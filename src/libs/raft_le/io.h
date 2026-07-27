@@ -117,6 +117,47 @@ public:
     virtual term_t voted_for() const = 0;
 };
 
+struct logger
+{
+    using can_log_fn_t = std::function<bool()>;
+    using log_fn_t     = std::function<int(const std::string&)>;
+
+    logger()
+        : can_error_log_fn([]() -> bool { return false; })
+        , log_error_fn([](const std::string&) -> int { return 0; })
+        , can_warning_log_fn([]() -> bool { return false; })
+        , log_warning_fn([](const std::string&) -> int { return 0; })
+        , can_info_log_fn([]() -> bool { return false; })
+        , log_info_fn([](const std::string&) -> int { return 0; })
+        , can_debug_log_fn([]() -> bool { return false; })
+        , log_debug_fn([](const std::string&) -> int { return 0; })
+        , can_trace_log_fn([]() -> bool { return false; })
+        , log_trace_fn([](const std::string&) -> int { return 0; })
+    {}
+
+    can_log_fn_t can_error_log_fn;
+    log_fn_t log_error_fn;
+    can_log_fn_t can_warning_log_fn;
+    log_fn_t log_warning_fn;
+    can_log_fn_t can_info_log_fn;
+    log_fn_t log_info_fn;
+    can_log_fn_t can_debug_log_fn;
+    log_fn_t log_debug_fn;
+    can_log_fn_t can_trace_log_fn;
+    log_fn_t log_trace_fn;
+};
+
+class ilogger_factory
+{
+public:
+    using ptr = std::shared_ptr<ilogger_factory>;
+
+public:
+    virtual ~ilogger_factory() {}
+
+    virtual logger get_logger(const std::string& ch) = 0;
+};
+
 } // namespace le
 } // namespace raft
 } // namespace wstux
