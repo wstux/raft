@@ -35,6 +35,7 @@
 namespace wstux {
 namespace raft {
 namespace le {
+namespace details { struct context; }
 
 class server final
 {
@@ -69,9 +70,17 @@ public:
     static std::vector<std::string> logging_channels();
 
 private:
+    using context_ptr = std::shared_ptr<details::context>;
+
+private:
+    static bool load(details::context& ctx);
+
+private:
     const server_id_t m_id;
     is_stop_fn_t m_is_stop_fn;
     std::atomic_bool m_is_stop;
+
+    context_ptr m_p_ctx;
 };
 
 } // namespace le
