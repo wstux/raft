@@ -30,6 +30,7 @@
 #include "raft_le/details/logging.h"
 #include "raft_le/details/serialization.h"
 #include "raft_le/details/connection/messages.h"
+#include "raft_le/details/handlers/vote_handler.h"
 #include "raft_le/details/role/election.h"
 
 namespace wstux {
@@ -47,8 +48,10 @@ void handle_message(details::context::ptr p_ctx, const details::message& msg)
     case details::message_type::heartbeat_response:
         break;
     case details::message_type::vote_request:
+        details::vote::handle_request(*p_ctx, msg.term, msg.src_id, msg.vote_req);
         break;
     case details::message_type::vote_response:
+        details::vote::handle_response(*p_ctx, msg.term, msg.src_id, msg.vote_resp);
         break;
     default:
         RAFT_ROOT_LOG_WARN((*p_ctx), "Unsupported message type " << msg.type);
