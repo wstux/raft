@@ -123,6 +123,15 @@ inline typename std::result_of<TFn(context&, TArgs...)>::type wrap(context::ptr 
     return (*func)(ctx, std::forward<TArgs>(args)...);
 }
 
+template<typename TFn, typename... TArgs>
+inline void wrap_send(context& ctx, peer::ptr p_peer, const TFn& func, TArgs&&... args)
+{
+    const scheduler::handler_type handler = [p_peer, func, args...]() -> void {
+        (p_peer.get()->*func)(std::move(args)...);
+    };
+    ctx.p_scheduler->execute_async(handler);
+}
+
 } // namespace utils
 
 } // namespace details

@@ -58,7 +58,6 @@ struct heartbeat_response_message final
 struct vote_message final
 {
     bool is_prevote;
-    term_t last_term;
 };
 
 struct vote_response_message final

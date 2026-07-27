@@ -69,7 +69,7 @@ public:
 
     void send_heartbeat_response(uint64_t term, int32_t src_id, bool accept);
 
-    void send_vote_request(uint64_t term, int32_t src_id, bool is_prevote, term_t log_term);
+    void send_vote_request(uint64_t term, int32_t src_id, bool is_prevote);
 
     void send_vote_response(uint64_t term, int32_t src_id, bool is_prevote, bool accept);
 

@@ -30,8 +30,6 @@
 #include <boost/iostreams/stream.hpp>
 #include <boost/iostreams/device/back_inserter.hpp>
 #include <boost/serialization/access.hpp>
-//#include <boost/serialization/nvp.hpp>
-//#include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/vector.hpp>
 
 #include "raft_le/details/connection/messages.h"
@@ -58,7 +56,6 @@ void serialize(TArch& ar, ::wstux::raft::le::details::message& msg, const unsign
         ar & msg.heartbeat_resp.accept;
     } else if (msg.type == ::wstux::raft::le::details::message_type::vote_request) {
         ar & msg.vote_req.is_prevote;
-        ar & msg.vote_req.last_term;
     } else if (msg.type == ::wstux::raft::le::details::message_type::vote_response) {
         ar & msg.vote_resp.is_prevote;
         ar & msg.vote_resp.accept;
