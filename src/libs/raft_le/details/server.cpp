@@ -28,19 +28,46 @@
 #include "raft_le/details/context.h"
 #include "raft_le/details/logger_channels.h"
 #include "raft_le/details/logging.h"
+#include "raft_le/details/serialization.h"
+#include "raft_le/details/connection/messages.h"
 
 namespace wstux {
 namespace raft {
 namespace le {
+namespace {
+
+void handle_message(details::context::ptr p_ctx, const details::message& msg)
+{
+    std::unique_lock<std::mutex> lock(p_ctx->handler_mutex);
+
+    switch(msg.type) {
+    case details::message_type::heartbeat_request:
+        break;
+    case details::message_type::heartbeat_response:
+        break;
+    case details::message_type::vote_request:
+        break;
+    case details::message_type::vote_response:
+        break;
+    default:
+        RAFT_ROOT_LOG_WARN((*p_ctx), "Unsupported message type " << msg.type);
+        break;
+    }
+}
+
+} // <anonymous> namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 // class server
 
-server::server(const server_id_t id, const io::ptr& /*p_io*/, const ilogger_factory::ptr /*p_factory*/, const is_stop_fn_t& is_stop_fn)
+server::server(const server_id_t id, const io::ptr& p_io, const ilogger_factory::ptr p_factory, const is_stop_fn_t& is_stop_fn)
     : m_id(id)
     , m_is_stop_fn(is_stop_fn)
     , m_is_stop(true)
+    , m_p_ctx(std::make_shared<details::context>(id, p_io, p_factory, is_stop_fn))
 {
+    static_assert(std::is_same<context_ptr, details::context::ptr>::value, "Invalid context pointer type");
+
     assert(m_id != gk_invalid_id);
 }
 
@@ -83,14 +110,21 @@ bool server::is_inited() const
 
 bool server::is_leader() const
 {
-    return false;
+    context_ptr p_ctx = m_p_ctx;
+    return p_ctx->role.is_leader();
 }
 
-void server::handle_message(const buffer_type& /*msg_buf*/)
+void server::handle_message(const buffer_type& msg_buf)
 {
     if (is_stop()) {
         return;
     }
+
+    details::message msg;
+    details::deserialize(msg_buf, msg);
+
+    context_ptr p_ctx = m_p_ctx;
+    le::handle_message(p_ctx, msg);
 }
 
 bool server::load(details::context& ctx)

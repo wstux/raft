@@ -160,6 +160,14 @@ bool init(context& ctx, server_id_t id)
         return false;
     }
 
+    ctx.role.voted_for = gk_invalid_id;
+
+    ctx.p_scheduler = std::make_shared<scheduler>(cfg.scheduler_threads_count);
+
+    ctx.election_distribution = std::uniform_int_distribution<size_t>(cfg.vote_timeout_min_ms, cfg.vote_timeout_max_ms);
+    ctx.heartbeat_interval_ms = cfg.heartbeat_interval_ms;
+    ctx.heartbeat_probes_count = cfg.heartbeat_probes_count;
+
     return true;
 }
 
