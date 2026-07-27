@@ -72,7 +72,7 @@ context::context(server_id_t id, const io::ptr p_io, const ilogger_factory::ptr 
 
 std::ostream& operator<<(std::ostream& os, const context& ctx)
 {
-    os << ctx.id << "(" << ctx.role.str() << "; current term " << ctx.term << ")";
+    os << ctx.id << "(" << ctx.role.str() << ")";
     return os;
 }
 
