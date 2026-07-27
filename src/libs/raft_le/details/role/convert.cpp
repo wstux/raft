@@ -26,6 +26,7 @@
 
 #include "raft_le/details/logging.h"
 #include "raft_le/details/role/convert.h"
+#include "raft_le/details/role/election.h"
 
 namespace wstux {
 namespace raft {
@@ -57,7 +58,7 @@ void become_candidate(context& ctx)
     if (peers::voting_members_count(ctx) == 1) {
         become_leader(ctx);
     } else {
-        //election_start(ctx);
+        election_start(ctx);
     }
 }
 

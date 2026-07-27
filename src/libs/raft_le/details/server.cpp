@@ -30,6 +30,7 @@
 #include "raft_le/details/logging.h"
 #include "raft_le/details/serialization.h"
 #include "raft_le/details/connection/messages.h"
+#include "raft_le/details/role/election.h"
 
 namespace wstux {
 namespace raft {
@@ -161,6 +162,7 @@ bool server::start()
 
     RAFT_ROOT_LOG_INFO((*p_ctx), "Starting raft server " << p_ctx->id << ".");
 
+    details::role::initiate_election(*p_ctx);
     return true;
 }
 
