@@ -35,10 +35,19 @@ namespace le {
 namespace details {
 namespace {
 
-bool load_peers(context& /*ctx*/, const cluster_config_t& cluster_cfg)
+bool load_peers(context& ctx, const cluster_config_t& cluster_cfg)
 {
     bool is_loaded = false;
-    for (const server_config& _ : cluster_cfg) {
+    for (const server_config& cfg : cluster_cfg) {
+        if (ctx.id == cfg.id) {
+            is_loaded = true;
+            ctx.config = cfg;
+            //ctx.role.is_voter = cfg.is_voter;
+        } else if (peers::find(ctx, cfg.id).get() == nullptr) {
+            peers::emplace(ctx, cfg);
+        } else {
+            return false;
+        }
     }
     return is_loaded;
 }
@@ -61,10 +70,80 @@ context::context(server_id_t id, const io::ptr p_io, const ilogger_factory::ptr 
     , l(p_factory)
 {}
 
-std::ostream& operator<<(std::ostream& os, const context& /*ctx*/)
+std::ostream& operator<<(std::ostream& os, const context& ctx)
 {
+    os << ctx.id << "(" << ctx.role.str() << "; current term " << ctx.term << ")";
     return os;
 }
+
+namespace peers {
+
+bool emplace(context& ctx, const server_config& cfg)
+{
+    if (ctx.id == cfg.id) {
+        return false;
+    }
+
+    const size_t hb_expired_interval_ms = ctx.heartbeat_interval_ms * ctx.heartbeat_probes_count;
+    peer::ptr p_peer = std::make_shared<peer>(cfg, ctx.p_io, hb_expired_interval_ms);
+
+    std::unique_lock<std::shared_mutex> lock(ctx.peers_mutex);
+    ctx.peers.emplace(cfg.id, p_peer);
+    return true;
+}
+
+peer::ptr find(context& ctx, server_id_t id)
+{
+    std::shared_lock<std::shared_mutex> lock(ctx.peers_mutex);
+    peer::map::const_iterator it = ctx.peers.find(id);
+    if (it != ctx.peers.cend()) {
+        return it->second;
+    }
+    return peer::ptr();
+}
+
+size_t quorum_for_election(context& ctx)
+{
+    const size_t members_count = voting_members_count(ctx);
+    return (members_count / 2);
+}
+
+size_t size(context& ctx)
+{
+    std::shared_lock<std::shared_mutex> lock(ctx.peers_mutex);
+    return ctx.peers.size();
+}
+
+void swap(context& ctx, peer::map& peers)
+{
+    std::unique_lock<std::shared_mutex> lock(ctx.peers_mutex);
+    ctx.peers.swap(peers);
+}
+
+peer::list to_list(context& ctx)
+{
+    peer::list peers;
+    {
+        std::shared_lock<std::shared_mutex> lock(ctx.peers_mutex);
+        peers.reserve(ctx.peers.size());
+        std::transform(ctx.peers.begin(), ctx.peers.end(), std::back_inserter(peers),
+            [](const peer::map::value_type& p) -> peer::ptr { return p.second; });
+    }
+    return peers;
+}
+
+size_t voting_members_count(context& ctx)
+{
+    using peer_value = peer::map::value_type;
+
+    //assert(ctx.role.is_voter);
+
+    std::shared_lock<std::shared_mutex> lock(ctx.peers_mutex);
+    return 1 + std::count_if(ctx.peers.cbegin(), ctx.peers.cend(),
+                             [](const peer_value& v) -> bool { return v.second->is_voter(); });
+}
+
+} // namespace peers
 
 namespace sturtup {
 
@@ -80,6 +159,14 @@ bool init(context& ctx, server_id_t id)
     if (cfg.heartbeat_interval_ms == 0 || cfg.vote_timeout_max_ms == 0 || cfg.vote_timeout_max_ms < cfg.vote_timeout_min_ms) {
         return false;
     }
+
+    ctx.role.voted_for = gk_invalid_id;
+
+    ctx.p_scheduler = std::make_shared<scheduler>(cfg.scheduler_threads_count);
+
+    ctx.election_distribution = std::uniform_int_distribution<size_t>(cfg.vote_timeout_min_ms, cfg.vote_timeout_max_ms);
+    ctx.heartbeat_interval_ms = cfg.heartbeat_interval_ms;
+    ctx.heartbeat_probes_count = cfg.heartbeat_probes_count;
 
     return true;
 }
@@ -114,9 +201,19 @@ size_t current_time_ms()
     return static_cast<std::size_t>(cur_ms.count());
 }
 
-cluster_config_t make_config(context& /*ctx*/)
+cluster_config_t make_config(context& ctx)
 {
-    return {};
+    const peer::list peers = peers::to_list(ctx);
+
+    cluster_config_t cfg;
+    cfg.reserve(peers.size() + 1);
+
+    cfg.emplace_back(ctx.config);
+    for (const peer::list::value_type& p : peers) {
+        cfg.emplace_back(p->config());
+    }
+
+    return cfg;
 }
 
 } // namespace utils

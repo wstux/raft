@@ -38,6 +38,8 @@
 #include "raft_le/io.h"
 #include "raft_le/details/logger_channels.h"
 #include "raft_le/details/scheduler.h"
+#include "raft_le/details/connection/peer.h"
+#include "raft_le/details/role/role.h"
 
 namespace wstux {
 namespace raft {
@@ -60,8 +62,12 @@ struct context final : public std::enable_shared_from_this<context>
     io::ptr p_io;
 
     std::mutex handler_mutex;
+    role::state role;
 
     std::atomic<term_t> term;
+
+    std::shared_mutex peers_mutex;
+    peer::map peers;
 
     scheduler::ptr p_scheduler;
 
@@ -77,6 +83,24 @@ struct context final : public std::enable_shared_from_this<context>
 };
 
 std::ostream& operator<<(std::ostream& os, const context& ctx);
+
+namespace peers {
+
+bool emplace(context& ctx, const server_config& cfg);
+
+peer::ptr find(context& ctx, server_id_t id);
+
+size_t quorum_for_election(context& ctx);
+
+size_t size(context& ctx);
+
+void swap(context& ctx, peer::map& peers);
+
+peer::list to_list(context& ctx);
+
+size_t voting_members_count(context& ctx);
+
+} // namespace peers
 
 namespace sturtup {
 
