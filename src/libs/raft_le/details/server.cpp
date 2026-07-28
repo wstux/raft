@@ -96,7 +96,7 @@ const std::string& server::endpoint() const
 bool server::init()
 {
     context_ptr p_ctx = m_p_ctx;
-    const bool is_inited = details::sturtup::init(*p_ctx, m_id);
+    const bool is_inited = details::utils::init(*p_ctx, m_id);
     if (! is_inited) {
         RAFT_ROOT_LOG_ERROR((*p_ctx), "Filed to init raft server.");
         return false;
@@ -134,7 +134,7 @@ void server::handle_message(const buffer_type& msg_buf)
 
 bool server::load(details::context& ctx)
 {
-    const bool is_loaded = details::sturtup::load(ctx);
+    const bool is_loaded = details::utils::load(ctx);
     if (! is_loaded) {
         RAFT_ROOT_LOG_ERROR(ctx, "Failed to load raft configuration.");
         return false;

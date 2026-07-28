@@ -75,7 +75,10 @@ struct server_config final
     bool is_voter;
 };
 
-using cluster_config_t = std::vector<server_config>;
+struct cluster_config final
+{
+    std::vector<server_config> servers;
+};
 
 class iclient
 {
@@ -96,7 +99,7 @@ public:
 public:
     virtual ~io() {}
 
-    virtual const cluster_config_t& bootstrap() const = 0;
+    virtual const cluster_config& bootstrap() const = 0;
 
     virtual const config& configuration() const = 0;
 
@@ -112,9 +115,9 @@ public:
 
     virtual void set_term(term_t term) = 0;
 
-    virtual void set_voted_for(term_t term) = 0;
+    virtual void set_voted_for(server_id_t id) = 0;
 
-    virtual term_t voted_for() const = 0;
+    virtual server_id_t voted_for() const = 0;
 };
 
 struct logger
