@@ -25,6 +25,7 @@
 #include <cassert>
 
 #include "raft_le/details/logging.h"
+#include "raft_le/details/handlers/timeout_handler.h"
 #include "raft_le/details/role/convert.h"
 #include "raft_le/details/role/election.h"
 
@@ -79,7 +80,7 @@ void update_leader(context& ctx, server_id_t leader_id)
         RAFT_ROOT_LOG_INFO(ctx, "Updating leader for server " << ctx << " to server with id " << leader_id);
         ctx.role.follower_state.leader_id = leader_id;
     }
-    //timeout::election_restart_task(ctx);
+    timeout::election_restart_task(ctx);
 }
 
 void update_term(context& ctx, term_t term)

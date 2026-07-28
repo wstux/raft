@@ -25,6 +25,8 @@
 #include <cassert>
 
 #include "raft_le/details/logging.h"
+#include "raft_le/details/handlers/timeout_handler.h"
+#include "raft_le/details/handlers/vote_handler.h"
 #include "raft_le/details/role/convert.h"
 #include "raft_le/details/role/election.h"
 
@@ -55,8 +57,8 @@ void election_start(context& ctx)
         ctx.role.voted_for = ctx.id;
     }
 
-    //timeout::election_restart_task(ctx);
-    //vote::request(ctx);
+    timeout::election_restart_task(ctx);
+    vote::request(ctx);
 }
 
 void initiate_election(context& ctx)

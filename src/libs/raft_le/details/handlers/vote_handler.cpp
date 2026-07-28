@@ -26,6 +26,7 @@
 #include <algorithm>
 
 #include "raft_le/details/logging.h"
+#include "raft_le/details/handlers/heartbeat_handler.h"
 #include "raft_le/details/handlers/vote_handler.h"
 #include "raft_le/details/role/convert.h"
 #include "raft_le/details/role/election.h"
@@ -232,7 +233,7 @@ void handle_response(context& ctx, term_t term, server_id_t src_id, const vote_r
                 // send initial empty AppendEntries RPCs (heartbeats) to all peers
                 // to establish authority and prevent other elections.
                 // Broadcast empty AppendEntries to assert authority (Figure 2)
-                //heartbeat::request(ctx);
+                heartbeat::request(ctx);
             }
         }
     }

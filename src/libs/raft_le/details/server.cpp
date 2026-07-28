@@ -30,7 +30,10 @@
 #include "raft_le/details/logging.h"
 #include "raft_le/details/serialization.h"
 #include "raft_le/details/connection/messages.h"
+#include "raft_le/details/handlers/heartbeat_handler.h"
+#include "raft_le/details/handlers/timeout_handler.h"
 #include "raft_le/details/handlers/vote_handler.h"
+#include "raft_le/details/role/convert.h"
 #include "raft_le/details/role/election.h"
 
 namespace wstux {
@@ -44,8 +47,10 @@ void handle_message(details::context::ptr p_ctx, const details::message& msg)
 
     switch(msg.type) {
     case details::message_type::heartbeat_request:
+        details::heartbeat::handle_request(*p_ctx, msg.term, msg.src_id, msg.heartbeat_req);
         break;
     case details::message_type::heartbeat_response:
+        details::heartbeat::handle_response(*p_ctx, msg.term, msg.src_id, msg.heartbeat_resp);
         break;
     case details::message_type::vote_request:
         details::vote::handle_request(*p_ctx, msg.term, msg.src_id, msg.vote_req);
@@ -73,11 +78,7 @@ server::server(const server_id_t id, const io::ptr& p_io, const ilogger_factory:
     static_assert(std::is_same<context_ptr, details::context::ptr>::value, "Invalid context pointer type");
 
     assert(m_id != gk_invalid_id);
-}
-
-cluster_config_t server::cluster_cfg() const
-{
-    return details::utils::wrap(m_p_ctx, &details::utils::make_config);
+    details::role::become_follower(*m_p_ctx);
 }
 
 void server::deinit()
@@ -100,8 +101,8 @@ bool server::init()
         RAFT_ROOT_LOG_ERROR((*p_ctx), "Filed to init raft server.");
         return false;
     }
-    //m_p_ctx->election_task = ;
-    //m_p_ctx->heartbeat_task = ;
+    m_p_ctx->election_task = m_p_ctx->p_scheduler->make_task(std::bind(&details::timeout::election_timeout_task, std::ref(*m_p_ctx)));
+    m_p_ctx->heartbeat_task = m_p_ctx->p_scheduler->make_task(std::bind(&details::timeout::heartbeat_timeout_task, std::ref(*m_p_ctx)));
 
     return true;
 }
@@ -139,6 +140,7 @@ bool server::load(details::context& ctx)
         return false;
     }
 
+    details::role::become_follower(ctx);
     return true;
 }
 
@@ -164,6 +166,10 @@ bool server::start()
     }
 
     RAFT_ROOT_LOG_INFO((*p_ctx), "Starting raft server " << p_ctx->id << ".");
+    details::timeout::heartbeat_restart_task(*p_ctx);
+    if (p_ctx->role.is_voter) {
+        details::timeout::election_restart_task(*p_ctx);
+    }
 
     details::role::initiate_election(*p_ctx);
     return true;
@@ -178,6 +184,8 @@ void server::stop()
     }
     RAFT_ROOT_LOG_INFO((*p_ctx), "Stopping raft server " << p_ctx->id << ".");
 
+    details::timeout::election_cancel_task(*p_ctx);
+    details::timeout::heartbeat_cancel_task(*p_ctx);
     p_ctx->p_scheduler->stop();
 }
 
