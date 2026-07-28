@@ -22,67 +22,31 @@
  * THE SOFTWARE.
  */
 
-#ifndef _LIBS_RAFT_LEADER_ELECTION_SERVER_H_
-#define _LIBS_RAFT_LEADER_ELECTION_SERVER_H_
+#ifndef _LIBS_RAFT_LEADER_ELECTION_ROLE_CONVERT_H_
+#define _LIBS_RAFT_LEADER_ELECTION_ROLE_CONVERT_H_
 
-#include <atomic>
-#include <memory>
-#include <string>
-#include <vector>
-
-#include "raft_le/io.h"
+#include "raft_le/details/context.h"
 
 namespace wstux {
 namespace raft {
 namespace le {
-namespace details { struct context; }
+namespace details {
+namespace role {
 
-class server final
-{
-public:
-    using ptr = std::shared_ptr<server>;
+void become_follower(context& ctx);
 
-public:
-    server(const server_id_t id, const io::ptr& p_io, const ilogger_factory::ptr p_factory, const is_stop_fn_t& is_stop_fn);
+void become_candidate(context& ctx);
 
-    void deinit();
+void become_leader(context& ctx);
 
-    const std::string& endpoint() const;
+void update_leader(context& ctx, server_id_t leader_id);
 
-    server_id_t id() const { return m_id; }
+void update_term(context& ctx, term_t term);
 
-    bool init();
-
-    bool is_inited() const;
-
-    bool is_leader() const;
-
-    bool is_stop() const { return m_is_stop || m_is_stop_fn(); }
-
-    void handle_message(const buffer_type& msg_buf);
-
-    bool start();
-
-    void stop();
-
-    static std::vector<std::string> logging_channels();
-
-private:
-    using context_ptr = std::shared_ptr<details::context>;
-
-private:
-    static bool load(details::context& ctx);
-
-private:
-    const server_id_t m_id;
-    is_stop_fn_t m_is_stop_fn;
-    std::atomic_bool m_is_stop;
-
-    context_ptr m_p_ctx;
-};
-
+} // namespace role
+} // namespace details
 } // namespace le
 } // namespace raft
 } // namespace wstux
 
-#endif /* _LIBS_RAFT_LEADER_ELECTION_SERVER_H_ */
+#endif /* _LIBS_RAFT_LEADER_ELECTION_ROLE_CONVERT_H_ */

@@ -75,14 +75,13 @@ void peer::send_heartbeat_response(uint64_t term, int32_t src_id, bool accept)
     m_p_client->send(serialize<message>(msg));
 }
 
-void peer::send_vote_request(uint64_t term, int32_t src_id, bool is_prevote, term_t log_term)
+void peer::send_vote_request(uint64_t term, int32_t src_id, bool is_prevote)
 {
     message msg(message_type::vote_request);
     msg.src_id = src_id;
     msg.dst_id = m_cfg.id;
     msg.term = term;
     msg.vote_req.is_prevote = is_prevote;
-    msg.vote_req.last_term = log_term;
 
     m_p_client->send(serialize<message>(msg));
 }

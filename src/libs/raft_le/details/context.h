@@ -98,29 +98,27 @@ void swap(context& ctx, peer::map& peers);
 
 peer::list to_list(context& ctx);
 
+void update(context& ctx, const cluster_config& cluster_cfg);
+
 size_t voting_members_count(context& ctx);
 
 } // namespace peers
-
-namespace sturtup {
-
-bool init(context& ctx, server_id_t id);
-
-bool load(context& ctx);
-
-} // namespace sturtup
 
 namespace utils {
 
 size_t current_time_ms();
 
-cluster_config_t make_config(context& ctx);
+bool init(context& ctx, server_id_t id);
+
+bool load(context& ctx);
 
 template<typename TFn, typename... TArgs>
-inline typename std::result_of<TFn(context&, TArgs...)>::type wrap(context::ptr p_ctx, const TFn& func, TArgs&&... args)
+inline void wrap_send(context& ctx, peer::ptr p_peer, const TFn& func, TArgs&&... args)
 {
-    context& ctx = *p_ctx;
-    return (*func)(ctx, std::forward<TArgs>(args)...);
+    const scheduler::handler_type handler = [p_peer, func, args...]() -> void {
+        (p_peer.get()->*func)(std::move(args)...);
+    };
+    ctx.p_scheduler->execute_async(handler);
 }
 
 } // namespace utils

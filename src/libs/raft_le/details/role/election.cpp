@@ -22,67 +22,60 @@
  * THE SOFTWARE.
  */
 
-#ifndef _LIBS_RAFT_LEADER_ELECTION_SERVER_H_
-#define _LIBS_RAFT_LEADER_ELECTION_SERVER_H_
+#include <cassert>
 
-#include <atomic>
-#include <memory>
-#include <string>
-#include <vector>
-
-#include "raft_le/io.h"
+#include "raft_le/details/logging.h"
+#include "raft_le/details/handlers/timeout_handler.h"
+#include "raft_le/details/handlers/vote_handler.h"
+#include "raft_le/details/role/convert.h"
+#include "raft_le/details/role/election.h"
 
 namespace wstux {
 namespace raft {
 namespace le {
-namespace details { struct context; }
+namespace details {
+namespace role {
 
-class server final
+bool election_results(context& ctx)
 {
-public:
-    using ptr = std::shared_ptr<server>;
+    assert(ctx.role.is_candidate());
 
-public:
-    server(const server_id_t id, const io::ptr& p_io, const ilogger_factory::ptr p_factory, const is_stop_fn_t& is_stop_fn);
+    const size_t quorum_size = peers::quorum_for_election(ctx) + 1;
+    const size_t votes = ctx.role.candidate_state.votes_granted;
 
-    void deinit();
+    return ctx.role.is_candidate() && (votes >= quorum_size);
+}
 
-    const std::string& endpoint() const;
+void election_start(context& ctx)
+{
+    assert(ctx.role.is_candidate());
 
-    server_id_t id() const { return m_id; }
+    if (! ctx.role.candidate_state.is_prevote) {
+        term_t term = ++ctx.term;
+        RAFT_ROOT_LOG_TRACE(ctx, "Server " << ctx << " started election with local increased term " << ctx.term);
+        ctx.p_io->set_term(term);
+        ctx.role.voted_for = ctx.id;
+    }
 
-    bool init();
+    timeout::election_restart_task(ctx);
+    vote::request(ctx);
+}
 
-    bool is_inited() const;
+void initiate_election(context& ctx)
+{
+    assert(ctx.role.is_follower());
 
-    bool is_leader() const;
+    if (! ctx.role.is_voter) {
+        return;
+    }
 
-    bool is_stop() const { return m_is_stop || m_is_stop_fn(); }
+    if (peers::quorum_for_election(ctx) == 0) {
+        role::become_candidate(ctx);
+    }
+}
 
-    void handle_message(const buffer_type& msg_buf);
-
-    bool start();
-
-    void stop();
-
-    static std::vector<std::string> logging_channels();
-
-private:
-    using context_ptr = std::shared_ptr<details::context>;
-
-private:
-    static bool load(details::context& ctx);
-
-private:
-    const server_id_t m_id;
-    is_stop_fn_t m_is_stop_fn;
-    std::atomic_bool m_is_stop;
-
-    context_ptr m_p_ctx;
-};
-
+} // namespace role
+} // namespace details
 } // namespace le
 } // namespace raft
 } // namespace wstux
-
-#endif /* _LIBS_RAFT_LEADER_ELECTION_SERVER_H_ */

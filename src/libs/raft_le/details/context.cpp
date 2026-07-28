@@ -35,14 +35,14 @@ namespace le {
 namespace details {
 namespace {
 
-bool load_peers(context& ctx, const cluster_config_t& cluster_cfg)
+bool load_peers(context& ctx, const cluster_config& cluster_cfg)
 {
     bool is_loaded = false;
-    for (const server_config& cfg : cluster_cfg) {
+    for (const server_config& cfg : cluster_cfg.servers) {
         if (ctx.id == cfg.id) {
             is_loaded = true;
             ctx.config = cfg;
-            //ctx.role.is_voter = cfg.is_voter;
+            ctx.role.is_voter = cfg.is_voter;
         } else if (peers::find(ctx, cfg.id).get() == nullptr) {
             peers::emplace(ctx, cfg);
         } else {
@@ -72,7 +72,7 @@ context::context(server_id_t id, const io::ptr p_io, const ilogger_factory::ptr 
 
 std::ostream& operator<<(std::ostream& os, const context& ctx)
 {
-    os << ctx.id << "(" << ctx.role.str() << "; current term " << ctx.term << ")";
+    os << ctx.id << "(" << ctx.role.str() << ")";
     return os;
 }
 
@@ -132,11 +132,30 @@ peer::list to_list(context& ctx)
     return peers;
 }
 
+void update(context& ctx, const cluster_config& cluster_cfg)
+{
+    const size_t hb_expired_interval_ms = ctx.heartbeat_interval_ms * ctx.heartbeat_probes_count;
+
+    peer::map peers;
+    for (const server_config& cfg : cluster_cfg.servers) {
+        if (ctx.id == cfg.id) {
+            continue;
+        }
+        peer::ptr p_peer = find(ctx, cfg.id);
+        if (! p_peer) {
+            p_peer = std::make_shared<peer>(cfg, ctx.p_io, hb_expired_interval_ms);
+        }
+        peers.emplace(cfg.id, p_peer);
+    }
+
+    swap(ctx, peers);
+}
+
 size_t voting_members_count(context& ctx)
 {
     using peer_value = peer::map::value_type;
 
-    //assert(ctx.role.is_voter);
+    assert(ctx.role.is_voter);
 
     std::shared_lock<std::shared_mutex> lock(ctx.peers_mutex);
     return 1 + std::count_if(ctx.peers.cbegin(), ctx.peers.cend(),
@@ -145,7 +164,17 @@ size_t voting_members_count(context& ctx)
 
 } // namespace peers
 
-namespace sturtup {
+namespace utils {
+
+size_t current_time_ms()
+{
+    using clock_t = std::chrono::steady_clock;
+    using time_point_t = std::chrono::time_point<clock_t>;
+
+    time_point_t cur = clock_t::now();
+    std::chrono::duration<size_t, std::milli> cur_ms = std::chrono::duration_cast<std::chrono::milliseconds>(cur.time_since_epoch());
+    return static_cast<std::size_t>(cur_ms.count());
+}
 
 bool init(context& ctx, server_id_t id)
 {
@@ -179,41 +208,13 @@ bool load(context& ctx)
     }
 
     ctx.term = p_io->load_term();
-
-    const cluster_config_t& cluster_cfg = p_io->bootstrap();
-    if (! load_peers(ctx, cluster_cfg)) {
-        return false;
+    if (ctx.peers.empty()) {
+        const cluster_config& cluster_cfg = p_io->bootstrap();
+        if (! load_peers(ctx, cluster_cfg)) {
+            return false;
+        }
     }
     return true;
-}
-
-} // namespace sturtup
-
-namespace utils {
-
-size_t current_time_ms()
-{
-    using clock_t = std::chrono::steady_clock;
-    using time_point_t = std::chrono::time_point<clock_t>;
-
-    time_point_t cur = clock_t::now();
-    std::chrono::duration<size_t, std::milli> cur_ms = std::chrono::duration_cast<std::chrono::milliseconds>(cur.time_since_epoch());
-    return static_cast<std::size_t>(cur_ms.count());
-}
-
-cluster_config_t make_config(context& ctx)
-{
-    const peer::list peers = peers::to_list(ctx);
-
-    cluster_config_t cfg;
-    cfg.reserve(peers.size() + 1);
-
-    cfg.emplace_back(ctx.config);
-    for (const peer::list::value_type& p : peers) {
-        cfg.emplace_back(p->config());
-    }
-
-    return cfg;
 }
 
 } // namespace utils
