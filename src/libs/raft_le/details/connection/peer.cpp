@@ -53,20 +53,21 @@ bool peer::is_probe_expired() const
     return (utils::current_time_ms() - m_last_response_ms > m_heartbeat_expired_interval_ms);
 }
 
-void peer::send_heartbeat_request(uint64_t term, int32_t src_id, term_t log_term)
+void peer::send_heartbeat_request(uint64_t term, int32_t src_id)
 {
-    message msg(message_type::heartbeat_request);
+    message msg;
+    msg.type = message_type::heartbeat_request;
     msg.src_id = src_id;
     msg.dst_id = m_cfg.id;
     msg.term = term;
-    msg.heartbeat_req.last_term = log_term;
 
     m_p_client->send(serialize<message>(msg));
 }
 
 void peer::send_heartbeat_response(uint64_t term, int32_t src_id, bool accept)
 {
-    message msg(message_type::heartbeat_response);
+    message msg;
+    msg.type = message_type::heartbeat_response;
     msg.src_id = src_id;
     msg.dst_id = m_cfg.id;
     msg.term = term;
@@ -77,7 +78,8 @@ void peer::send_heartbeat_response(uint64_t term, int32_t src_id, bool accept)
 
 void peer::send_vote_request(uint64_t term, int32_t src_id, bool is_prevote)
 {
-    message msg(message_type::vote_request);
+    message msg;
+    msg.type = message_type::vote_request;
     msg.src_id = src_id;
     msg.dst_id = m_cfg.id;
     msg.term = term;
@@ -88,7 +90,8 @@ void peer::send_vote_request(uint64_t term, int32_t src_id, bool is_prevote)
 
 void peer::send_vote_response(uint64_t term, int32_t src_id, bool is_prevote, bool accept)
 {
-    message msg(message_type::vote_response);
+    message msg;
+    msg.type = message_type::vote_response;
     msg.src_id = src_id;
     msg.dst_id = m_cfg.id;
     msg.term = term;
@@ -96,6 +99,11 @@ void peer::send_vote_response(uint64_t term, int32_t src_id, bool is_prevote, bo
     msg.vote_resp.accept = accept;
 
     m_p_client->send(serialize<message>(msg));
+}
+
+void peer::set_hb_expired_interval(size_t interval_ms)
+{
+    m_heartbeat_expired_interval_ms = interval_ms;
 }
 
 void peer::update_last_response()

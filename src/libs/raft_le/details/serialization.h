@@ -47,11 +47,7 @@ void serialize(TArch& ar, ::wstux::raft::le::details::message& msg, const unsign
     ar & msg.dst_id;
     ar & msg.term;
 
-    if (TArch::is_loading::value) {
-        msg.init();
-    }
     if (msg.type == ::wstux::raft::le::details::message_type::heartbeat_request) {
-        ar & msg.heartbeat_req.last_term;
     } else if (msg.type == ::wstux::raft::le::details::message_type::heartbeat_response) {
         ar & msg.heartbeat_resp.accept;
     } else if (msg.type == ::wstux::raft::le::details::message_type::vote_request) {

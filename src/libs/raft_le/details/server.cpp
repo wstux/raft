@@ -149,9 +149,34 @@ std::vector<std::string> server::logging_channels()
     return details::loggers::logging_channels();
 }
 
+bool server::reconfigure()
+{
+    context_ptr p_ctx = m_p_ctx;
+
+    const config& cfg = p_ctx->p_io->configuration();
+    if (cfg.heartbeat_interval_ms == 0 || cfg.vote_timeout_max_ms == 0 || cfg.vote_timeout_max_ms < cfg.vote_timeout_min_ms) {
+        return false;
+    }
+
+    const cluster_config& cluster_cfg = p_ctx->p_io->bootstrap();
+
+    p_ctx->p_scheduler->reconfigure(cfg.scheduler_threads_count);
+
+    std::unique_lock<std::mutex> lock(p_ctx->handler_mutex);
+    p_ctx->election_distribution = std::uniform_int_distribution<size_t>(cfg.vote_timeout_min_ms, cfg.vote_timeout_max_ms);
+
+    p_ctx->heartbeat_interval_ms = cfg.heartbeat_interval_ms;
+    p_ctx->heartbeat_probes_count = cfg.heartbeat_probes_count;
+
+    details::peers::update(*p_ctx, cluster_cfg);
+    return true;
+}
+
 bool server::start()
 {
     context_ptr p_ctx = m_p_ctx;
+
+    std::unique_lock<std::mutex> lock(m_p_ctx->handler_mutex);
     if (! m_is_stop.exchange(false)) {
         RAFT_ROOT_LOG_WARN((*p_ctx), "Raft server " << p_ctx->id << " has been already started.");
         return false;

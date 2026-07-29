@@ -29,6 +29,7 @@
 
 #include <chrono>
 #include <fstream>
+#include <filesystem>
 #include <functional>
 #include <iostream>
 #include <map>
@@ -97,6 +98,7 @@ private:
                 sout << (*p_line_number) << " ";
             }
             sout << timestamp() << " <" << std::this_thread::get_id() << "> [" << lvl << "] <" << ch << "> " << msg;
+            sout.flush();
             return msg.size();
         }
 
@@ -104,10 +106,7 @@ private:
         {
             static std::mutex mutex;
             std::lock_guard<std::mutex> lock(mutex);
-
             return log_msg(std::cout, lvl, ch, msg);
-            //std::cout << timestamp() << " <" << std::this_thread::get_id() << "> [" << lvl << "] <" << ch << "> " << msg;
-            //return msg.size();
         }
 
         static int log(logger_data::ptr p_data, std::string lvl, std::string ch, const std::string& msg)
@@ -118,45 +117,32 @@ private:
             if (p_data->fout.is_open()) {
                 std::lock_guard<std::mutex> lock(p_data->mutex);
                 log_msg(p_data->fout, lvl, ch, msg, &(++p_data->line_number));
-                p_data->fout.flush();
             }
             if (p_data->enable_console_log) {
-                log_msg(std::cout, lvl, ch, msg);
+                log(lvl, ch, msg);
             }
             return msg.size();
-        }
-
-        static int timestamp(char* buf, size_t size)
-        {
-            struct timeval cur_tv;
-            struct tm cur_tm;
-
-            if (gettimeofday(&cur_tv, NULL) != 0) {
-                return -1;
-            }
-            if (localtime_r(&cur_tv.tv_sec, &cur_tm) == NULL) {
-                return -1;
-            }
-
-            int rc = snprintf(buf, size, "%04d-%02d-%02d %02d:%02d:%02d.%03d",
-                        cur_tm.tm_year + 1900, cur_tm.tm_mon + 1, cur_tm.tm_mday,
-                        cur_tm.tm_hour, cur_tm.tm_min, cur_tm.tm_sec, (int)(cur_tv.tv_usec / 1000));
-            if (rc < 0) {
-                return -1;
-            }
-            buf[rc] = '\0';
-            return 0;
         }
 
         static std::string timestamp()
         {
             constexpr size_t ts_size = 24;
-            char cur_ts[ts_size];
-            if (timestamp(cur_ts, ts_size) != 0) {
+            char buf[ts_size];
+
+            struct timeval cur_tv;
+            struct tm cur_tm;
+            if (gettimeofday(&cur_tv, NULL) != 0 || localtime_r(&cur_tv.tv_sec, &cur_tm) == NULL) {
                 return "";
             }
+            int rc = snprintf(buf, ts_size, "%04d-%02d-%02d %02d:%02d:%02d.%03d",
+                        cur_tm.tm_year + 1900, cur_tm.tm_mon + 1, cur_tm.tm_mday,
+                        cur_tm.tm_hour, cur_tm.tm_min, cur_tm.tm_sec, (int)(cur_tv.tv_usec / 1000));
+            if (rc < 0) {
+                return "";
+            }
+            buf[rc] = '\0';
 
-            return std::string(cur_ts, ts_size - 1);
+            return std::string(buf, ts_size - 1);
         }
     };
 
@@ -167,11 +153,31 @@ public:
 
     virtual raft::le::logger get_logger(const std::string& ch) override { return logger_factory::logger(ch, m_p_data); }
 
-public:
-    static const bool is_enable_logging;
+    static std::string log_dir(const std::filesystem::path& nook_dir, const std::string& fixture, const std::string& name)
+    {
+        namespace fs = std::filesystem;
+
+        if (! is_enable_logging) {
+            return std::string();
+        }
+
+        if (! fs::exists(nook_dir.parent_path())) {
+            return std::string();
+        }
+
+        fs::path logdir = nook_dir / "tests_log" / (fixture.empty() ? "" : fixture) / (name.empty() ? "" : name);
+        if (! fs::exists(logdir)) {
+            if (! fs::create_directories(logdir)) {
+                return std::string();
+            }
+        }
+        return logdir.string();
+    }
 
 private:
     logger_data::ptr m_p_data;
+
+    static const bool is_enable_logging;
 };
 
 const bool logger_factory::is_enable_logging = false;
@@ -260,7 +266,7 @@ private:
             const size_t sleep_for_ms = m_sleep_for(m_rand_engine);
             return std::chrono::milliseconds(sleep_for_ms);
         }
-        return 25ms;
+        return 5ms;
     }
 
     void thread_main()
@@ -320,32 +326,13 @@ public:
         virtual iclient::ptr create_client(server_id_t, const std::string&) const { return std::make_shared<empty_client_stub>();}
     };
 
-    struct results final
-    {
-        using ptr = std::shared_ptr<results>;
-
-        bool init = true;
-        bool load = true;
-
-        config cfg;
-
-        term_t term = 0;
-    };
-
 public:
-    io_stub(const std::shared_ptr<cluster_config>& p_cluster_cfg, const iclient_factory::ptr& p_factory, results::ptr p_results = nullptr)
+    io_stub(const std::shared_ptr<cluster_config>& p_cluster_cfg, const iclient_factory::ptr& p_factory)
         : m_p_cluster_cfg(p_cluster_cfg)
         , m_p_factory(p_factory)
-        , m_p_results(p_results)
         , m_term(0)
         , m_voted_for(gk_invalid_id)
     {
-        if (m_p_results) {
-            m_cfg = m_p_results->cfg;
-            m_term = m_p_results->term;
-        } else {
-            m_p_results = std::make_shared<results>();
-        }
         m_cfg.scheduler_threads_count = 2;
     }
 
@@ -362,9 +349,9 @@ public:
 
     virtual void deinit() override final {}
 
-    virtual bool init(server_id_t) override final { return m_p_results->init; }
+    virtual bool init(server_id_t) override final { return true; }
 
-    virtual bool load() override final { return m_p_results->load; }
+    virtual bool load() override final { return true; }
 
     virtual term_t load_term() override final { return m_term; }
 
@@ -378,7 +365,6 @@ private:
     std::shared_ptr<cluster_config> m_p_cluster_cfg;
     iclient_factory::ptr m_p_factory;
     config m_cfg;
-    results::ptr m_p_results;
 
     term_t m_term;
     server_id_t m_voted_for;

@@ -61,6 +61,8 @@ public:
 
     void handle_message(const buffer_type& msg_buf);
 
+    bool reconfigure();
+
     bool start();
 
     void stop();
