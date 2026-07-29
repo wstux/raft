@@ -126,7 +126,7 @@ void request(context& ctx)
         assert(p->id() != ctx.id);
 
         RAFT_HB_LOG_TRACE(ctx, "Sending heartbeat request to server " << p->id() << ". " << ctx << ", current term " << ctx.term);
-        utils::wrap_send(ctx, p, &peer::send_heartbeat_request, ctx.term.load(), ctx.id, ctx.term.load());
+        utils::wrap_send(ctx, p, &peer::send_heartbeat_request, ctx.term.load(), ctx.id);
     };
 }
 

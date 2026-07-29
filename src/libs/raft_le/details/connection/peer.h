@@ -65,7 +65,7 @@ public:
 
     bool reset_recent_recv() { return m_recent_recv.exchange(false); }
 
-    void send_heartbeat_request(uint64_t term, int32_t src_id, term_t log_term);
+    void send_heartbeat_request(uint64_t term, int32_t src_id);
 
     void send_heartbeat_response(uint64_t term, int32_t src_id, bool accept);
 

@@ -46,9 +46,7 @@ enum message_type : int32_t
 };
 
 struct heartbeat_message final
-{
-    term_t last_term;
-};
+{};
 
 struct heartbeat_response_message final
 {
@@ -70,24 +68,6 @@ struct message final
 {
     static constexpr size_t version = message_version::v_1;
 
-    message() {}
-
-    explicit message(message_type t)
-        : type(t)
-    {
-        init();
-    }
-
-    ~message() { apply<destroy_op>(); }
-
-    message(const message&) = delete;
-    message(message&&) = delete;
-
-    message& operator=(const message&) = delete;
-    message& operator=(message&&) = delete;
-
-    void init() { apply<construct_op>(); }
-
     message_type type;
 
     server_id_t src_id;
@@ -100,31 +80,6 @@ struct message final
         vote_message               vote_req;
         vote_response_message      vote_resp;
     };
-
-private:
-    struct construct_op
-    {
-        template<typename T>
-        static void run(T& field) { ::new (static_cast<void*>(&field)) T(); }
-    };
-
-    struct destroy_op
-    {
-        template<typename T>
-        static void run(T& field) { field.~T(); }
-    };
-
-private:
-    template<typename TAction>
-    void apply()
-    {
-        switch (type) {
-        case heartbeat_request:  TAction::run(this->*(&message::heartbeat_req)); break;
-        case heartbeat_response: TAction::run(this->*(&message::heartbeat_resp)); break;
-        case vote_request:       TAction::run(this->*(&message::vote_req)); break;
-        case vote_response:      TAction::run(this->*(&message::vote_resp)); break;
-        }
-    }
 };
 
 } // namespace details
