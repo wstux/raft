@@ -101,6 +101,11 @@ void peer::send_vote_response(uint64_t term, int32_t src_id, bool is_prevote, bo
     m_p_client->send(serialize<message>(msg));
 }
 
+void peer::set_hb_expired_interval(size_t interval_ms)
+{
+    m_heartbeat_expired_interval_ms = interval_ms;
+}
+
 void peer::update_last_response()
 {
     m_last_response_ms = utils::current_time_ms();

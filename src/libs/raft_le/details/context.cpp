@@ -144,6 +144,8 @@ void update(context& ctx, const cluster_config& cluster_cfg)
         peer::ptr p_peer = find(ctx, cfg.id);
         if (! p_peer) {
             p_peer = std::make_shared<peer>(cfg, ctx.p_io, hb_expired_interval_ms);
+        } else {
+            p_peer->set_hb_expired_interval(hb_expired_interval_ms);
         }
         peers.emplace(cfg.id, p_peer);
     }

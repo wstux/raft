@@ -73,6 +73,8 @@ public:
 
     void send_vote_response(uint64_t term, int32_t src_id, bool is_prevote, bool accept);
 
+    void set_hb_expired_interval(size_t interval_ms);
+
     void update_last_response();
 
 private:
