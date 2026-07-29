@@ -1,6 +1,7 @@
 # Unit tests
 
 if (BUILD_TESTS)
+    add_subdirectory(benchmark)
     add_subdirectory(stub)
 endif()
 
