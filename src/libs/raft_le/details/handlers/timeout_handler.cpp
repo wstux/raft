@@ -91,7 +91,7 @@ size_t election_timeout_ms(context& ctx)
  *      timeout. Having two independent timeout tasks (heartbeat and election)
  *      introduces synchronization vulnerabilities.
  */
-bool is_leader_expired(context& ctx)
+/*bool is_leader_expired(context& ctx)
 {
     assert(ctx.role.is_follower());
 
@@ -104,7 +104,7 @@ bool is_leader_expired(context& ctx)
         return p_leader_peer->is_probe_expired();
     }
     return true;
-}
+}*/
 
 } // <anonymous> namespace
 
@@ -174,7 +174,7 @@ void heartbeat_timeout_task(context& ctx)
     if (ctx.role.is_leader()) {
         // Raft Paper, Section 5.2: "Leaders send periodic heartbeats to maintain their authority."
         heartbeat::request(ctx);
-    } else if (ctx.role.is_follower()) {
+    /*} else if (ctx.role.is_follower()) {
         // \todo: Design redundancy and specification violation.
         // Followers in standard Raft should not have an active heartbeat timeout
         // task. Forcing this task to reset leader_id to null independently of the
@@ -184,7 +184,7 @@ void heartbeat_timeout_task(context& ctx)
             RAFT_TO_LOG_DEBUG(ctx, "Heartbeat timeout task. Leader " << ctx.role.follower_state.leader_id
                 << " for server " << ctx << " has been expired.");
             ctx.role.follower_state.leader_id = gk_invalid_id;
-        }
+        }*/
     }
     // Reschedule the heartbeat task to maintain cyclic execution.
     heartbeat_restart_task(ctx);
