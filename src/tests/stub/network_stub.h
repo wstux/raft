@@ -52,15 +52,12 @@ public:
     using server_ptr = server::ptr;
 
 public:
-    network_stub(const client_type type = client_type::single, const std::string& test_fixture = "", const std::string& test_name = "")
+    explicit network_stub(const client_type type = client_type::single)
         : m_type(type)
         , m_p_cluster_cfg(std::make_shared<cluster_config>())
-    {
-        m_test_fixture = test_fixture;
-        m_test_name = test_name;
-    }
+    {}
 
-    virtual ~network_stub() {}
+    virtual ~network_stub() { stop(); }
 
     virtual iclient::ptr create_client(server_id_t id, const std::string&) const override
     {
@@ -99,43 +96,18 @@ public:
         return servers;
     }
 
-    void build_cluster()
-    {
-        io_stub::iclient_factory::ptr p_factory = shared_from_this();
-        for (const server_config& cfg : m_p_cluster_cfg->servers) {
-            io_stub::ptr p_io = std::make_shared<io_stub>(m_p_cluster_cfg, p_factory);
-
-            server_ptr p_srv = create_server_impl(cfg.id, p_io);
-        }
-    }
-
     void create_cluster(const std::vector<std::pair<server_id_t, bool>>& servers)
     {
         for (const std::pair<server_id_t, bool>& srv_param : servers) {
-            register_server(srv_param.first, srv_param.second);
+            const server_id_t id = srv_param.first;
+            const bool is_voter = srv_param.second;
+            m_p_cluster_cfg->servers.emplace_back(id, std::to_string(id), is_voter);
         }
-        build_cluster();
-    }
-
-    server_ptr create_server(server_id_t id, bool is_voter, bool is_separate = true, bool is_start = true)
-    {
-        std::shared_ptr<cluster_config> p_cluster_cfg;
-        if (! is_separate) {
-            p_cluster_cfg = m_p_cluster_cfg;
-            register_server(id, is_voter);
-        } else {
-            p_cluster_cfg = std::make_shared<cluster_config>();
-            p_cluster_cfg->servers.emplace_back(id, std::to_string(id), is_voter);
-        }
-        io_stub::iclient_factory::ptr p_factory = shared_from_this();
-        io_stub::ptr p_io = std::make_shared<io_stub>(p_cluster_cfg, p_factory);
-        server_ptr p_srv = create_server_impl(id, p_io);
-
-        if (is_start) {
+        for (const server_config& cfg : m_p_cluster_cfg->servers) {
+            io_stub::ptr p_io = std::make_shared<io_stub>(m_p_cluster_cfg, this->shared_from_this());
+            server_ptr p_srv = create_server_impl(cfg.id, p_io);
             p_srv->init();
-            p_srv->start();
         }
-        return p_srv;
     }
 
     bool has_leader() const { return (leaders_count() != 0); }
@@ -146,11 +118,6 @@ public:
 
         return std::count_if(m_servers.begin(), m_servers.end(),
                              [](const servers_map::value_type& v) -> bool { return v.second->is_leader(); });
-    }
-
-    void register_server(server_id_t id, bool is_voter = true)
-    {
-        m_p_cluster_cfg->servers.emplace_back(id, std::to_string(id), is_voter);
     }
 
     void remove_leader()
@@ -165,12 +132,9 @@ public:
         }
     }
 
-    void start(bool is_init = true)
+    void start()
     {
         for (const std::map<server_id_t, server_ptr>::value_type& s : m_servers) {
-            if (is_init) {
-                s.second->init();
-            }
             s.second->start();
         }
     }
@@ -179,46 +143,45 @@ public:
     {
         using namespace std::chrono_literals;
 
+        if (m_is_stop) {
+            return;
+        }
         m_is_stop = true;
         for (const std::map<server_id_t, server_ptr>::value_type& s : m_servers) {
             s.second->stop();
             s.second->deinit();
         }
-
-        if (m_type != client_type::single) {
-            std::this_thread::sleep_for(300ms);
-        }
     }
 
-    void wait_leader(const size_t limit = 3) const
+    void wait_leader(const size_t limit_ms = 1500) const
     {
         using namespace std::chrono_literals;
-        for (size_t i = 0; (i < limit * 3) && (! has_leader()); ++i) {
-            std::this_thread::sleep_for(500ms);
+        for (size_t i = 0; (i < limit_ms) && (! has_leader()); i += 10) {
+            std::this_thread::sleep_for(10ms);
         }
     }
 
-    static details::context::ptr make_context(const size_t servs_count, io_stub::iclient_factory::ptr p_factory,
-                                              io_stub::results::ptr p_res, bool is_voter = true)
+    static details::context::ptr make_context(const size_t servs_count, bool is_voter = true)
     {
+        tests::io_stub::iclient_factory::ptr p_factory = std::make_shared<tests::io_stub::empty_clients_factory>();
         std::shared_ptr<cluster_config> p_cluster_cfg = std::make_shared<cluster_config>();
         for (size_t i = 0; i < servs_count; ++i) {
             p_cluster_cfg->servers.emplace_back(i + 1, std::to_string(i), (i == 0) ? is_voter : true);
         }
 
         std::function<bool()> is_stop_fn = []()->bool { return false; };
-        tests::io_stub::ptr p_io = std::make_shared<io_stub>(p_cluster_cfg, p_factory, p_res);
+        tests::io_stub::ptr p_io = std::make_shared<io_stub>(p_cluster_cfg, p_factory);
 
         details::context::ptr p_ctx = std::make_shared<details::context>(1, p_io, std::make_shared<logger_factory>(), is_stop_fn);
         return p_ctx;
     }
 
     template<typename TTestInfo>
-    static network_stub::ptr make_network(const client_type type = client_type::single, const std::string& test_fixture = "",
-                                          const TTestInfo* p_test_info = nullptr)
+    static void enable_file_logging(const std::string& fixture, const TTestInfo* p_info)
     {
-        const std::string test_name = (p_test_info) ? (p_test_info->name()) : "";
-        return std::make_shared<tests::network_stub>(type, test_fixture, test_name);
+        const std::string name = (p_info) ? (p_info->name()) : "";
+        m_test_fixture = fixture;
+        m_test_name = name;
     }
 
 private:
@@ -234,44 +197,15 @@ private:
         return p_srv;
     }
 
-    static std::string log_dir()
-    {
-        namespace fs = std::filesystem;
-
-        if (! logger_factory::is_enable_logging) {
-            return std::string();
-        }
-
-        fs::path td_dir = TEST_DATA_DIR;
-        if (! fs::exists(td_dir.parent_path())) {
-            return std::string();
-        }
-
-        fs::path logdir = td_dir / "tests_log";
-        if (! m_test_fixture.empty()) {
-            logdir = logdir / m_test_fixture;
-        }
-        if (! m_test_name.empty()) {
-            logdir = logdir / m_test_name;
-        }
-        if (! fs::exists(logdir)) {
-            if (! fs::create_directories(logdir)) {
-                return std::string();
-            }
-        }
-        return logdir.string();
-    }
-
     static std::string log_file(server_id_t id)
     {
         namespace fs = std::filesystem;
 
-        std::string logdir_str = log_dir();
+        std::string logdir_str = logger_factory::log_dir(TEST_DATA_DIR, m_test_fixture, m_test_name);
         if (logdir_str.empty()) {
             return std::string();
         }
-        fs::path log_file = fs::path(logdir_str) / ("server_" + std::to_string(id));
-        return log_file.string();
+        return fs::path(logdir_str) / ("server_" + std::to_string(id));
     }
 
 private:

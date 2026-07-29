@@ -43,7 +43,8 @@ class raft_election : public ::testing::Test
 public:
     virtual void SetUp() override
     {
-        m_p_network = tests::network_stub::make_network(T::type, "raft_election", ::testing::UnitTest::GetInstance()->current_test_info());
+        m_p_network = std::make_shared<tests::network_stub>(T::type);
+        tests::network_stub::enable_file_logging("raft_election", ::testing::UnitTest::GetInstance()->current_test_info());
     }
 
     virtual void TearDown() override { m_p_network->stop(); }

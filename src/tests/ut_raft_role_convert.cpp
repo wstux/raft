@@ -44,9 +44,7 @@ public:
     {
         namespace tests = raft::tests;
 
-        tests::io_stub::results::ptr p_res = std::make_shared<tests::io_stub::results>();
-        tests::io_stub::iclient_factory::ptr p_factory = std::make_shared<tests::io_stub::empty_clients_factory>();
-        raft::details::context::ptr p_ctx = tests::network_stub::make_context(cluster_size, p_factory, p_res, is_voter);
+        raft::details::context::ptr p_ctx = tests::network_stub::make_context(cluster_size, is_voter);
         if (! raft::details::utils::init(*p_ctx, 1)) {
             return nullptr;
         }
