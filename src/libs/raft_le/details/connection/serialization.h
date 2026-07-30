@@ -25,6 +25,8 @@
 #ifndef _LIBS_RAFT_LEADER_ELECTION_SERIALIZATION_H_
 #define _LIBS_RAFT_LEADER_ELECTION_SERIALIZATION_H_
 
+#include <cassert>
+
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/iostreams/stream.hpp>
@@ -115,12 +117,15 @@ void serialize(const T& data, buffer_type& buffer)
     using inserter_type = boost::iostreams::back_insert_device<buffer_type>;
     using iostream_type = boost::iostreams::stream<inserter_type>;
 
+    buffer.clear();
+
     iostream_type sout{inserter_type(buffer)};
 
-    // Create a binary output archive and serialize the data
-    boost::archive::binary_oarchive arch(sout);
-
-    arch << data;
+    {
+        // Create a binary output archive and serialize the data
+        boost::archive::binary_oarchive arch(sout);
+        arch << data;
+    }
 
     // Flush the stream to ensure all data is written to the vector
     sout.flush();

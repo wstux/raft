@@ -25,6 +25,8 @@
 #ifndef _LIBS_RAFT_LEADER_ELECTION_CONNECTION_MESSAGES_H_
 #define _LIBS_RAFT_LEADER_ELECTION_CONNECTION_MESSAGES_H_
 
+#include <type_traits>
+
 #include "raft_le/io.h"
 
 namespace wstux {
@@ -81,6 +83,9 @@ struct message final
         vote_response_message      vote_resp;
     };
 };
+
+static_assert(std::is_pod<message>::value, "message struct must be pod");
+static_assert(sizeof(message) == 32, "Invalid message size");
 
 } // namespace details
 } // namespace le

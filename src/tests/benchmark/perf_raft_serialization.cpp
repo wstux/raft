@@ -24,8 +24,8 @@
 
 #include <benchmark/benchmark.h>
 
-#include "raft_le/details/serialization.h"
 #include "raft_le/details/connection/messages.h"
+#include "raft_le/details/connection/serialization.h"
 
 static void serialize_message(benchmark::State& state)
 {

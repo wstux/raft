@@ -26,8 +26,8 @@
 #include <chrono>
 
 #include "raft_le/details/context.h"
-#include "raft_le/details/serialization.h"
 #include "raft_le/details/connection/peer.h"
+#include "raft_le/details/connection/serialization.h"
 
 namespace wstux {
 namespace raft {
