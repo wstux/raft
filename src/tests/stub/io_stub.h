@@ -202,11 +202,18 @@ public:
 
     virtual ~client_stub() {}
 
-    virtual void send(const buffer_type& msg) override { m_p_srv->handle_message(msg); }
+    virtual void send(const buffer_type& msg) override
+    {
+        std::shared_ptr<server> p_srv = m_p_srv.lock();
+        if (p_srv) {
+            p_srv->handle_message(msg);
+        }
+        //m_p_srv->handle_message(msg);
+    }
 
 private:
     const int32_t m_id;
-    std::shared_ptr<server> m_p_srv;
+    std::weak_ptr<server> m_p_srv;
 };
 
 class threaded_client_stub final : public iclient
@@ -266,7 +273,7 @@ private:
             const size_t sleep_for_ms = m_sleep_for(m_rand_engine);
             return std::chrono::milliseconds(sleep_for_ms);
         }
-        return 5ms;
+        return 1ms;
     }
 
     void thread_main()
@@ -274,7 +281,11 @@ private:
         while(! m_is_stop && ! m_is_stop_fn()) {
             queue_data* d;
             while (m_queue.pop(d)) {
-                m_p_srv->handle_message(d->msg);
+                //m_p_srv->handle_message(d->msg);
+                std::shared_ptr<server> p_srv = m_p_srv.lock();
+                if (p_srv) {
+                    p_srv->handle_message(d->msg);
+                }
                 delete d;
             }
             std::this_thread::sleep_for(sleep_for());
@@ -285,7 +296,7 @@ private:
     const int32_t m_id;
     std::atomic_bool m_is_stop{false};
     std::function<bool()> m_is_stop_fn;
-    std::shared_ptr<server> m_p_srv;
+    std::weak_ptr<server> m_p_srv;
     client_type m_type;
 
     std::mt19937 m_rand_engine;
@@ -361,7 +372,7 @@ public:
 
     virtual server_id_t voted_for() const override final { return m_voted_for; }
 
-private:
+public:
     std::shared_ptr<cluster_config> m_p_cluster_cfg;
     iclient_factory::ptr m_p_factory;
     config m_cfg;
