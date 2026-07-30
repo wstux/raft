@@ -86,6 +86,24 @@ std::ostream& operator<<(std::ostream& os, const context& ctx);
 
 namespace peers {
 
+/**
+ *  \brief  Checks if the leader maintains active contact with a majority (quorum)
+ *      of nodes.
+ *  \param  ctx - current server state context.
+ *  \return true if the leader has active contact with a quorum of voting nodes
+ *      (including itself), otherwise false if the leader has lost contact with
+ *      the quorum and must become a follower.
+ *
+ *  \details    Raft Paper, Section 6 (Cluster membership changes / Leader lease):
+ *      "A leader steps down if it does not receive heartbeat responses from a
+ *      majority of the cluster nodes within an election timeout period."
+ *
+ *      Used for Leader Lease management. If the leader detects that it
+ *      is disconnected from the majority of cluster nodes, it must step down to
+ *      prevent a split-brain scenario.
+ */
+bool check_contact_quorum(context& ctx);
+
 bool emplace(context& ctx, const server_config& cfg);
 
 peer::ptr find(context& ctx, server_id_t id);
