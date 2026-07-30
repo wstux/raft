@@ -82,14 +82,25 @@ bool check_contact_quorum(context& ctx)
 {
     assert(ctx.role.is_leader());
 
-    peer::list peers = peers::to_list(ctx);
+    /*peer::list peers = peers::to_list(ctx);
     const size_t contacts = 1 + std::count_if(peers.begin(), peers.end(),
         [](peer::ptr& p) -> bool {
             const bool recent_recv = p->reset_recent_recv();
             return (p->is_voter() && recent_recv);
         });
 
-    return contacts > peers::quorum_for_election(ctx);
+    return contacts > peers::quorum_for_election(ctx);*/
+
+    std::shared_lock<std::shared_mutex> lock(ctx.peers_mutex);
+    size_t contacts = 1;
+    size_t voting_count = 1;
+    for (const peer::map::value_type& v : ctx.peers) {
+        const bool recent_recv = v.second->reset_recent_recv();
+        contacts += (v.second->is_voter() && recent_recv) ? 1 : 0;
+        voting_count += (v.second->is_voter()) ? 1 : 0;
+    }
+    const size_t quorum_for_election_size = (voting_count / 2);
+    return contacts > quorum_for_election_size;
 }
 
 bool emplace(context& ctx, const server_config& cfg)
@@ -134,18 +145,6 @@ void swap(context& ctx, peer::map& peers)
     ctx.peers.swap(peers);
 }
 
-peer::list to_list(context& ctx)
-{
-    peer::list peers;
-    {
-        std::shared_lock<std::shared_mutex> lock(ctx.peers_mutex);
-        peers.reserve(ctx.peers.size());
-        std::transform(ctx.peers.begin(), ctx.peers.end(), std::back_inserter(peers),
-            [](const peer::map::value_type& p) -> peer::ptr { return p.second; });
-    }
-    return peers;
-}
-
 void update(context& ctx, const cluster_config& cluster_cfg)
 {
     const size_t hb_expired_interval_ms = ctx.heartbeat_interval_ms * ctx.heartbeat_probes_count;
@@ -175,7 +174,7 @@ size_t voting_members_count(context& ctx)
 
     std::shared_lock<std::shared_mutex> lock(ctx.peers_mutex);
     return 1 + std::count_if(ctx.peers.cbegin(), ctx.peers.cend(),
-                             [](const peer_value& v) -> bool { return v.second->is_voter(); });
+        [](const peer_value& v) -> bool { return v.second->is_voter(); });
 }
 
 } // namespace peers

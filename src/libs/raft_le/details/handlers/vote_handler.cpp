@@ -264,10 +264,16 @@ void request(context& ctx)
 
     const bool is_prevote = ctx.role.candidate_state.is_prevote;
 
-    peer::list peers = peers::to_list(ctx);
+    /*peer::list peers = peers::to_list(ctx);
     for (peer::ptr& p : peers) {
         if (p->is_voter()) {
             utils::wrap_send(ctx, p, &peer::send_vote_request, term, ctx.id, is_prevote);
+        }
+    }*/
+    std::shared_lock<std::shared_mutex> lock(ctx.peers_mutex);
+    for (const peer::map::value_type& v : ctx.peers) {
+        if (v.second->is_voter()) {
+            utils::wrap_send(ctx, v.second, &peer::send_vote_request, term, ctx.id, is_prevote);
         }
     }
 }

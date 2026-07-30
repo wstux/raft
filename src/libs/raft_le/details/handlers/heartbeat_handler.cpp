@@ -121,13 +121,22 @@ void request(context& ctx)
 
     assert(ctx.role.is_leader());
 
-    peer::list peers = peers::to_list(ctx);
+    /*peer::list peers = peers::to_list(ctx);
     for (const peer::list::value_type& p : peers) {
         assert(p->id() != ctx.id);
 
         RAFT_HB_LOG_TRACE(ctx, "Sending heartbeat request to server " << p->id() << ". " << ctx << ", current term " << ctx.term);
         utils::wrap_send(ctx, p, &peer::send_heartbeat_request, ctx.term.load(), ctx.id);
-    };
+    };*/
+    std::shared_lock<std::shared_mutex> lock(ctx.peers_mutex);
+    for (const peer::map::value_type& v : ctx.peers) {
+        const peer::list::value_type& p = v.second;
+
+        assert(p->id() != ctx.id);
+
+        RAFT_HB_LOG_TRACE(ctx, "Sending heartbeat request to server " << p->id() << ". " << ctx << ", current term " << ctx.term);
+        utils::wrap_send(ctx, p, &peer::send_heartbeat_request, ctx.term.load(), ctx.id);
+    }
 }
 
 } // namespace heartbeat

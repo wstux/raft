@@ -114,8 +114,6 @@ size_t size(context& ctx);
 
 void swap(context& ctx, peer::map& peers);
 
-peer::list to_list(context& ctx);
-
 void update(context& ctx, const cluster_config& cluster_cfg);
 
 size_t voting_members_count(context& ctx);
