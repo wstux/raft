@@ -54,6 +54,7 @@ void election_start(context& ctx)
         term_t term = ++ctx.term;
         RAFT_ROOT_LOG_TRACE(ctx, "Server " << ctx << " started election with local increased term " << ctx.term);
         ctx.p_io->set_term(term);
+        ctx.p_io->set_voted_for(ctx.id);
         ctx.role.voted_for = ctx.id;
     }
 

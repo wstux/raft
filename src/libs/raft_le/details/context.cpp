@@ -223,6 +223,7 @@ bool load(context& ctx)
     }
 
     ctx.term = p_io->load_term();
+    ctx.role.voted_for = p_io->voted_for();
     if (ctx.peers.empty()) {
         const cluster_config& cluster_cfg = p_io->bootstrap();
         if (! load_peers(ctx, cluster_cfg)) {
