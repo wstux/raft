@@ -43,6 +43,15 @@ TestTarget(ut_raft_scheduler
         googletest
 )
 
+TestTarget(ut_raft_serialization
+    SOURCES
+        ut_raft_serialization.cpp
+    LIBRARIES
+        raft_le
+    DEPENDS
+        googletest
+)
+
 TestTarget(ut_raft_server_leader_election
     SOURCES
         ut_raft_server_leader_election.cpp

@@ -216,7 +216,6 @@ TEST(raft_scheduler, cancel_task)
  *      The counter remains equal to 0, confirming the task did not run after
  *      shutdown.
  */
-
 TEST(raft_scheduler, stop)
 {
     raft::scheduler scheduler;
