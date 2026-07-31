@@ -7,7 +7,7 @@ if (BUILD_BOOST)
         CONFIGURE_COMMAND
             ./bootstrap.sh --prefix=${EXTERNALS_PREFIX}/boost/install
                            --with-toolset=gcc
-                           --with-libraries=date_time,serialization,thread
+                           --with-libraries=date_time,thread
         BUILD_COMMAND
             CXXFLAGS='${CMAKE_CXX_FLAGS};-Wno-uninitialized'
             ./b2 linkflags=\"${CMAKE_EXE_LINKER_FLAGS}\"

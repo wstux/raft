@@ -45,14 +45,51 @@ static void leader_election(benchmark::State& state)
         for (size_t i = 0; i < N; ++i) {
             cluster.emplace_back(i + 1, true);
         }
-        p_network->create_cluster(cluster);
-        //p_network->create_cluster({{1, true}, {2, true}, {3, true}});
+        p_network->create_cluster(cluster, false);
+        for (size_t i = 0; i < N; ++i) {
+            tests::io_stub::ptr p_io = p_network->get_io(i + 1);
+            p_io->m_cfg.heartbeat_interval_ms = 5;
+            p_io->m_cfg.vote_timeout_min_ms = 10;
+            p_io->m_cfg.vote_timeout_max_ms = 15;
+        }
+        p_network->init();
+        //p_network->create_cluster(cluster);
 
         state.ResumeTiming();
         p_network->start();
-
         p_network->wait_leader();
+        state.PauseTiming();
 
+        p_network->stop();
+        p_network.reset();
+        benchmark::DoNotOptimize(p_network);
+    }
+}
+
+template<size_t N>
+static void leader_election_default(benchmark::State& state)
+{
+    namespace raft = ::wstux::raft::le;
+    namespace tests = ::wstux::raft::le::tests;
+
+    for (auto _ : state) {
+        state.PauseTiming();
+
+        tests::network_stub::ptr p_network = std::make_shared<tests::network_stub>(tests::client_type::threaded);
+        std::vector<std::pair<raft::server_id_t, bool>> cluster;
+        cluster.reserve(N);
+        for (size_t i = 0; i < N; ++i) {
+            cluster.emplace_back(i + 1, true);
+        }
+        p_network->create_cluster(cluster);
+
+        state.ResumeTiming();
+        p_network->start();
+        p_network->wait_leader();
+        state.PauseTiming();
+
+        p_network->stop();
+        p_network.reset();
         benchmark::DoNotOptimize(p_network);
     }
 }
@@ -60,5 +97,9 @@ static void leader_election(benchmark::State& state)
 BENCHMARK(leader_election<3>)->Unit(benchmark::kMillisecond);
 BENCHMARK(leader_election<5>)->Unit(benchmark::kMillisecond);
 BENCHMARK(leader_election<7>)->Unit(benchmark::kMillisecond);
+
+BENCHMARK(leader_election_default<3>)->Unit(benchmark::kMillisecond);
+BENCHMARK(leader_election_default<5>)->Unit(benchmark::kMillisecond);
+BENCHMARK(leader_election_default<7>)->Unit(benchmark::kMillisecond);
 
 BENCHMARK_MAIN();

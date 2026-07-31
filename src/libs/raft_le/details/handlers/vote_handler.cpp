@@ -27,6 +27,7 @@
 
 #include "raft_le/details/logging.h"
 #include "raft_le/details/handlers/heartbeat_handler.h"
+#include "raft_le/details/handlers/timeout_handler.h"
 #include "raft_le/details/handlers/vote_handler.h"
 #include "raft_le/details/role/convert.h"
 #include "raft_le/details/role/election.h"
@@ -260,14 +261,20 @@ void request(context& ctx)
 
     // Raft Paper, Section 5.2: "Each candidate votes for itself..."
     ctx.role.candidate_state.votes_granted = 1;
-    //timeout::election_restart_task(ctx);
+    timeout::election_restart_task(ctx);
 
     const bool is_prevote = ctx.role.candidate_state.is_prevote;
 
-    peer::list peers = peers::to_list(ctx);
+    /*peer::list peers = peers::to_list(ctx);
     for (peer::ptr& p : peers) {
         if (p->is_voter()) {
             utils::wrap_send(ctx, p, &peer::send_vote_request, term, ctx.id, is_prevote);
+        }
+    }*/
+    std::shared_lock<std::shared_mutex> lock(ctx.peers_mutex);
+    for (const peer::map::value_type& v : ctx.peers) {
+        if (v.second->is_voter()) {
+            utils::wrap_send(ctx, v.second, &peer::send_vote_request, term, ctx.id, is_prevote);
         }
     }
 }

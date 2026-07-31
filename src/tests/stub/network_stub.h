@@ -84,6 +84,8 @@ public:
         return nullptr;
     }
 
+    io_stub::ptr get_io(server_id_t id) const { return m_io_map.at(id); }
+
     server_ptr get_server(server_id_t id) const { return m_servers.at(id); }
 
     std::vector<server_ptr> get_servers() const
@@ -96,7 +98,7 @@ public:
         return servers;
     }
 
-    void create_cluster(const std::vector<std::pair<server_id_t, bool>>& servers)
+    void create_cluster(const std::vector<std::pair<server_id_t, bool>>& servers, bool is_init = true)
     {
         for (const std::pair<server_id_t, bool>& srv_param : servers) {
             const server_id_t id = srv_param.first;
@@ -106,7 +108,16 @@ public:
         for (const server_config& cfg : m_p_cluster_cfg->servers) {
             io_stub::ptr p_io = std::make_shared<io_stub>(m_p_cluster_cfg, this->shared_from_this());
             server_ptr p_srv = create_server_impl(cfg.id, p_io);
-            p_srv->init();
+            if (is_init) {
+                p_srv->init();
+            }
+        }
+    }
+
+    void init()
+    {
+        for (const std::map<server_id_t, server_ptr>::value_type& s : m_servers) {
+            s.second->init();
         }
     }
 
@@ -151,6 +162,9 @@ public:
             s.second->stop();
             s.second->deinit();
         }
+
+        m_servers.clear();
+        m_io_map.clear();
     }
 
     void wait_leader(const size_t limit_ms = 1500) const

@@ -23,7 +23,7 @@
  */
 
 #include <cassert>
-#include <algorithm>
+//#include <algorithm>
 
 #include "raft_le/details/logging.h"
 #include "raft_le/details/handlers/heartbeat_handler.h"
@@ -55,7 +55,7 @@ namespace {
  *      is disconnected from the majority of cluster nodes, it must step down to
  *      prevent a split-brain scenario.
  */
-bool check_contact_quorum(context& ctx)
+/*bool check_contact_quorum(context& ctx)
 {
     assert(ctx.role.is_leader());
 
@@ -67,7 +67,7 @@ bool check_contact_quorum(context& ctx)
         });
 
     return contacts > peers::quorum_for_election(ctx);
-}
+}*/
 
 size_t election_timeout_ms(context& ctx)
 {
@@ -135,7 +135,7 @@ void election_timeout_task(context& ctx)
     if (ctx.role.is_leader()) {
         // Raft Paper, Section 6 (Leader lease): "A leader steps down if it does
         // not receive heartbeat responses from a majority of the cluster nodes."
-        if (! check_contact_quorum(ctx)) {
+        if (! peers::check_contact_quorum(ctx)) {
             role::become_follower(ctx);
         }
     } else if (ctx.role.is_candidate()) {
