@@ -62,9 +62,9 @@ TEST(raft_serialization, heartbeat_request)
     msg.term = 1;
 
     raft::buffer_type buffer = raft::details::serialize(msg);
-    //EXPECT_TRUE(buffer.size() == raft::details::message::size) << buffer.size();
+    EXPECT_TRUE(buffer.size() == raft::details::message::size) << buffer.size();
 
-    raft::details::message dsr_msg = raft::details::deserialize<raft::details::message>(buffer);
+    raft::details::message dsr_msg = raft::details::deserialize(buffer);
     EXPECT_TRUE(msg == dsr_msg);
 }
 
@@ -80,9 +80,9 @@ TEST(raft_serialization, heartbeat_response)
     msg.heartbeat_resp.accept = true;
 
     raft::buffer_type buffer = raft::details::serialize(msg);
-    //EXPECT_TRUE(buffer.size() == raft::details::message::size) << buffer.size();
+    EXPECT_TRUE(buffer.size() == raft::details::message::size) << buffer.size();
 
-    raft::details::message dsr_msg = raft::details::deserialize<raft::details::message>(buffer);
+    raft::details::message dsr_msg = raft::details::deserialize(buffer);
     EXPECT_TRUE(msg == dsr_msg);
 }
 
@@ -98,9 +98,9 @@ TEST(raft_serialization, vote_request)
     msg.vote_req.is_prevote = true;
 
     raft::buffer_type buffer = raft::details::serialize(msg);
-    //EXPECT_TRUE(buffer.size() == raft::details::message::size) << buffer.size();
+    EXPECT_TRUE(buffer.size() == raft::details::message::size) << buffer.size();
 
-    raft::details::message dsr_msg = raft::details::deserialize<raft::details::message>(buffer);
+    raft::details::message dsr_msg = raft::details::deserialize(buffer);
     EXPECT_TRUE(msg == dsr_msg);
 }
 
@@ -117,9 +117,9 @@ TEST(raft_serialization, vote_response)
     msg.vote_resp.accept = true;
 
     raft::buffer_type buffer = raft::details::serialize(msg);
-    //EXPECT_TRUE(buffer.size() == raft::details::message::size) << buffer.size();
+    EXPECT_TRUE(buffer.size() == raft::details::message::size) << buffer.size();
 
-    raft::details::message dsr_msg = raft::details::deserialize<raft::details::message>(buffer);
+    raft::details::message dsr_msg = raft::details::deserialize(buffer);
     EXPECT_TRUE(msg == dsr_msg);
 }
 

@@ -34,7 +34,7 @@ namespace raft {
 namespace le {
 namespace details {
 
-enum message_version : size_t
+enum message_version : uint32_t
 {
     v_1 = 20260727
 };
@@ -68,7 +68,8 @@ struct vote_response_message final
 
 struct message final
 {
-    static constexpr size_t version = message_version::v_1;
+    static constexpr size_t size = 32;
+    static constexpr uint32_t version = message_version::v_1;
 
     message_type type;
 
@@ -84,8 +85,9 @@ struct message final
     };
 };
 
-static_assert(std::is_pod<message>::value, "message struct must be pod");
-static_assert(sizeof(message) == 32, "Invalid message size");
+static_assert(std::is_pod<message>::value, "Message struct must be pod");
+static_assert(std::is_trivially_copyable<message>::value, "Message struct must be trivially copyable");
+static_assert(sizeof(message) == message::size, "Invalid message size");
 
 } // namespace details
 } // namespace le

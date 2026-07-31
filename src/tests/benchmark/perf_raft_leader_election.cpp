@@ -66,8 +66,40 @@ static void leader_election(benchmark::State& state)
     }
 }
 
+template<size_t N>
+static void leader_election_default(benchmark::State& state)
+{
+    namespace raft = ::wstux::raft::le;
+    namespace tests = ::wstux::raft::le::tests;
+
+    for (auto _ : state) {
+        state.PauseTiming();
+
+        tests::network_stub::ptr p_network = std::make_shared<tests::network_stub>(tests::client_type::threaded);
+        std::vector<std::pair<raft::server_id_t, bool>> cluster;
+        cluster.reserve(N);
+        for (size_t i = 0; i < N; ++i) {
+            cluster.emplace_back(i + 1, true);
+        }
+        p_network->create_cluster(cluster);
+
+        state.ResumeTiming();
+        p_network->start();
+        p_network->wait_leader();
+        state.PauseTiming();
+
+        p_network->stop();
+        p_network.reset();
+        benchmark::DoNotOptimize(p_network);
+    }
+}
+
 BENCHMARK(leader_election<3>)->Unit(benchmark::kMillisecond);
 BENCHMARK(leader_election<5>)->Unit(benchmark::kMillisecond);
 BENCHMARK(leader_election<7>)->Unit(benchmark::kMillisecond);
+
+BENCHMARK(leader_election_default<3>)->Unit(benchmark::kMillisecond);
+BENCHMARK(leader_election_default<5>)->Unit(benchmark::kMillisecond);
+BENCHMARK(leader_election_default<7>)->Unit(benchmark::kMillisecond);
 
 BENCHMARK_MAIN();

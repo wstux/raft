@@ -37,7 +37,7 @@ namespace le {
 
 using is_stop_fn_t = std::function<bool(void)>;
 
-using server_id_t = size_t;
+using server_id_t = uint64_t;
 using term_t = uint32_t;
 
 using buffer_type = std::vector<char>;
