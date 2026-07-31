@@ -27,6 +27,7 @@
 
 #include "raft_le/details/logging.h"
 #include "raft_le/details/handlers/heartbeat_handler.h"
+#include "raft_le/details/handlers/timeout_handler.h"
 #include "raft_le/details/handlers/vote_handler.h"
 #include "raft_le/details/role/convert.h"
 #include "raft_le/details/role/election.h"
@@ -260,7 +261,7 @@ void request(context& ctx)
 
     // Raft Paper, Section 5.2: "Each candidate votes for itself..."
     ctx.role.candidate_state.votes_granted = 1;
-    //timeout::election_restart_task(ctx);
+    timeout::election_restart_task(ctx);
 
     const bool is_prevote = ctx.role.candidate_state.is_prevote;
 
