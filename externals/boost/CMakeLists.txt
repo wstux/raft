@@ -2,8 +2,8 @@ if (BUILD_BOOST)
     set(CMAKE_CXX_FLAGS "-Wno-uninitialized;-Wno-deprecated-copy")
 
     ExternalTarget(boost
-        URL
-            https://github.com/boostorg/boost/releases/download/boost-1.88.0/boost-1.88.0-cmake.tar.gz
+        URL     https://github.com/boostorg/boost/releases/download/boost-1.88.0/boost-1.88.0-cmake.tar.gz
+        URL_MD5 "fe33be48eeb6de4dc2fefe60a3834c1f"
         CONFIGURE_COMMAND
             ./bootstrap.sh --prefix=${EXTERNALS_PREFIX}/boost/install
                            --with-toolset=gcc

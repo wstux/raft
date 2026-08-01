@@ -81,6 +81,9 @@ server::server(const server_id_t id, const io::ptr& p_io, const ilogger_factory:
     details::role::become_follower(*m_p_ctx);
 }
 
+server::~server()
+{}
+
 void server::deinit()
 {
     m_p_ctx->p_io->deinit();

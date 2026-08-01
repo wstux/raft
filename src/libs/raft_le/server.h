@@ -45,6 +45,8 @@ public:
 public:
     server(const server_id_t id, const io::ptr& p_io, const ilogger_factory::ptr p_factory, const is_stop_fn_t& is_stop_fn);
 
+    ~server();
+
     void deinit();
 
     const std::string& endpoint() const;
