@@ -82,15 +82,6 @@ bool check_contact_quorum(context& ctx)
 {
     assert(ctx.role.is_leader());
 
-    /*peer::list peers = peers::to_list(ctx);
-    const size_t contacts = 1 + std::count_if(peers.begin(), peers.end(),
-        [](peer::ptr& p) -> bool {
-            const bool recent_recv = p->reset_recent_recv();
-            return (p->is_voter() && recent_recv);
-        });
-
-    return contacts > peers::quorum_for_election(ctx);*/
-
     std::shared_lock<std::shared_mutex> lock(ctx.peers_mutex);
     size_t contacts = 1;
     size_t voting_count = 1;
