@@ -113,7 +113,11 @@ inline void serialize(const message& msg, char* p_buffer)
 
 inline void deserialize(const buffer_type& buffer, message& msg)
 {
-    assert(buffer.size() <= message::size);
+    assert(buffer.size() == message::size);
+    if (buffer.size() != message::size) {
+        msg.type = message_type::invalid;
+        return;
+    }
 
     const char* p_buffer = buffer.data();
 
