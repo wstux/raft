@@ -71,7 +71,8 @@ function(ExternalTarget EXT_TARGET_NAME)
                     INCLUDE_DIR
                     INSTALL_COMMAND
                     INSTALL_DIR
-                    URL #URL_MD5
+                    URL
+                    URL_MD5
     )
     set(_lists_kw   DEPENDS
                     LIBRARIES
