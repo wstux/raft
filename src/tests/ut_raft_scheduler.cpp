@@ -25,6 +25,7 @@
 #include <atomic>
 #include <chrono>
 #include <functional>
+#include <memory>
 #include <thread>
 
 #include <gtest/gtest.h>
@@ -77,6 +78,8 @@ void wait_for(const size_t limit_ms, const std::function<bool()>& is_ready)
 TEST(raft_scheduler, execute)
 {
     raft::scheduler scheduler;
+    scheduler.start();
+
     std::atomic_size_t counter{0};
     raft::scheduler::handler_type handler_fn = std::bind(timer_handler, std::ref(counter));
     raft::scheduler::task_type task = scheduler.make_task(handler_fn);
@@ -109,6 +112,7 @@ TEST(raft_scheduler, execute)
 TEST(raft_scheduler, execute_async)
 {
     raft::scheduler scheduler;
+    scheduler.start();
 
     std::thread::id worker_id = std::this_thread::get_id();
     raft::scheduler::handler_type handler_fn = [&worker_id]() -> void { worker_id = std::this_thread::get_id(); };
@@ -141,6 +145,8 @@ TEST(raft_scheduler, execute_async)
 TEST(raft_scheduler, cancel)
 {
     raft::scheduler scheduler;
+    scheduler.start();
+
     std::atomic_size_t counter{0};
     raft::scheduler::handler_type handler_fn = std::bind(timer_handler, std::ref(counter));
     raft::scheduler::task_type task = scheduler.make_task(handler_fn);
@@ -180,6 +186,8 @@ TEST(raft_scheduler, cancel)
 TEST(raft_scheduler, cancel_task)
 {
     raft::scheduler scheduler;
+    scheduler.start();
+
     std::atomic_size_t counter{0};
     raft::scheduler::handler_type handler_fn = std::bind(timer_handler, std::ref(counter));
     raft::scheduler::task_type task_1 = scheduler.make_task(handler_fn);
@@ -219,6 +227,8 @@ TEST(raft_scheduler, cancel_task)
 TEST(raft_scheduler, stop)
 {
     raft::scheduler scheduler;
+    scheduler.start();
+
     std::atomic_size_t counter{0};
     raft::scheduler::handler_type handler_fn = std::bind(timer_handler, std::ref(counter));
     raft::scheduler::task_type task = scheduler.make_task(handler_fn);
@@ -252,6 +262,7 @@ TEST(raft_scheduler, stop)
 TEST(raft_scheduler, reconfigure)
 {
     raft::scheduler scheduler(1);
+    scheduler.start();
     EXPECT_TRUE(scheduler.threads_size() == 1) << scheduler.threads_size();
 
     scheduler.reconfigure(9);
@@ -288,6 +299,8 @@ TEST(raft_scheduler, reconfigure)
 TEST(raft_scheduler, reconfigure_with_waiting_task)
 {
     raft::scheduler scheduler(5);
+    scheduler.start();
+
     std::atomic_size_t counter{0};
     raft::scheduler::handler_type handler_fn = std::bind(timer_handler, std::ref(counter));
     raft::scheduler::task_type task = scheduler.make_task(handler_fn);
@@ -324,6 +337,8 @@ TEST(raft_scheduler, reconfigure_with_waiting_task)
 TEST(raft_scheduler, reconfigure_with_long_task)
 {
     raft::scheduler scheduler(5);
+    scheduler.start();
+
     std::atomic_size_t counter{0};
     raft::scheduler::handler_type handler_fn = std::bind(long_timer_handler, std::ref(counter));
     raft::scheduler::task_type task = scheduler.make_task(handler_fn);
@@ -364,6 +379,8 @@ TEST(raft_scheduler, reconfigure_with_long_task)
 TEST(raft_scheduler, reconfigure_with_active_task)
 {
     raft::scheduler scheduler(5);
+    scheduler.start();
+
     std::atomic_size_t counter{0};
     raft::scheduler::handler_type handler_fn = std::bind(long_timer_handler, std::ref(counter));
 
@@ -398,6 +415,7 @@ TEST(raft_scheduler, reconfigure_with_active_task)
 TEST(raft_scheduler, reconfigure_after_stop)
 {
     raft::scheduler scheduler(5);
+    scheduler.start();
     scheduler.stop();
 
     scheduler.reconfigure(9);

@@ -173,14 +173,17 @@ bool server::start()
     }
 
     if (! is_inited()) {
+        m_is_stop.exchange(true);
         return false;
     }
 
     if (! load(*m_p_ctx)) {
+        m_is_stop.exchange(true);
         return false;
     }
 
     RAFT_ROOT_LOG_INFO((*m_p_ctx), "Starting raft server " << m_p_ctx->id << ".");
+    m_p_ctx->p_scheduler->start();
     details::timeout::heartbeat_restart_task(*m_p_ctx);
     if (m_p_ctx->role.is_voter) {
         details::timeout::election_restart_task(*m_p_ctx);

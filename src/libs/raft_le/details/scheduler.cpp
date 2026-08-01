@@ -114,9 +114,7 @@ struct scheduler::context final
     explicit context(size_t pool_size)
         : threads_size(pool_size)
         , io_ctx()
-    {
-        start();
-    }
+    {}
 
     bool is_stopped() const { return (thread_pool.get() == nullptr); }
 
@@ -248,6 +246,17 @@ void scheduler::schedule(const task_type& task, int32_t ms)
 
     task->timer.expires_after(std::chrono::milliseconds(ms));
     task->timer.async_wait(std::bind(&task::handler, task, std::placeholders::_1));
+}
+
+void scheduler::start()
+{
+    bool expected = true;
+    if (! m_is_stop.compare_exchange_strong(expected, false)) {
+        return;
+    }
+
+    std::unique_lock<std::shared_mutex> lock(m_p_ctx->pool_mutex);
+    m_p_ctx->start();
 }
 
 void scheduler::stop()
