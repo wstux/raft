@@ -99,9 +99,9 @@ public:
 public:
     virtual ~io() {}
 
-    virtual const cluster_config& bootstrap() const = 0;
+    virtual cluster_config bootstrap() const = 0;
 
-    virtual const config& configuration() const = 0;
+    virtual config configuration() const = 0;
 
     virtual iclient::ptr create_client(server_id_t id, const std::string& endpoint) const = 0;
 

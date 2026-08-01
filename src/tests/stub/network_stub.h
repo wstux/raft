@@ -186,7 +186,7 @@ public:
         std::function<bool()> is_stop_fn = []()->bool { return false; };
         tests::io_stub::ptr p_io = std::make_shared<io_stub>(p_cluster_cfg, p_factory);
 
-        details::context::ptr p_ctx = std::make_shared<details::context>(1, p_io, std::make_shared<logger_factory>(), is_stop_fn);
+        details::context::ptr p_ctx = std::make_unique<details::context>(1, p_io, std::make_shared<logger_factory>(), is_stop_fn);
         return p_ctx;
     }
 

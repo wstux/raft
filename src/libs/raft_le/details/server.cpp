@@ -41,25 +41,25 @@ namespace raft {
 namespace le {
 namespace {
 
-void handle_message(details::context::ptr p_ctx, const details::message& msg)
+void handle_message(details::context& ctx, const details::message& msg)
 {
-    std::unique_lock<std::mutex> lock(p_ctx->handler_mutex);
+    std::unique_lock<std::mutex> lock(ctx.handler_mutex);
 
     switch(msg.type) {
     case details::message_type::heartbeat_request:
-        details::heartbeat::handle_request(*p_ctx, msg.term, msg.src_id, msg.heartbeat_req);
+        details::heartbeat::handle_request(ctx, msg.term, msg.src_id, msg.heartbeat_req);
         break;
     case details::message_type::heartbeat_response:
-        details::heartbeat::handle_response(*p_ctx, msg.term, msg.src_id, msg.heartbeat_resp);
+        details::heartbeat::handle_response(ctx, msg.term, msg.src_id, msg.heartbeat_resp);
         break;
     case details::message_type::vote_request:
-        details::vote::handle_request(*p_ctx, msg.term, msg.src_id, msg.vote_req);
+        details::vote::handle_request(ctx, msg.term, msg.src_id, msg.vote_req);
         break;
     case details::message_type::vote_response:
-        details::vote::handle_response(*p_ctx, msg.term, msg.src_id, msg.vote_resp);
+        details::vote::handle_response(ctx, msg.term, msg.src_id, msg.vote_resp);
         break;
     default:
-        RAFT_ROOT_LOG_WARN((*p_ctx), "Unsupported message type " << msg.type);
+        RAFT_ROOT_LOG_WARN(ctx, "Unsupported message type " << msg.type);
         break;
     }
 }
@@ -73,7 +73,7 @@ server::server(const server_id_t id, const io::ptr& p_io, const ilogger_factory:
     : m_id(id)
     , m_is_stop_fn(is_stop_fn)
     , m_is_stop(true)
-    , m_p_ctx(std::make_shared<details::context>(id, p_io, p_factory, is_stop_fn))
+    , m_p_ctx(std::make_unique<details::context>(id, p_io, p_factory, is_stop_fn))
 {
     static_assert(std::is_same<context_ptr, details::context::ptr>::value, "Invalid context pointer type");
 
@@ -83,22 +83,19 @@ server::server(const server_id_t id, const io::ptr& p_io, const ilogger_factory:
 
 void server::deinit()
 {
-    context_ptr p_ctx = m_p_ctx;
-    p_ctx->p_io->deinit();
+    m_p_ctx->p_io->deinit();
 }
 
 const std::string& server::endpoint() const
 {
-    context_ptr p_ctx = m_p_ctx;
-    return p_ctx->config.endpoint;
+    return m_p_ctx->config.endpoint;
 }
 
 bool server::init()
 {
-    context_ptr p_ctx = m_p_ctx;
-    const bool is_inited = details::utils::init(*p_ctx, m_id);
+    const bool is_inited = details::utils::init(*m_p_ctx, m_id);
     if (! is_inited) {
-        RAFT_ROOT_LOG_ERROR((*p_ctx), "Filed to init raft server.");
+        RAFT_ROOT_LOG_ERROR((*m_p_ctx), "Filed to init raft server.");
         return false;
     }
     m_p_ctx->election_task = m_p_ctx->p_scheduler->make_task(std::bind(&details::timeout::election_timeout_task, std::ref(*m_p_ctx)));
@@ -109,14 +106,12 @@ bool server::init()
 
 bool server::is_inited() const
 {
-    context_ptr p_ctx = m_p_ctx;
-    return (p_ctx->election_task.get() != nullptr);
+    return (m_p_ctx->election_task.get() != nullptr);
 }
 
 bool server::is_leader() const
 {
-    context_ptr p_ctx = m_p_ctx;
-    return p_ctx->role.is_leader();
+    return m_p_ctx->role.is_leader();
 }
 
 void server::handle_message(const buffer_type& msg_buf)
@@ -128,8 +123,7 @@ void server::handle_message(const buffer_type& msg_buf)
     details::message msg;
     details::deserialize(msg_buf, msg);
 
-    context_ptr p_ctx = m_p_ctx;
-    le::handle_message(p_ctx, msg);
+    le::handle_message(*m_p_ctx, msg);
 }
 
 bool server::load(details::context& ctx)
@@ -151,34 +145,30 @@ std::vector<std::string> server::logging_channels()
 
 bool server::reconfigure()
 {
-    context_ptr p_ctx = m_p_ctx;
-
-    const config& cfg = p_ctx->p_io->configuration();
+    const config cfg = m_p_ctx->p_io->configuration();
     if (cfg.heartbeat_interval_ms == 0 || cfg.vote_timeout_max_ms == 0 || cfg.vote_timeout_max_ms < cfg.vote_timeout_min_ms) {
         return false;
     }
 
-    const cluster_config& cluster_cfg = p_ctx->p_io->bootstrap();
+    const cluster_config cluster_cfg = m_p_ctx->p_io->bootstrap();
 
-    p_ctx->p_scheduler->reconfigure(cfg.scheduler_threads_count);
+    m_p_ctx->p_scheduler->reconfigure(cfg.scheduler_threads_count);
 
-    std::unique_lock<std::mutex> lock(p_ctx->handler_mutex);
-    p_ctx->election_distribution = std::uniform_int_distribution<size_t>(cfg.vote_timeout_min_ms, cfg.vote_timeout_max_ms);
+    std::unique_lock<std::mutex> lock(m_p_ctx->handler_mutex);
+    m_p_ctx->election_distribution = std::uniform_int_distribution<size_t>(cfg.vote_timeout_min_ms, cfg.vote_timeout_max_ms);
 
-    p_ctx->heartbeat_interval_ms = cfg.heartbeat_interval_ms;
-    p_ctx->heartbeat_probes_count = cfg.heartbeat_probes_count;
+    m_p_ctx->heartbeat_interval_ms = cfg.heartbeat_interval_ms;
+    m_p_ctx->heartbeat_probes_count = cfg.heartbeat_probes_count;
 
-    details::peers::update(*p_ctx, cluster_cfg);
+    details::peers::update(*m_p_ctx, cluster_cfg);
     return true;
 }
 
 bool server::start()
 {
-    context_ptr p_ctx = m_p_ctx;
-
     std::unique_lock<std::mutex> lock(m_p_ctx->handler_mutex);
     if (! m_is_stop.exchange(false)) {
-        RAFT_ROOT_LOG_WARN((*p_ctx), "Raft server " << p_ctx->id << " has been already started.");
+        RAFT_ROOT_LOG_WARN((*m_p_ctx), "Raft server " << m_p_ctx->id << " has been already started.");
         return false;
     }
 
@@ -186,32 +176,31 @@ bool server::start()
         return false;
     }
 
-    if (! load(*p_ctx)) {
+    if (! load(*m_p_ctx)) {
         return false;
     }
 
-    RAFT_ROOT_LOG_INFO((*p_ctx), "Starting raft server " << p_ctx->id << ".");
-    details::timeout::heartbeat_restart_task(*p_ctx);
-    if (p_ctx->role.is_voter) {
-        details::timeout::election_restart_task(*p_ctx);
+    RAFT_ROOT_LOG_INFO((*m_p_ctx), "Starting raft server " << m_p_ctx->id << ".");
+    details::timeout::heartbeat_restart_task(*m_p_ctx);
+    if (m_p_ctx->role.is_voter) {
+        details::timeout::election_restart_task(*m_p_ctx);
     }
 
-    details::role::initiate_election(*p_ctx);
+    details::role::initiate_election(*m_p_ctx);
     return true;
 }
 
 void server::stop()
 {
-    context_ptr p_ctx = m_p_ctx;
     if (m_is_stop.exchange(true)) {
-        RAFT_ROOT_LOG_WARN((*p_ctx), "Raft server " << p_ctx->id << " has been already stopped.");
+        RAFT_ROOT_LOG_WARN((*m_p_ctx), "Raft server " << m_p_ctx->id << " has been already stopped.");
         return;
     }
-    RAFT_ROOT_LOG_INFO((*p_ctx), "Stopping raft server " << p_ctx->id << ".");
+    RAFT_ROOT_LOG_INFO((*m_p_ctx), "Stopping raft server " << m_p_ctx->id << ".");
 
-    details::timeout::election_cancel_task(*p_ctx);
-    details::timeout::heartbeat_cancel_task(*p_ctx);
-    p_ctx->p_scheduler->stop();
+    m_p_ctx->p_scheduler->stop();
+    details::timeout::election_cancel_task(*m_p_ctx);
+    details::timeout::heartbeat_cancel_task(*m_p_ctx);
 }
 
 } // namespace le

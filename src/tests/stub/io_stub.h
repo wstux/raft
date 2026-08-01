@@ -349,9 +349,9 @@ public:
 
     virtual ~io_stub() {}
 
-    virtual const cluster_config& bootstrap() const override final { return *m_p_cluster_cfg; }
+    virtual cluster_config bootstrap() const override final { return *m_p_cluster_cfg; }
 
-    virtual const config& configuration() const override final { return m_cfg; };
+    virtual config configuration() const override final { return m_cfg; };
 
     virtual iclient::ptr create_client(server_id_t id, const std::string& endpoint) const override final
     {

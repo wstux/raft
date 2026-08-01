@@ -190,7 +190,7 @@ bool init(context& ctx, server_id_t id)
         return false;
     }
 
-    const config& cfg = ctx.p_io->configuration();
+    const config cfg = ctx.p_io->configuration();
     if (cfg.heartbeat_interval_ms == 0 || cfg.vote_timeout_max_ms == 0 || cfg.vote_timeout_max_ms < cfg.vote_timeout_min_ms) {
         return false;
     }
@@ -216,7 +216,7 @@ bool load(context& ctx)
     ctx.term = p_io->load_term();
     ctx.role.voted_for = p_io->voted_for();
     if (ctx.peers.empty()) {
-        const cluster_config& cluster_cfg = p_io->bootstrap();
+        const cluster_config cluster_cfg = p_io->bootstrap();
         if (! load_peers(ctx, cluster_cfg)) {
             return false;
         }

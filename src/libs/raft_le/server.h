@@ -70,7 +70,7 @@ public:
     static std::vector<std::string> logging_channels();
 
 private:
-    using context_ptr = std::shared_ptr<details::context>;
+    using context_ptr = std::unique_ptr<details::context>;
 
 private:
     static bool load(details::context& ctx);
