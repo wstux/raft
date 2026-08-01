@@ -82,15 +82,6 @@ bool check_contact_quorum(context& ctx)
 {
     assert(ctx.role.is_leader());
 
-    /*peer::list peers = peers::to_list(ctx);
-    const size_t contacts = 1 + std::count_if(peers.begin(), peers.end(),
-        [](peer::ptr& p) -> bool {
-            const bool recent_recv = p->reset_recent_recv();
-            return (p->is_voter() && recent_recv);
-        });
-
-    return contacts > peers::quorum_for_election(ctx);*/
-
     std::shared_lock<std::shared_mutex> lock(ctx.peers_mutex);
     size_t contacts = 1;
     size_t voting_count = 1;
@@ -199,7 +190,7 @@ bool init(context& ctx, server_id_t id)
         return false;
     }
 
-    const config& cfg = ctx.p_io->configuration();
+    const config cfg = ctx.p_io->configuration();
     if (cfg.heartbeat_interval_ms == 0 || cfg.vote_timeout_max_ms == 0 || cfg.vote_timeout_max_ms < cfg.vote_timeout_min_ms) {
         return false;
     }
@@ -223,8 +214,9 @@ bool load(context& ctx)
     }
 
     ctx.term = p_io->load_term();
+    ctx.role.voted_for = p_io->voted_for();
     if (ctx.peers.empty()) {
-        const cluster_config& cluster_cfg = p_io->bootstrap();
+        const cluster_config cluster_cfg = p_io->bootstrap();
         if (! load_peers(ctx, cluster_cfg)) {
             return false;
         }

@@ -48,7 +48,7 @@ namespace details {
 
 struct context final : public std::enable_shared_from_this<context>
 {
-    using ptr = std::shared_ptr<context>;
+    using ptr = std::unique_ptr<context>;
 
     context(server_id_t id, const io::ptr p_io, const ilogger_factory::ptr p_factory, const is_stop_fn_t& is_stop);
 

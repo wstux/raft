@@ -23,7 +23,6 @@
  */
 
 #include <cassert>
-#include <algorithm>
 
 #include "raft_le/details/logging.h"
 #include "raft_le/details/handlers/heartbeat_handler.h"
@@ -84,7 +83,7 @@ bool got_vote(context& ctx, const server_id_t candidate_id, const vote_message& 
         // Raft Paper, Figure 2 (State): voted_for in current term
         ctx.role.voted_for = candidate_id;
         // Raft Paper, Section 5.2: Restart timer when leader legitimacy is preserved
-        //timeout::election_restart_task(ctx);
+        timeout::election_restart_task(ctx);
     }
     return true;
 }

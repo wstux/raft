@@ -91,6 +91,8 @@ public:
     /// \param  ms - delay before execution in milliseconds.
     void schedule(const task_type& task, int32_t ms);
 
+    void start();
+
     /// \brief  Immediately stops the thread pool and waits for threads to finish execution.
     /// \details    Tasks currently queued or waiting on a timer will be discarded.
     void stop();
@@ -109,7 +111,7 @@ private:
     struct context;
 
 private:
-    std::atomic_bool m_is_stop{false};
+    std::atomic_bool m_is_stop{true};
     std::unique_ptr<context> m_p_ctx; ///< Pointer to the execution context.
 };
 

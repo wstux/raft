@@ -44,7 +44,8 @@ enum message_type : int32_t
     heartbeat_request  = 0,
     heartbeat_response = 1,
     vote_request       = 2,
-    vote_response      = 3
+    vote_response      = 3,
+    invalid
 };
 
 struct heartbeat_message final
