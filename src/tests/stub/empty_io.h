@@ -1,0 +1,97 @@
+/*
+ * The MIT License
+ *
+ * Copyright 2026 Chistyakov Alexander.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
+#ifndef _TESTS_RAFT_LEADER_ELECTION_EMPTY_IO_H_
+#define _TESTS_RAFT_LEADER_ELECTION_EMPTY_IO_H_
+
+#include "raft_le/io.h"
+
+namespace wstux {
+namespace raft {
+namespace le {
+namespace tests {
+
+class empty_client final : public iclient
+{
+public:
+    virtual ~empty_client() {}
+    virtual void send(const buffer_type&) override {}
+
+    static iclient::ptr make() { return std::make_shared<empty_client>(); }
+};
+
+class logger_factory : public ilogger_factory
+{
+public:
+    virtual logger get_logger(const std::string&) override { return logger(); }
+};
+
+class empty_io final : public io
+{
+public:
+    using ptr = std::shared_ptr<empty_io>;
+
+public:
+    empty_io() { cfg.scheduler_threads_count = 2; }
+    virtual ~empty_io() {}
+
+    virtual cluster_config bootstrap() const override final { return cluster_cfg; }
+    virtual config configuration() const override final { return cfg; };
+    virtual iclient::ptr create_client(server_id_t, const std::string&) const override final { return empty_client::make(); }
+    virtual void deinit() override final {}
+    virtual bool init(server_id_t) override final { return is_init; }
+    virtual bool load() override final { return is_load; }
+    virtual term_t load_term() override final { return 0; }
+    virtual void set_term(term_t) override final {}
+    virtual void set_voted_for(server_id_t) override final {}
+    virtual server_id_t voted_for() const override final { return gk_invalid_id; }
+
+public:
+    config cfg;
+    cluster_config cluster_cfg;
+
+    bool is_init = true;
+    bool is_load = true;
+};
+
+using return_type = std::pair<details::context::ptr, empty_io::ptr>;
+
+inline return_type make_context(const size_t servs_count, bool is_voter)
+{
+    empty_io::ptr p_io = std::make_shared<empty_io>();
+    for (size_t i = 0; i < servs_count; ++i) {
+        p_io->cluster_cfg.servers.emplace_back(i + 1, std::to_string(i), (i == 0) ? is_voter : true);
+    }
+
+    std::function<bool()> is_stop_fn = []()->bool { return false; };
+    details::context::ptr p_ctx = std::make_unique<details::context>(1, p_io, std::make_shared<logger_factory>(), is_stop_fn);
+    return return_type(std::move(p_ctx), p_io);
+}
+
+} // namespace tests
+} // namespace le
+} // namespace raft
+} // namespace wstux
+
+#endif /* _TESTS_RAFT_LEADER_ELECTION_EMPTY_IO_H_ */

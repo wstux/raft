@@ -25,8 +25,6 @@
 #ifndef _LIBS_RAFT_LEADER_ELECTION_SERIALIZATION_H_
 #define _LIBS_RAFT_LEADER_ELECTION_SERIALIZATION_H_
 
-#include <cassert>
-
 #include <boost/endian/conversion.hpp>
 
 #include "raft_le/details/connection/messages.h"
@@ -113,9 +111,8 @@ inline void serialize(const message& msg, char* p_buffer)
 
 inline void deserialize(const buffer_type& buffer, message& msg)
 {
-    assert(buffer.size() == message::size);
+    msg.type = message_type::invalid;
     if (buffer.size() != message::size) {
-        msg.type = message_type::invalid;
         return;
     }
 

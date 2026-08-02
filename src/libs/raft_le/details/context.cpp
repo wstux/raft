@@ -124,12 +124,6 @@ size_t quorum_for_election(context& ctx)
     return (members_count / 2);
 }
 
-size_t size(context& ctx)
-{
-    std::shared_lock<std::shared_mutex> lock(ctx.peers_mutex);
-    return ctx.peers.size();
-}
-
 void swap(context& ctx, peer::map& peers)
 {
     std::unique_lock<std::shared_mutex> lock(ctx.peers_mutex);

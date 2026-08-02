@@ -5,6 +5,15 @@ if (BUILD_TESTS)
     add_subdirectory(stub)
 endif()
 
+TestTarget(ut_raft_peers
+    SOURCES
+        ut_raft_peers.cpp
+    LIBRARIES
+        raft_le
+    DEPENDS
+        googletest
+)
+
 TestTarget(ut_raft_role
     SOURCES
         ut_raft_role.cpp

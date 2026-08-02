@@ -123,6 +123,17 @@ TEST(raft_serialization, vote_response)
     EXPECT_TRUE(msg == dsr_msg);
 }
 
+TEST(raft_serialization, invalid_buffer)
+{
+    namespace raft = ::wstux::raft::le;
+
+    raft::buffer_type buffer(raft::details::message::size / 2, 1);
+    EXPECT_TRUE(buffer.size() != raft::details::message::size) << buffer.size();
+
+    raft::details::message dsr_msg = raft::details::deserialize(buffer);
+    EXPECT_TRUE(dsr_msg.type == raft::details::message_type::invalid);
+}
+
 int main(int argc, char** argv)
 {
     testing::InitGoogleTest(&argc, argv);
