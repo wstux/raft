@@ -15,7 +15,6 @@ if (BUILD_BOOST)
                  cxxflags=\"${CMAKE_CXX_FLAGS}\"
                  architecture=x86
                  address-model=64
-                 #link=shared,static
                  link=static
                  --debug-configuration -q
                  --prefix=${EXTERNALS_PREFIX}/boost/install
@@ -27,7 +26,8 @@ if (BUILD_BOOST)
         INSTALL_DIR
             ${EXTERNALS_PREFIX}/boost/install
         LIBRARIES
-            libboost_date_time-mt-x64.a
-            libboost_thread-mt-x64.a
+            libboost_atomic-mt-s-x64.a
+            libboost_date_time-mt-s-x64.a
+            libboost_thread-mt-s-x64.a
     )
 endif()
