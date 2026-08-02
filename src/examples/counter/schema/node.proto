@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package cluster;
+
+service NodeService {
+    rpc SendRaftMessage(Message) returns (Empty);
+
+    rpc SentCounterMessage(CounterMessage) returns (Empty);
+}
+
+message Empty {}
+
+message Message {
+    bytes buffer = 1;
+}
+
+message CounterMessage {
+    uint64 counter = 1;
+}
