@@ -47,12 +47,8 @@ public:
     {
         tests::return_type rt = tests::make_context(cluster_size, is_voter);
         details::context::ptr p_ctx = std::move(rt.first);
-        if (! details::utils::init(*p_ctx, 1)) {
-            return p_ctx;
-        }
-        if (! details::utils::load(*p_ctx)) {
-            return p_ctx;
-        }
+        details::utils::init(*p_ctx, 1);
+        details::utils::load(*p_ctx);
         return p_ctx;
     }
 };

@@ -46,18 +46,14 @@ public:
 
         tests::return_type rt = tests::make_context(cluster_size, is_voter);
         raft::details::context::ptr p_ctx = std::move(rt.first);
-        if (! raft::details::utils::init(*p_ctx, 1)) {
-            return nullptr;
-        }
+        raft::details::utils::init(*p_ctx, 1);
         p_ctx->election_task = p_ctx->p_scheduler->make_task(std::bind(&raft::details::timeout::election_timeout_task, std::ref(*p_ctx)));
         p_ctx->heartbeat_task = p_ctx->p_scheduler->make_task(std::bind(&raft::details::timeout::heartbeat_timeout_task, std::ref(*p_ctx)));
 
         p_ctx->p_scheduler->cancel(p_ctx->election_task);
         p_ctx->p_scheduler->cancel(p_ctx->heartbeat_task);
 
-        if (! raft::details::utils::load(*p_ctx)) {
-            return nullptr;
-        }
+        raft::details::utils::load(*p_ctx);
         return p_ctx;
     }
 };
