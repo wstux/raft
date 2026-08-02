@@ -5,6 +5,24 @@ if (BUILD_TESTS)
     add_subdirectory(stub)
 endif()
 
+TestTarget(ut_raft_context
+    SOURCES
+        ut_raft_context.cpp
+    LIBRARIES
+        raft_le
+    DEPENDS
+        googletest
+)
+
+TestTarget(ut_raft_logger_channels
+    SOURCES
+        ut_raft_logger_channels.cpp
+    LIBRARIES
+        raft_le
+    DEPENDS
+        googletest
+)
+
 TestTarget(ut_raft_peers
     SOURCES
         ut_raft_peers.cpp
@@ -28,7 +46,6 @@ TestTarget(ut_raft_role_convert
         ut_raft_role_convert.cpp
     LIBRARIES
         raft_le
-        raft_stub
     DEPENDS
         googletest
 )
@@ -38,7 +55,6 @@ TestTarget(ut_raft_role_election
         ut_raft_role_election.cpp
     LIBRARIES
         raft_le
-        raft_stub
     DEPENDS
         googletest
 )
