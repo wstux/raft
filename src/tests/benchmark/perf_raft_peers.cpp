@@ -31,7 +31,7 @@
 #include "raft_le/details/handlers/timeout_handler.h"
 #include "raft_le/details/role/convert.h"
 
-#include "stub/network_stub.h"
+#include "stub/empty_io.h"
 
 namespace {
 
@@ -42,7 +42,8 @@ constexpr size_t gk_cluster_size = 7;
     namespace raft = ::wstux::raft::le;
     namespace tests = raft::tests;
 
-    raft::details::context::ptr p_ctx = tests::network_stub::make_context(cluster_size, true);
+    tests::return_type rt = tests::make_context(cluster_size, true);
+    raft::details::context::ptr p_ctx = std::move(rt.first);
     if (! raft::details::utils::init(*p_ctx, 1)) {
         return nullptr;
     }

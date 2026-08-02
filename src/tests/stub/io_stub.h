@@ -321,22 +321,6 @@ public:
         virtual iclient::ptr create_client(server_id_t id, const std::string& endpoint) const = 0;
     };
 
-    class empty_clients_factory : public tests::io_stub::iclient_factory
-    {
-    public:
-        class empty_client_stub final : public iclient
-        {
-        public:
-            virtual ~empty_client_stub() {}
-            virtual void send(const buffer_type&) override {}
-        };
-
-    public:
-        virtual ~empty_clients_factory() {}
-
-        virtual iclient::ptr create_client(server_id_t, const std::string&) const { return std::make_shared<empty_client_stub>();}
-    };
-
 public:
     io_stub(const std::shared_ptr<cluster_config>& p_cluster_cfg, const iclient_factory::ptr& p_factory)
         : m_p_cluster_cfg(p_cluster_cfg)

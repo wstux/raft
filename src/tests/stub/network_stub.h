@@ -175,21 +175,6 @@ public:
         }
     }
 
-    static details::context::ptr make_context(const size_t servs_count, bool is_voter = true)
-    {
-        tests::io_stub::iclient_factory::ptr p_factory = std::make_shared<tests::io_stub::empty_clients_factory>();
-        std::shared_ptr<cluster_config> p_cluster_cfg = std::make_shared<cluster_config>();
-        for (size_t i = 0; i < servs_count; ++i) {
-            p_cluster_cfg->servers.emplace_back(i + 1, std::to_string(i), (i == 0) ? is_voter : true);
-        }
-
-        std::function<bool()> is_stop_fn = []()->bool { return false; };
-        tests::io_stub::ptr p_io = std::make_shared<io_stub>(p_cluster_cfg, p_factory);
-
-        details::context::ptr p_ctx = std::make_unique<details::context>(1, p_io, std::make_shared<logger_factory>(), is_stop_fn);
-        return p_ctx;
-    }
-
     template<typename TTestInfo>
     static void enable_file_logging(const std::string& fixture, const TTestInfo* p_info)
     {

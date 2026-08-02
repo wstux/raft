@@ -16,7 +16,6 @@ TestTarget(perf_raft_peers
         perf_raft_peers.cpp
     LIBRARIES
         raft_le
-        raft_stub
     DEPENDS
         googlebenchmark
     DISABLE
