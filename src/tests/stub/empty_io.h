@@ -42,12 +42,12 @@ public:
 
 public:
     virtual ~empty_client() {}
-    virtual void send(const buffer_type&) override { has_message = true; }
+    virtual void send(const buffer_type& b) override { buffer = b; }
 
     static empty_client::ptr make() { return std::make_shared<empty_client>(); }
 
 public:
-    std::atomic_bool has_message{false};
+    buffer_type buffer;
 };
 
 class logger_factory : public ilogger_factory
