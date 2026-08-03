@@ -28,6 +28,7 @@
 #include <gtest/gtest.h>
 
 #include "raft_le/details/handlers/heartbeat_handler.h"
+#include "raft_le/details/handlers/timeout_handler.h"
 #include "raft_le/details/role/convert.h"
 
 #include "stub/empty_io.h"
@@ -173,6 +174,50 @@ TEST(raft_heartbeat_handler, handle_response_invalid_peer)
 
     details::heartbeat::handle_response(*p_ctx, 1, 5, details::heartbeat_response_message());
     EXPECT_FALSE(p_peer->recent_recv());
+}
+
+TEST(raft_timeout_handler, timeout_stopped_servicce)
+{
+    tests::return_type rt = context(2);
+    details::context::ptr p_ctx = std::move(rt.first);
+    details::context& ctx = *p_ctx;
+    ctx.election_task = ctx.p_scheduler->make_task(std::bind(&raft::details::timeout::election_timeout_task, std::ref(*p_ctx)));
+
+    details::timeout::election_cancel_task(ctx);
+    EXPECT_TRUE(ctx.p_scheduler->is_canceled(ctx.election_task));
+    rt.second->is_stop = true;
+
+    details::timeout::election_timeout_task(ctx);
+    EXPECT_TRUE(ctx.p_scheduler->is_canceled(ctx.election_task));
+}
+
+TEST(raft_timeout_handler, not_quorum)
+{
+    tests::return_type rt = context(3);
+    details::context& ctx = *rt.first;
+    details::role::become_follower(ctx);
+    details::role::become_candidate(ctx);
+    details::role::become_leader(ctx);
+
+    details::timeout::election_timeout_task(ctx);
+    EXPECT_TRUE(ctx.role.is_follower());
+}
+
+TEST(raft_timeout_handler, election_start)
+{
+    tests::return_type rt = context(3);
+    details::context& ctx = *rt.first;
+    ctx.p_scheduler->stop();
+    details::role::become_follower(ctx);
+    details::role::become_candidate(ctx);
+    EXPECT_TRUE(ctx.role.is_candidate());
+    ctx.term = 1;
+    ctx.role.candidate_state.is_prevote = false;
+    EXPECT_TRUE(ctx.term == 1);
+
+    details::timeout::election_timeout_task(ctx);
+    EXPECT_TRUE(ctx.role.is_candidate());
+    EXPECT_TRUE(ctx.term == 2);
 }
 
 int main(int argc, char** argv)

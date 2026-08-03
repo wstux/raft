@@ -71,10 +71,12 @@ public:
     /// \param  handler - the handler function to execute.
     void execute_async(const handler_type& handler);
 
+    bool is_canceled(const task_type& task) const;
+
     /// \brief  Factory method to create a task object without starting it.
     /// \param  handler - the handler function to bind to the task.
     /// \return The created task.
-    task_type make_task(const handler_type& handler);
+    task_type make_task(const handler_type& handler) const;
 
     /// \brief  Dynamically changes the size of the worker thread pool.
     /// \param  new_size - the new size of the thread pool.
