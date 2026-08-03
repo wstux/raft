@@ -14,6 +14,15 @@ TestTarget(ut_raft_context
         googletest
 )
 
+TestTarget(ut_raft_handlers
+    SOURCES
+        ut_raft_handlers.cpp
+    LIBRARIES
+        raft_le
+    DEPENDS
+        googletest
+)
+
 TestTarget(ut_raft_logger_channels
     SOURCES
         ut_raft_logger_channels.cpp

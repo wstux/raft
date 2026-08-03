@@ -25,6 +25,9 @@
 #ifndef _TESTS_RAFT_LEADER_ELECTION_EMPTY_IO_H_
 #define _TESTS_RAFT_LEADER_ELECTION_EMPTY_IO_H_
 
+#include <atomic>
+#include <map>
+
 #include "raft_le/io.h"
 
 namespace wstux {
@@ -35,10 +38,16 @@ namespace tests {
 class empty_client final : public iclient
 {
 public:
-    virtual ~empty_client() {}
-    virtual void send(const buffer_type&) override {}
+    using ptr = std::shared_ptr<empty_client>;
 
-    static iclient::ptr make() { return std::make_shared<empty_client>(); }
+public:
+    virtual ~empty_client() {}
+    virtual void send(const buffer_type&) override { has_message = true; }
+
+    static empty_client::ptr make() { return std::make_shared<empty_client>(); }
+
+public:
+    std::atomic_bool has_message{false};
 };
 
 class logger_factory : public ilogger_factory
@@ -58,7 +67,15 @@ public:
 
     virtual cluster_config bootstrap() const override final { return cluster_cfg; }
     virtual config configuration() const override final { return cfg; };
-    virtual iclient::ptr create_client(server_id_t, const std::string&) const override final { return empty_client::make(); }
+
+    virtual iclient::ptr create_client(server_id_t id, const std::string&) const override final
+    {
+        using rc_t = std::pair<std::map<server_id_t, empty_client::ptr>::iterator, bool>;
+
+        rc_t rc = clients.emplace(id, empty_client::make());
+        return rc.first->second;
+    }
+
     virtual void deinit() override final {}
     virtual bool init(server_id_t) override final { return is_init; }
     virtual bool load() override final { return is_load; }
@@ -70,6 +87,8 @@ public:
 public:
     config cfg;
     cluster_config cluster_cfg;
+
+    mutable std::map<server_id_t, empty_client::ptr> clients;
 
     bool is_init = true;
     bool is_load = true;
