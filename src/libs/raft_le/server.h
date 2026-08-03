@@ -49,8 +49,6 @@ public:
 
     void deinit();
 
-    const std::string& endpoint() const;
-
     server_id_t id() const { return m_id; }
 
     bool init();

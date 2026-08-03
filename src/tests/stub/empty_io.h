@@ -29,6 +29,7 @@
 #include <map>
 
 #include "raft_le/io.h"
+#include "raft_le/details/context.h"
 
 namespace wstux {
 namespace raft {

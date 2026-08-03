@@ -89,11 +89,6 @@ void server::deinit()
     m_p_ctx->p_io->deinit();
 }
 
-const std::string& server::endpoint() const
-{
-    return m_p_ctx->config.endpoint;
-}
-
 bool server::init()
 {
     const bool is_inited = details::utils::init(*m_p_ctx, m_id);

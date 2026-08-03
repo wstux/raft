@@ -86,6 +86,15 @@ TestTarget(ut_raft_serialization
         googletest
 )
 
+TestTarget(ut_raft_server
+    SOURCES
+        ut_raft_server.cpp
+    LIBRARIES
+        raft_le
+    DEPENDS
+        googletest
+)
+
 TestTarget(ut_raft_server_leader_election
     SOURCES
         ut_raft_server_leader_election.cpp
