@@ -192,7 +192,12 @@ void scheduler::execute_async(const handler_type& handler)
     execute_async(async_task);
 }
 
-scheduler::task_type scheduler::make_task(const handler_type& handler)
+bool scheduler::is_canceled(const task_type& task) const
+{
+    return task->is_cancelled.load();
+}
+
+scheduler::task_type scheduler::make_task(const handler_type& handler) const
 {
     return std::make_shared<task>(handler, m_p_ctx->io_ctx);
 }

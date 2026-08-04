@@ -31,18 +31,26 @@
 #include "raft_le/details/handlers/timeout_handler.h"
 #include "raft_le/details/role/convert.h"
 
-#include "stub/network_stub.h"
+#include "stub/empty_io.h"
 
 namespace {
 
 constexpr size_t gk_cluster_size = 7;
 
-::wstux::raft::le::details::context::ptr make_ctx(size_t cluster_size)
+::wstux::raft::le::details::context::ptr make_ctx(size_t servs_count)
 {
     namespace raft = ::wstux::raft::le;
+    namespace details = raft::details;
     namespace tests = raft::tests;
 
-    raft::details::context::ptr p_ctx = tests::network_stub::make_context(cluster_size, true);
+    tests::empty_io::ptr p_io = std::make_shared<tests::empty_io>();
+    for (size_t i = 0; i < servs_count; ++i) {
+        p_io->cluster_cfg.servers.emplace_back(i + 1, std::to_string(i), true);
+    }
+
+    tests::empty_io* p_raw_io = p_io.get();
+    std::function<bool()> is_stop_fn = [p_raw_io]()->bool { return p_raw_io->is_stop; };
+    details::context::ptr p_ctx = std::make_unique<details::context>(1, p_io, std::make_shared<tests::logger_factory>(), is_stop_fn);
     if (! raft::details::utils::init(*p_ctx, 1)) {
         return nullptr;
     }

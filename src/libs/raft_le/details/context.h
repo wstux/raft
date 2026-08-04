@@ -110,8 +110,6 @@ peer::ptr find(context& ctx, server_id_t id);
 
 size_t quorum_for_election(context& ctx);
 
-size_t size(context& ctx);
-
 void swap(context& ctx, peer::map& peers);
 
 void update(context& ctx, const cluster_config& cluster_cfg);

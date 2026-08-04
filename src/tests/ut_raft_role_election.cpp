@@ -29,137 +29,142 @@
 #include "raft_le/details/role/convert.h"
 #include "raft_le/details/role/election.h"
 
-#include "stub/network_stub.h"
+#include "stub/empty_io.h"
 
 namespace {
 
 namespace raft = ::wstux::raft::le;
+namespace details = raft::details;
+namespace tests = raft::tests;
 
 class raft_role_election : public ::testing::Test
 {
 public:
-    virtual void SetUp() override {}
+    virtual void SetUp() override
+    {
+        m_p_io = std::make_shared<tests::empty_io>();
+
+        tests::empty_io* p_raw_io = m_p_io.get();
+        std::function<bool()> is_stop_fn = [p_raw_io]()->bool { return p_raw_io->is_stop; };
+
+        m_p_ctx = std::make_unique<details::context>(1, m_p_io, std::make_shared<tests::logger_factory>(), is_stop_fn);
+    }
+
     virtual void TearDown() override {}
 
-    static raft::details::context::ptr context(size_t cluster_size, bool is_voter = true)
+    details::context& init(size_t servs_count, bool is_voter = true)
     {
-        namespace tests = raft::tests;
-
-        raft::details::context::ptr p_ctx = tests::network_stub::make_context(cluster_size, is_voter);
-        if (! raft::details::utils::init(*p_ctx, 1)) {
-            return nullptr;
+        for (size_t i = 0; i < servs_count; ++i) {
+            m_p_io->cluster_cfg.servers.emplace_back(i + 1, std::to_string(i), (i == 0) ? is_voter : true);
         }
-        p_ctx->election_task = p_ctx->p_scheduler->make_task(std::bind(&raft::details::timeout::election_timeout_task, std::ref(*p_ctx)));
-        p_ctx->heartbeat_task = p_ctx->p_scheduler->make_task(std::bind(&raft::details::timeout::heartbeat_timeout_task, std::ref(*p_ctx)));
 
-        p_ctx->p_scheduler->cancel(p_ctx->election_task);
-        p_ctx->p_scheduler->cancel(p_ctx->heartbeat_task);
+        details::utils::init(*m_p_ctx, 1);
+        m_p_ctx->election_task = m_p_ctx->p_scheduler->make_task(std::bind(&details::timeout::election_timeout_task, std::ref(*m_p_ctx)));
+        m_p_ctx->heartbeat_task = m_p_ctx->p_scheduler->make_task(std::bind(&details::timeout::heartbeat_timeout_task, std::ref(*m_p_ctx)));
 
-        if (! raft::details::utils::load(*p_ctx)) {
-            return nullptr;
-        }
-        return p_ctx;
+        m_p_ctx->p_scheduler->cancel(m_p_ctx->election_task);
+        m_p_ctx->p_scheduler->cancel(m_p_ctx->heartbeat_task);
+
+        details::utils::load(*m_p_ctx);
+        return *m_p_ctx;
     }
+
+protected:
+    tests::empty_io::ptr m_p_io;
+    details::context::ptr m_p_ctx;
 };
 
 } // <anonymous> namespace
 
 TEST_F(raft_role_election, initiate_election)
 {
-    raft::details::context::ptr p_ctx = raft_role_election::context(1);
-    ASSERT_TRUE(p_ctx.get() != nullptr);
+    details::context& ctx = init(1);
 
-    raft::details::role::become_follower(*p_ctx);
-    ASSERT_TRUE(p_ctx->role.is_follower());
+    details::role::become_follower(ctx);
+    ASSERT_TRUE(ctx.role.is_follower());
 
-    raft::details::role::initiate_election(*p_ctx);
-    ASSERT_TRUE(p_ctx->role.is_leader());
+    details::role::initiate_election(ctx);
+    ASSERT_TRUE(ctx.role.is_leader());
 }
 
 TEST_F(raft_role_election, initiate_election_non_voter)
 {
-    raft::details::context::ptr p_ctx = raft_role_election::context(1, false);
-    ASSERT_TRUE(p_ctx.get() != nullptr);
+    details::context& ctx = init(1, false);
 
-    raft::details::role::become_follower(*p_ctx);
-    ASSERT_TRUE(p_ctx->role.is_follower());
-    ASSERT_FALSE(p_ctx->role.is_voter);
+    details::role::become_follower(ctx);
+    ASSERT_TRUE(ctx.role.is_follower());
+    ASSERT_FALSE(ctx.role.is_voter);
 
-    raft::details::role::initiate_election(*p_ctx);
-    ASSERT_TRUE(p_ctx->role.is_follower()) << p_ctx->role.str();
+    details::role::initiate_election(ctx);
+    ASSERT_TRUE(ctx.role.is_follower()) << ctx.role.str();
 }
 
 TEST_F(raft_role_election, initiate_election_cluster)
 {
-    raft::details::context::ptr p_ctx = raft_role_election::context(3);
-    ASSERT_TRUE(p_ctx.get() != nullptr);
+    details::context& ctx = init(3);
 
-    raft::details::role::become_follower(*p_ctx);
-    ASSERT_TRUE(p_ctx->role.is_follower());
+    details::role::become_follower(ctx);
+    ASSERT_TRUE(ctx.role.is_follower());
 
-    raft::details::role::initiate_election(*p_ctx);
-    ASSERT_TRUE(p_ctx->role.is_follower());
+    details::role::initiate_election(ctx);
+    ASSERT_TRUE(ctx.role.is_follower());
 }
 
 TEST_F(raft_role_election, election_false_results)
 {
-    raft::details::context::ptr p_ctx = raft_role_election::context(3);
-    ASSERT_TRUE(p_ctx.get() != nullptr);
+    details::context& ctx = init(3);
 
-    raft::details::role::become_follower(*p_ctx);
-    raft::details::role::become_candidate(*p_ctx);
-    ASSERT_TRUE(p_ctx->role.is_candidate());
+    details::role::become_follower(ctx);
+    details::role::become_candidate(ctx);
+    ASSERT_TRUE(ctx.role.is_candidate());
 
-    p_ctx->role.candidate_state.votes_granted = 1;
-    EXPECT_FALSE(raft::details::role::election_results(*p_ctx));
+    ctx.role.candidate_state.votes_granted = 1;
+    EXPECT_FALSE(details::role::election_results(ctx));
 }
 
 TEST_F(raft_role_election, election_true_results)
 {
-    raft::details::context::ptr p_ctx = raft_role_election::context(3);
-    ASSERT_TRUE(p_ctx.get() != nullptr);
+    details::context& ctx = init(3);
 
-    raft::details::role::become_follower(*p_ctx);
-    raft::details::role::become_candidate(*p_ctx);
-    ASSERT_TRUE(p_ctx->role.is_candidate());
+    details::role::become_follower(ctx);
+    details::role::become_candidate(ctx);
+    ASSERT_TRUE(ctx.role.is_candidate());
 
-    p_ctx->role.candidate_state.votes_granted = 2;
-    EXPECT_TRUE(raft::details::role::election_results(*p_ctx));
+    ctx.role.candidate_state.votes_granted = 2;
+    EXPECT_TRUE(details::role::election_results(ctx));
 
-    p_ctx->role.candidate_state.votes_granted = 3;
-    EXPECT_TRUE(raft::details::role::election_results(*p_ctx));
+    ctx.role.candidate_state.votes_granted = 3;
+    EXPECT_TRUE(details::role::election_results(ctx));
 }
 
 TEST_F(raft_role_election, election_start_prevote)
 {
-    raft::details::context::ptr p_ctx = raft_role_election::context(3);
-    ASSERT_TRUE(p_ctx.get() != nullptr);
+    details::context& ctx = init(3);
 
-    raft::details::role::become_follower(*p_ctx);
-    raft::details::role::become_candidate(*p_ctx);
-    ASSERT_TRUE(p_ctx->role.is_candidate());
+    details::role::become_follower(ctx);
+    details::role::become_candidate(ctx);
+    ASSERT_TRUE(ctx.role.is_candidate());
 
-    EXPECT_TRUE(p_ctx->role.candidate_state.is_prevote);
-    raft::details::role::election_start(*p_ctx);
-    EXPECT_TRUE(p_ctx->role.candidate_state.is_prevote);
-    EXPECT_TRUE(p_ctx->term == 0) << "Term: " << p_ctx->term;
-    EXPECT_TRUE(p_ctx->role.voted_for == 0) << "Voted for: " << p_ctx->role.voted_for;
+    EXPECT_TRUE(ctx.role.candidate_state.is_prevote);
+    details::role::election_start(ctx);
+    EXPECT_TRUE(ctx.role.candidate_state.is_prevote);
+    EXPECT_TRUE(ctx.term == 0) << "Term: " << ctx.term;
+    EXPECT_TRUE(ctx.role.voted_for == 0) << "Voted for: " << ctx.role.voted_for;
 }
 
 TEST_F(raft_role_election, election_start)
 {
-    raft::details::context::ptr p_ctx = raft_role_election::context(3);
-    ASSERT_TRUE(p_ctx.get() != nullptr);
+    details::context& ctx = init(3);
 
-    raft::details::role::become_follower(*p_ctx);
-    raft::details::role::become_candidate(*p_ctx);
-    ASSERT_TRUE(p_ctx->role.is_candidate());
+    details::role::become_follower(ctx);
+    details::role::become_candidate(ctx);
+    ASSERT_TRUE(ctx.role.is_candidate());
 
-    p_ctx->role.candidate_state.is_prevote = false;
-    raft::details::role::election_start(*p_ctx);
-    EXPECT_FALSE(p_ctx->role.candidate_state.is_prevote);
-    EXPECT_TRUE(p_ctx->term == 1) << "Term: " << p_ctx->term;
-    EXPECT_TRUE(p_ctx->role.voted_for == 1) << "Voted for: " << p_ctx->role.voted_for;
+    ctx.role.candidate_state.is_prevote = false;
+    details::role::election_start(ctx);
+    EXPECT_FALSE(ctx.role.candidate_state.is_prevote);
+    EXPECT_TRUE(ctx.term == 1) << "Term: " << ctx.term;
+    EXPECT_TRUE(ctx.role.voted_for == 1) << "Voted for: " << ctx.role.voted_for;
 }
 
 int main(int argc, char** argv)

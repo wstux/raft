@@ -429,6 +429,20 @@ TEST(raft_scheduler, reconfigure_after_stop)
     EXPECT_TRUE(counter == 0) << counter;
 }
 
+TEST(raft_scheduler, thread_pool_size)
+{
+    raft::scheduler sch(0);
+
+    EXPECT_TRUE(sch.threads_size() == std::thread::hardware_concurrency()) << sch.threads_size();
+}
+
+TEST(raft_scheduler, double_start)
+{
+    raft::scheduler sch;
+    sch.start();
+    EXPECT_NO_THROW(sch.start());
+}
+
 int main(int argc, char** argv)
 {
     testing::InitGoogleTest(&argc, argv);
