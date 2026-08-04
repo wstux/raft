@@ -39,92 +39,90 @@ namespace tests = raft::tests;
 class raft_context : public ::testing::Test
 {
 public:
-    virtual void SetUp() override {}
+    virtual void SetUp() override
+    {
+        m_p_io = std::make_shared<tests::empty_io>();
+
+        tests::empty_io* p_raw_io = m_p_io.get();
+        std::function<bool()> is_stop_fn = [p_raw_io]()->bool { return p_raw_io->is_stop; };
+
+        m_p_ctx = std::make_unique<details::context>(1, m_p_io, std::make_shared<tests::logger_factory>(), is_stop_fn);
+    }
+
     virtual void TearDown() override {}
 
-    static details::context::ptr context(size_t cluster_size = 0, bool is_voter = true)
+    details::context& init(size_t servs_count = 1, bool is_voter = true)
     {
-        tests::return_type rt = tests::make_context(cluster_size, is_voter);
-        details::context::ptr p_ctx = std::move(rt.first);
-        if (! details::utils::init(*p_ctx, 1)) {
-            return p_ctx;
+        for (size_t i = 0; i < servs_count; ++i) {
+            m_p_io->cluster_cfg.servers.emplace_back(i + 1, std::to_string(i), (i == 0) ? is_voter : true);
         }
-        if (! details::utils::load(*p_ctx)) {
-            return p_ctx;
-        }
-        return p_ctx;
+
+        return *m_p_ctx;
     }
+
+protected:
+    tests::empty_io::ptr m_p_io;
+    details::context::ptr m_p_ctx;
 };
 
 } // <anonymous> namespace
 
 TEST_F(raft_context, init)
 {
-    tests::return_type rt = tests::make_context(1, true);
-    details::context::ptr p_ctx = std::move(rt.first);
+    details::context& ctx = init(1);
 
-    EXPECT_TRUE(details::utils::init(*p_ctx, 1));
+    EXPECT_TRUE(details::utils::init(ctx, 1));
 }
 
 TEST_F(raft_context, init_failed)
 {
-    tests::return_type rt = tests::make_context(1, true);
-    details::context::ptr p_ctx = std::move(rt.first);
-    tests::empty_io::ptr p_io = rt.second;
+    details::context& ctx = init(1);
 
-    p_io->is_init = false;
-    EXPECT_FALSE(details::utils::init(*p_ctx, 1));
+    m_p_io->is_init = false;
+    EXPECT_FALSE(details::utils::init(ctx, 1));
 }
 
 TEST_F(raft_context, init_invalid_config)
 {
-    tests::return_type rt = tests::make_context(1, true);
-    details::context::ptr p_ctx = std::move(rt.first);
-    tests::empty_io::ptr p_io = rt.second;
+    details::context& ctx = init(1);
 
-    p_io->cfg.heartbeat_interval_ms = 0;
-    EXPECT_FALSE(details::utils::init(*p_ctx, 1));
+    m_p_io->cfg.heartbeat_interval_ms = 0;
+    EXPECT_FALSE(details::utils::init(ctx, 1));
 }
 
 TEST_F(raft_context, load)
 {
-    tests::return_type rt = tests::make_context(1, true);
-    details::context::ptr p_ctx = std::move(rt.first);
+    details::context& ctx = init(1);
 
-    EXPECT_TRUE(details::utils::init(*p_ctx, 1));
-    EXPECT_TRUE(details::utils::load(*p_ctx));
+    EXPECT_TRUE(details::utils::init(ctx, 1));
+    EXPECT_TRUE(details::utils::load(ctx));
 }
 
 TEST_F(raft_context, load_failed)
 {
-    tests::return_type rt = tests::make_context(1, true);
-    details::context::ptr p_ctx = std::move(rt.first);
-    tests::empty_io::ptr p_io = rt.second;
+    details::context& ctx = init(1);
 
-    p_io->is_load = false;
-    EXPECT_TRUE(details::utils::init(*p_ctx, 1));
-    EXPECT_FALSE(details::utils::load(*p_ctx));
+    m_p_io->is_load = false;
+    EXPECT_TRUE(details::utils::init(ctx, 1));
+    EXPECT_FALSE(details::utils::load(ctx));
 }
 
 TEST_F(raft_context, load_failed_duplicated_peer)
 {
-    tests::return_type rt = tests::make_context(3, true);
-    details::context::ptr p_ctx = std::move(rt.first);
-    tests::empty_io::ptr p_io = rt.second;
+    details::context& ctx = init(3);
 
-    p_io->cluster_cfg.servers.emplace_back(2, "2", true);
-    EXPECT_TRUE(details::utils::init(*p_ctx, 1));
-    EXPECT_FALSE(details::utils::load(*p_ctx));
+    m_p_io->cluster_cfg.servers.emplace_back(2, "2", true);
+    EXPECT_TRUE(details::utils::init(ctx, 1));
+    EXPECT_FALSE(details::utils::load(ctx));
 }
 
 TEST_F(raft_context, to_string)
 {
-    tests::return_type rt = tests::make_context(3, true);
-    details::context::ptr p_ctx = std::move(rt.first);
+    details::context& ctx = init(3);
 
-    p_ctx->role.role = details::role::role_type::candidate;
+    ctx.role.role = details::role::role_type::candidate;
     std::stringstream ss;
-    ss << (*p_ctx);
+    ss << ctx;
     EXPECT_TRUE(ss.str() == "1(candidate)");
 }
 

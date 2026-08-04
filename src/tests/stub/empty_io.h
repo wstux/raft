@@ -29,7 +29,6 @@
 #include <map>
 
 #include "raft_le/io.h"
-#include "raft_le/details/context.h"
 
 namespace wstux {
 namespace raft {
@@ -95,21 +94,6 @@ public:
     bool is_load = true;
     bool is_stop = false;
 };
-
-using return_type = std::pair<details::context::ptr, empty_io::ptr>;
-
-inline return_type make_context(const size_t servs_count, bool is_voter)
-{
-    empty_io::ptr p_io = std::make_shared<empty_io>();
-    for (size_t i = 0; i < servs_count; ++i) {
-        p_io->cluster_cfg.servers.emplace_back(i + 1, std::to_string(i), (i == 0) ? is_voter : true);
-    }
-
-    empty_io* p_raw_io = p_io.get();
-    std::function<bool()> is_stop_fn = [p_raw_io]()->bool { return p_raw_io->is_stop; };
-    details::context::ptr p_ctx = std::make_unique<details::context>(1, p_io, std::make_shared<logger_factory>(), is_stop_fn);
-    return return_type(std::move(p_ctx), p_io);
-}
 
 } // namespace tests
 } // namespace le

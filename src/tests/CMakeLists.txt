@@ -1,9 +1,7 @@
-# Unit tests
+add_subdirectory(benchmark)
+add_subdirectory(stub)
 
-if (BUILD_TESTS)
-    add_subdirectory(benchmark)
-    add_subdirectory(stub)
-endif()
+# Unit tests
 
 TestTarget(ut_raft_context
     SOURCES

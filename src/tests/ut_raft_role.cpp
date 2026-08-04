@@ -105,6 +105,21 @@ TEST_F(raft_role, undefined)
     EXPECT_TRUE(role.str() == "undefined") << "role: " << role.str();
 }
 
+TEST_F(raft_role, has_leader)
+{
+    namespace raft = ::wstux::raft::le;
+    using raft_role = raft::details::role::state;
+
+    raft_role role;
+    role.role = raft::details::role::role_type::leader;
+
+    EXPECT_FALSE(role.has_leader());
+
+    role.role = raft::details::role::role_type::follower;
+    role.follower_state.leader_id = 1;
+    EXPECT_TRUE(role.has_leader());
+}
+
 int main(int argc, char** argv)
 {
     testing::InitGoogleTest(&argc, argv);
