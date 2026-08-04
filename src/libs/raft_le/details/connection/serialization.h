@@ -25,6 +25,9 @@
 #ifndef _LIBS_RAFT_LEADER_ELECTION_SERIALIZATION_H_
 #define _LIBS_RAFT_LEADER_ELECTION_SERIALIZATION_H_
 
+#include <array>
+#include <utility>
+
 #include <boost/endian/conversion.hpp>
 
 #include "raft_le/details/connection/messages.h"
@@ -112,9 +115,6 @@ inline void serialize(const message& msg, char* p_buffer)
 inline void deserialize(const buffer_type& buffer, message& msg)
 {
     msg.type = message_type::invalid;
-    if (buffer.size() != message::size) {
-        return;
-    }
 
     const char* p_buffer = buffer.data();
 
@@ -125,6 +125,8 @@ inline void deserialize(const buffer_type& buffer, message& msg)
     }
 }
 
+using buffer_data_type = std::array<char, message::size>;
+
 inline message deserialize(const buffer_type& buffer)
 {
     message msg;
@@ -133,27 +135,19 @@ inline message deserialize(const buffer_type& buffer)
     return msg;
 }
 
-inline void serialize(const message& msg, buffer_type& buffer)
+inline buffer_type serialize(const message& msg, buffer_data_type& buffer)
 {
     constexpr size_t message_size = sizeof(uint32_t) + sizeof(int32_t) + sizeof(uint64_t) +
         sizeof(uint64_t) + sizeof(uint32_t) + sizeof(uint8_t) + sizeof(uint8_t);
     static_assert(message_size <= message::size,  "Invalid message size");
-
-    buffer.resize(message::size);
+    static_assert(std::tuple_size<buffer_data_type>::value == message::size);
 
     if (message::version == message_version::v_1) {
         char* p_buffer = buffer.data();
         v1::write<uint32_t>(message::version, p_buffer);
         v1::serialize(msg, p_buffer);
     }
-}
-
-inline buffer_type serialize(const message& msg)
-{
-    buffer_type buffer;
-
-    serialize(msg, buffer);
-    return buffer;
+    return buffer_type(buffer.begin(), buffer.end());
 }
 
 } // namespace details

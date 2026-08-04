@@ -61,7 +61,8 @@ void peer::send_heartbeat_request(uint64_t term, int32_t src_id)
     msg.dst_id = m_cfg.id;
     msg.term = term;
 
-    m_p_client->send(serialize(msg));
+    buffer_data_type buffer;
+    m_p_client->send(serialize(msg, buffer));
 }
 
 void peer::send_heartbeat_response(uint64_t term, int32_t src_id, bool accept)
@@ -73,7 +74,8 @@ void peer::send_heartbeat_response(uint64_t term, int32_t src_id, bool accept)
     msg.term = term;
     msg.heartbeat_resp.accept = accept;
 
-    m_p_client->send(serialize(msg));
+    buffer_data_type buffer;
+    m_p_client->send(serialize(msg, buffer));
 }
 
 void peer::send_vote_request(uint64_t term, int32_t src_id, bool is_prevote)
@@ -85,7 +87,8 @@ void peer::send_vote_request(uint64_t term, int32_t src_id, bool is_prevote)
     msg.term = term;
     msg.vote_req.is_prevote = is_prevote;
 
-    m_p_client->send(serialize(msg));
+    buffer_data_type buffer;
+    m_p_client->send(serialize(msg, buffer));
 }
 
 void peer::send_vote_response(uint64_t term, int32_t src_id, bool is_prevote, bool accept)
@@ -98,7 +101,8 @@ void peer::send_vote_response(uint64_t term, int32_t src_id, bool is_prevote, bo
     msg.vote_resp.is_prevote = is_prevote;
     msg.vote_resp.accept = accept;
 
-    m_p_client->send(serialize(msg));
+    buffer_data_type buffer;
+    m_p_client->send(serialize(msg, buffer));
 }
 
 void peer::update(size_t hb_expired_interval_ms)

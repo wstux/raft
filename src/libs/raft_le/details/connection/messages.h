@@ -89,6 +89,8 @@ struct message final
 static_assert(std::is_pod<message>::value, "Message struct must be pod");
 static_assert(std::is_trivially_copyable<message>::value, "Message struct must be trivially copyable");
 static_assert(sizeof(message) == message::size, "Invalid message size");
+static_assert(sizeof(uint32_t)+sizeof(message_type)+2*sizeof(server_id_t)+sizeof(term_t)+2*sizeof(uint8_t) <= message::size, "Invalid message size");
+static_assert(buffer_type::extent == message::size, "Invalid buffer size");
 
 } // namespace details
 } // namespace le

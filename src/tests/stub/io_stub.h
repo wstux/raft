@@ -27,6 +27,7 @@
 
 #include <sys/time.h>
 
+#include <algorithm>
 #include <chrono>
 #include <fstream>
 #include <filesystem>
@@ -42,6 +43,8 @@
 
 #include "raft_le/io.h"
 #include "raft_le/server.h"
+#include "raft_le/details/connection/messages.h"
+#include "raft_le/details/connection/serialization.h"
 
 namespace wstux {
 namespace raft {
@@ -223,6 +226,9 @@ public:
 
     struct queue_data
     {
+        queue_data() : msg(buf.begin(), buf.end()) {}
+
+        details::buffer_data_type buf;
         buffer_type msg;
     };
 
@@ -259,7 +265,7 @@ public:
     virtual void send(const buffer_type& msg) override
     {
         queue_data* d = new queue_data();
-        d->msg = msg;
+        std::copy(msg.begin(), msg.end(), d->buf.begin());
 
         while (! m_queue.push(d)) {}
     }
