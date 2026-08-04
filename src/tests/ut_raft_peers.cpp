@@ -28,6 +28,7 @@
 #include <gtest/gtest.h>
 
 #include "raft_le/details/context.h"
+#include "raft_le/details/role/convert.h"
 
 #include "stub/empty_io.h"
 
@@ -40,17 +41,32 @@ namespace tests = raft::tests;
 class raft_peers : public ::testing::Test
 {
 public:
-    virtual void SetUp() override {}
+    virtual void SetUp() override
+    {
+        m_p_io = std::make_shared<tests::empty_io>();
+
+        tests::empty_io* p_raw_io = m_p_io.get();
+        std::function<bool()> is_stop_fn = [p_raw_io]()->bool { return p_raw_io->is_stop; };
+
+        m_p_ctx = std::make_unique<details::context>(1, m_p_io, std::make_shared<tests::logger_factory>(), is_stop_fn);
+    }
+
     virtual void TearDown() override {}
 
-    static details::context::ptr context(size_t cluster_size = 0, bool is_voter = true)
+    details::context& init(size_t servs_count = 1, bool is_voter = true)
     {
-        tests::return_type rt = tests::make_context(cluster_size, is_voter);
-        details::context::ptr p_ctx = std::move(rt.first);
-        details::utils::init(*p_ctx, 1);
-        details::utils::load(*p_ctx);
-        return p_ctx;
+        for (size_t i = 0; i < servs_count; ++i) {
+            m_p_io->cluster_cfg.servers.emplace_back(i + 1, std::to_string(i), (i == 0) ? is_voter : true);
+        }
+
+        details::utils::init(*m_p_ctx, 1);
+        details::utils::load(*m_p_ctx);
+        return *m_p_ctx;
     }
+
+protected:
+    tests::empty_io::ptr m_p_io;
+    details::context::ptr m_p_ctx;
 };
 
 } // <anonymous> namespace
@@ -69,55 +85,82 @@ TEST_F(raft_peers, probe_expired)
 
 TEST_F(raft_peers, emplace)
 {
-    details::context::ptr p_ctx = raft_peers::context();
+    details::context& ctx = init();
 
     raft::server_config self_cfg(1, "1", true);
-    EXPECT_FALSE(details::peers::emplace(*p_ctx, self_cfg));
+    EXPECT_FALSE(details::peers::emplace(ctx, self_cfg));
 
     raft::server_config new_cfg(2, "2", true);
-    EXPECT_TRUE(details::peers::emplace(*p_ctx, new_cfg));
+    EXPECT_TRUE(details::peers::emplace(ctx, new_cfg));
 }
 
 TEST_F(raft_peers, find)
 {
-    details::context::ptr p_ctx = raft_peers::context(2);
+    details::context& ctx = init(2);
 
-    EXPECT_FALSE(details::peers::find(*p_ctx, 1));
-    EXPECT_TRUE(details::peers::find(*p_ctx, 2));
-    EXPECT_FALSE(details::peers::find(*p_ctx, 3));
+    EXPECT_FALSE(details::peers::find(ctx, 1));
+    EXPECT_TRUE(details::peers::find(ctx, 2));
+    EXPECT_FALSE(details::peers::find(ctx, 3));
 }
 
 TEST_F(raft_peers, quorum_for_election)
 {
-    details::context::ptr p_ctx = raft_peers::context(2);
+    details::context& ctx = init(2);
 
-    EXPECT_TRUE(details::peers::quorum_for_election(*p_ctx) == 1) << details::peers::quorum_for_election(*p_ctx);
+    EXPECT_TRUE(details::peers::quorum_for_election(ctx) == 1) << details::peers::quorum_for_election(ctx);
 }
 
 TEST_F(raft_peers, update)
 {
-    details::context::ptr p_ctx = raft_peers::context(3);
+    details::context& ctx = init(3);
 
     raft::cluster_config cluster_cfg;
     for (size_t i = 0; i < 5; ++i) {
         cluster_cfg.servers.emplace_back(i + 1, std::to_string(i), true);
     }
-    EXPECT_TRUE(p_ctx->peers.size() == 2) << p_ctx->peers.size();
-    details::peers::update(*p_ctx, cluster_cfg);
-    EXPECT_TRUE(p_ctx->peers.size() == 4) << p_ctx->peers.size();
+    EXPECT_TRUE(ctx.peers.size() == 2) << ctx.peers.size();
+    details::peers::update(ctx, cluster_cfg);
+    EXPECT_TRUE(ctx.peers.size() == 4) << ctx.peers.size();
 }
 
 TEST_F(raft_peers, voting_members_count)
 {
-    details::context::ptr p_ctx = raft_peers::context(3);
+    details::context& ctx = init(3);
 
+    size_t voters_count = 0;
     raft::cluster_config cluster_cfg;
     for (size_t i = 0; i < 7; ++i) {
-        cluster_cfg.servers.emplace_back(i + 1, std::to_string(i), (i + 1) % 2 == 1);
+        const bool is_voter = (i + 1) % 2 == 1;
+        voters_count += is_voter ? 1 : 0;
+        cluster_cfg.servers.emplace_back(i + 1, std::to_string(i), is_voter);
     }
-    EXPECT_TRUE(details::peers::voting_members_count(*p_ctx) == 3) << details::peers::voting_members_count(*p_ctx);
-    details::peers::update(*p_ctx, cluster_cfg);
-    EXPECT_TRUE(details::peers::voting_members_count(*p_ctx) == 5) << details::peers::voting_members_count(*p_ctx);
+    EXPECT_TRUE(details::peers::voting_members_count(ctx) == 3) << details::peers::voting_members_count(ctx);
+    details::peers::update(ctx, cluster_cfg);
+    EXPECT_TRUE(details::peers::voting_members_count(ctx) == voters_count) << details::peers::voting_members_count(ctx);
+}
+
+TEST_F(raft_peers, check_contact_quorum)
+{
+    details::context& ctx = init(5);
+    details::role::become_follower(ctx);
+    details::role::become_candidate(ctx);
+    details::role::become_leader(ctx);
+    for (details::peer::map::value_type& v : ctx.peers) {
+        v.second->mark_recent_recv();
+    }
+
+    EXPECT_TRUE(details::peers::check_contact_quorum(ctx));
+}
+
+TEST_F(raft_peers, failed_check_contact_quorum)
+{
+    details::context& ctx = init(5);
+    details::role::become_follower(ctx);
+    details::role::become_candidate(ctx);
+    details::role::become_leader(ctx);
+    ctx.peers.at(2)->mark_recent_recv();
+
+    EXPECT_FALSE(details::peers::check_contact_quorum(ctx));
 }
 
 int main(int argc, char** argv)

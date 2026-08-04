@@ -73,12 +73,12 @@ public:
 
     void send_vote_response(uint64_t term, int32_t src_id, bool is_prevote, bool accept);
 
-    void set_hb_expired_interval(size_t interval_ms);
+    void update(size_t hb_expired_interval_ms);
 
     void update_last_response();
 
 private:
-    const server_config m_cfg;
+    server_config m_cfg;
     size_t m_heartbeat_expired_interval_ms;
     iclient::ptr m_p_client;
 

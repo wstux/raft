@@ -142,8 +142,10 @@ void update(context& ctx, const cluster_config& cluster_cfg)
         peer::ptr p_peer = find(ctx, cfg.id);
         if (! p_peer) {
             p_peer = std::make_shared<peer>(cfg, ctx.p_io, hb_expired_interval_ms);
+        } else if (p_peer->config().endpoint != cfg.endpoint || p_peer->config().id != cfg.id || p_peer->config().is_voter != cfg.is_voter) {
+            p_peer = std::make_shared<peer>(cfg, ctx.p_io, hb_expired_interval_ms);
         } else {
-            p_peer->set_hb_expired_interval(hb_expired_interval_ms);
+            p_peer->update(hb_expired_interval_ms);
         }
         peers.emplace(cfg.id, p_peer);
     }
