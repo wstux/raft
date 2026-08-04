@@ -25,10 +25,13 @@
 #ifndef _TESTS_RAFT_LEADER_ELECTION_EMPTY_IO_H_
 #define _TESTS_RAFT_LEADER_ELECTION_EMPTY_IO_H_
 
+#include <algorithm>
 #include <atomic>
 #include <map>
 
 #include "raft_le/io.h"
+#include "raft_le/details/connection/messages.h"
+#include "raft_le/details/connection/serialization.h"
 
 namespace wstux {
 namespace raft {
@@ -41,12 +44,14 @@ public:
     using ptr = std::shared_ptr<empty_client>;
 
 public:
+    empty_client() : buffer(buf.begin(), buf.end()) {}
     virtual ~empty_client() {}
-    virtual void send(const buffer_type& b) override { buffer = b; }
+    virtual void send(const buffer_type& b) override { std::copy(b.begin(), b.end(), buf.begin()); } //buffer = b; }
 
     static empty_client::ptr make() { return std::make_shared<empty_client>(); }
 
 public:
+    details::buffer_data_type buf;
     buffer_type buffer;
 };
 

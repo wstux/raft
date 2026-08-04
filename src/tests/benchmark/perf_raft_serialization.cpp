@@ -40,10 +40,11 @@ static void serialize_message(benchmark::State& state)
     msg.vote_resp.is_prevote = false;
 
     for (auto _ : state) {
-        ::wstux::raft::le::buffer_type buf;
-        raft::details::serialize(msg, buf);
+        raft::details::buffer_data_type buf;
+        raft::buffer_type buffer = raft::details::serialize(msg, buf);
 
         benchmark::DoNotOptimize(buf);
+        benchmark::DoNotOptimize(buffer);
         benchmark::ClobberMemory();
     }
 }

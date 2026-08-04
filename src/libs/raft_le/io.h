@@ -25,22 +25,69 @@
 #ifndef _LIBS_RAFT_LEADER_ELECTION_IO_H_
 #define _LIBS_RAFT_LEADER_ELECTION_IO_H_
 
+#include <cassert>
 #include <cstdint>
 #include <functional>
 #include <memory>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 namespace wstux {
 namespace raft {
 namespace le {
+namespace details {
+
+/**
+ *  \brief  A lightweight implementation of a non-owning view over a contiguous
+ *      sequence of elements.
+ *
+ *  \details    This class is a simplified analog of `std::span` from the C++20
+ *      standard. It provides safe and convenient access to fixed-size data
+ *      arrays without managing their lifetime.
+ *
+ *      Reason for creation: the original `std::span` is only available
+ *      starting from C++20. This class is designed to ensure compatibility with
+ *      legacy codebases and compilers restricted to the C++17 standard, where
+ *      the standard implementation is missing.
+ *
+ *  \tparam T - the type of elements stored in the sequence.
+ *  \tparam TExtent - the fixed size of the sequence (number of elements).
+ */
+template <typename T, std::size_t TExtent>
+class span final
+{
+public:
+    using element_type           = T;
+    using value_type             = std::remove_cv_t<T>;
+    using size_type              = std::size_t;
+    using pointer                = T*;
+    using reference              = T&;
+    using iterator               = T*;
+
+    static constexpr size_type extent = TExtent;
+
+    constexpr span(pointer ptr, [[maybe_unused]] size_type count) : m_data(ptr) { assert(count == TExtent); }
+    constexpr span(pointer first, [[maybe_unused]] pointer last) : m_data(first) { assert((last - first) == TExtent); }
+
+    constexpr pointer data() const noexcept { return m_data; }
+    constexpr size_type size() const noexcept { return TExtent; }
+
+    constexpr iterator begin() const noexcept { return m_data; }
+    constexpr iterator end() const noexcept { return m_data + TExtent; }
+
+private:
+    pointer m_data;
+};
+
+} // namespace details
 
 using is_stop_fn_t = std::function<bool(void)>;
 
 using server_id_t = uint64_t;
 using term_t = uint32_t;
 
-using buffer_type = std::vector<char>;
+using buffer_type = details::span<const char, 32>;
 
 constexpr server_id_t gk_invalid_id = 0;
 

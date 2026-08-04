@@ -153,8 +153,7 @@ void counter_node::thread_main_rpc(const std::string& address)
 {
     LOG_TRACE(m_logger, "Got raft message.");
 
-    raft::le::buffer_type msg(p_req->buffer().cbegin(), p_req->buffer().cend());
-
+    raft::le::buffer_type msg(p_req->buffer().data(), p_req->buffer().size());
     m_p_server->handle_message(msg);
     return ::grpc::Status::OK;
 }
