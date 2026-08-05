@@ -61,7 +61,6 @@ struct context final : public std::enable_shared_from_this<context>
 
     io::ptr p_io;
 
-    std::mutex handler_mutex;
     role::state role;
 
     std::atomic<term_t> term;

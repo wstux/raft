@@ -58,8 +58,6 @@ void election_restart_task(context& ctx)
 
 void election_timeout_task(context& ctx)
 {
-    std::unique_lock<std::mutex> lock(ctx.handler_mutex);
-
     assert(ctx.role.is_voter);
 
     if (ctx.is_stop_fn()) {
@@ -105,8 +103,6 @@ void heartbeat_restart_task(context& ctx)
 
 void heartbeat_timeout_task(context& ctx)
 {
-    std::unique_lock<std::mutex> lock(ctx.handler_mutex);
-
     if (ctx.role.is_leader()) {
         // Raft Paper, Section 5.2: "Leaders send periodic heartbeats to maintain their authority."
         heartbeat::request(ctx);

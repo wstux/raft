@@ -43,8 +43,6 @@ namespace {
 
 void handle_message(details::context& ctx, const details::message& msg)
 {
-    std::unique_lock<std::mutex> lock(ctx.handler_mutex);
-
     switch(msg.type) {
     case details::message_type::heartbeat_request:
         details::heartbeat::handle_request(ctx, msg.term, msg.src_id, msg.heartbeat_req);
@@ -121,7 +119,10 @@ void server::handle_message(const buffer_type& msg_buf)
     details::message msg;
     details::deserialize(msg_buf, msg);
 
-    le::handle_message(*m_p_ctx, msg);
+    const details::scheduler::handler_type handler = [p_ctx = m_p_ctx.get(), msg = std::move(msg)]() -> void {
+        le::handle_message(*p_ctx, msg);
+    };
+    m_p_ctx->p_scheduler->execute_strand(handler);
 }
 
 bool server::load(details::context& ctx)
@@ -143,23 +144,24 @@ std::vector<std::string> server::logging_channels()
 
 bool server::reconfigure()
 {
-    const config cfg = m_p_ctx->p_io->configuration();
+    config cfg = m_p_ctx->p_io->configuration();
     if (cfg.heartbeat_interval_ms == 0 || cfg.vote_timeout_max_ms == 0 || cfg.vote_timeout_max_ms < cfg.vote_timeout_min_ms) {
         return false;
     }
 
-    const cluster_config cluster_cfg = m_p_ctx->p_io->bootstrap();
+    cluster_config cluster_cfg = m_p_ctx->p_io->bootstrap();
 
     m_p_ctx->p_scheduler->reconfigure(cfg.scheduler_threads_count);
 
-    std::unique_lock<std::mutex> lock(m_p_ctx->handler_mutex);
-    details::utils::reconfigure(*m_p_ctx, cfg, cluster_cfg);
+    const details::scheduler::handler_type handler = [p_ctx = m_p_ctx.get(), cfg = std::move(cfg), cluster_cfg = std::move(cluster_cfg)]() -> void {
+        details::utils::reconfigure(*p_ctx, cfg, cluster_cfg);
+    };
+    m_p_ctx->p_scheduler->execute_strand(handler);
     return true;
 }
 
 bool server::start()
 {
-    std::unique_lock<std::mutex> lock(m_p_ctx->handler_mutex);
     if (! m_is_stop.exchange(false)) {
         RAFT_ROOT_LOG_WARN((*m_p_ctx), "Raft server " << m_p_ctx->id << " has been already started.");
         return false;
@@ -177,12 +179,15 @@ bool server::start()
 
     RAFT_ROOT_LOG_INFO((*m_p_ctx), "Starting raft server " << m_p_ctx->id << ".");
     m_p_ctx->p_scheduler->start();
-    details::timeout::heartbeat_restart_task(*m_p_ctx);
-    if (m_p_ctx->role.is_voter) {
-        details::timeout::election_restart_task(*m_p_ctx);
-    }
 
-    details::role::initiate_election(*m_p_ctx);
+    const details::scheduler::handler_type handler = [p_ctx = m_p_ctx.get()]() -> void {
+        details::timeout::heartbeat_restart_task(*p_ctx);
+        if (p_ctx->role.is_voter) {
+            details::timeout::election_restart_task(*p_ctx);
+        }
+        details::role::initiate_election(*p_ctx);
+    };
+    m_p_ctx->p_scheduler->execute_strand(handler);
     return true;
 }
 

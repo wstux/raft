@@ -63,13 +63,13 @@ public:
     /// \param  task - task to be canceled.
     void cancel(const task_type& task);
 
-    /// \brief  Schedules the immediate asynchronous execution of a task.
-    /// \param  task - task.
-    void execute_async(const task_type& task);
-
     /// \brief  Creates and schedules the immediate asynchronous execution of a new handler.
     /// \param  handler - the handler function to execute.
     void execute_async(const handler_type& handler);
+
+    /// \brief  Executes the handler strictly sequentially within the strand.
+    /// \param  handler - the handler function to execute.
+    void execute_strand(const handler_type& handler);
 
     bool is_canceled(const task_type& task) const;
 
