@@ -126,6 +126,8 @@ bool init(context& ctx, server_id_t id);
 
 bool load(context& ctx);
 
+void reconfigure(context& ctx, const config& cfg, const cluster_config& cluster_cfg);
+
 template<typename TFn, typename... TArgs>
 inline void wrap_send(context& ctx, peer::ptr p_peer, const TFn& func, TArgs&&... args)
 {

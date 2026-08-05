@@ -153,12 +153,7 @@ bool server::reconfigure()
     m_p_ctx->p_scheduler->reconfigure(cfg.scheduler_threads_count);
 
     std::unique_lock<std::mutex> lock(m_p_ctx->handler_mutex);
-    m_p_ctx->election_distribution = std::uniform_int_distribution<size_t>(cfg.vote_timeout_min_ms, cfg.vote_timeout_max_ms);
-
-    m_p_ctx->heartbeat_interval_ms = cfg.heartbeat_interval_ms;
-    m_p_ctx->heartbeat_probes_count = cfg.heartbeat_probes_count;
-
-    details::peers::update(*m_p_ctx, cluster_cfg);
+    details::utils::reconfigure(*m_p_ctx, cfg, cluster_cfg);
     return true;
 }
 

@@ -220,6 +220,16 @@ bool load(context& ctx)
     return true;
 }
 
+void reconfigure(context& ctx, const config& cfg, const cluster_config& cluster_cfg)
+{
+    ctx.election_distribution = std::uniform_int_distribution<size_t>(cfg.vote_timeout_min_ms, cfg.vote_timeout_max_ms);
+
+    ctx.heartbeat_interval_ms = cfg.heartbeat_interval_ms;
+    ctx.heartbeat_probes_count = cfg.heartbeat_probes_count;
+
+    details::peers::update(ctx, cluster_cfg);
+}
+
 } // namespace utils
 
 } // namespace details
