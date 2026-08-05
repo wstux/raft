@@ -61,12 +61,10 @@ struct context final : public std::enable_shared_from_this<context>
 
     io::ptr p_io;
 
-    std::mutex handler_mutex;
     role::state role;
 
-    std::atomic<term_t> term;
+    term_t term;
 
-    std::shared_mutex peers_mutex;
     peer::map peers;
 
     scheduler::ptr p_scheduler;
@@ -125,6 +123,8 @@ size_t current_time_ms();
 bool init(context& ctx, server_id_t id);
 
 bool load(context& ctx);
+
+void reconfigure(context& ctx, const config& cfg, const cluster_config& cluster_cfg);
 
 template<typename TFn, typename... TArgs>
 inline void wrap_send(context& ctx, peer::ptr p_peer, const TFn& func, TArgs&&... args)

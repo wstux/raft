@@ -114,6 +114,7 @@ struct scheduler::context final
     explicit context(size_t pool_size)
         : threads_size(pool_size)
         , io_ctx()
+        , strand(boost::asio::make_strand(io_ctx))
     {}
 
     bool is_stopped() const { return (thread_pool.get() == nullptr); }
@@ -157,6 +158,7 @@ struct scheduler::context final
 
     std::atomic_size_t threads_size;
     boost::asio::io_context io_ctx;
+    boost::asio::strand<boost::asio::io_context::executor_type> strand;
     std::unique_ptr<work_guiard_t> work_guard; ///< Ensures that io_ctx.run() does not exit the loop when there are no more tasks.
     std::unique_ptr<boost::asio::thread_pool> thread_pool; ///< Boost.asio execution thread pool.
     std::shared_mutex pool_mutex; ///< Protects the recreation operations of the thread_pool.
@@ -181,15 +183,20 @@ void scheduler::cancel(const task_type& task)
     }
 }
 
-void scheduler::execute_async(const task_type& task)
-{
-    schedule(task, 0);
-}
-
 void scheduler::execute_async(const handler_type& handler)
 {
-    task_type async_task = make_task(handler);
-    execute_async(async_task);
+    if (m_is_stop.load(std::memory_order_acquire)) {
+        return;
+    }
+    boost::asio::post(m_p_ctx->io_ctx, handler);
+}
+
+void scheduler::execute_strand(const handler_type& handler)
+{
+    if (m_is_stop.load(std::memory_order_acquire)) {
+        return;
+    }
+    boost::asio::post(m_p_ctx->strand, handler);
 }
 
 bool scheduler::is_canceled(const task_type& task) const
@@ -250,7 +257,7 @@ void scheduler::schedule(const task_type& task, int32_t ms)
     task->resume();
 
     task->timer.expires_after(std::chrono::milliseconds(ms));
-    task->timer.async_wait(std::bind(&task::handler, task, std::placeholders::_1));
+    task->timer.async_wait(boost::asio::bind_executor(m_p_ctx->strand, std::bind(&task::handler, task, std::placeholders::_1)));
 }
 
 void scheduler::start()

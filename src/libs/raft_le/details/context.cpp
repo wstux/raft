@@ -82,7 +82,6 @@ bool check_contact_quorum(context& ctx)
 {
     assert(ctx.role.is_leader());
 
-    std::shared_lock<std::shared_mutex> lock(ctx.peers_mutex);
     size_t contacts = 1;
     size_t voting_count = 1;
     for (const peer::map::value_type& v : ctx.peers) {
@@ -103,14 +102,12 @@ bool emplace(context& ctx, const server_config& cfg)
     const size_t hb_expired_interval_ms = ctx.heartbeat_interval_ms * ctx.heartbeat_probes_count;
     peer::ptr p_peer = std::make_shared<peer>(cfg, ctx.p_io, hb_expired_interval_ms);
 
-    std::unique_lock<std::shared_mutex> lock(ctx.peers_mutex);
     ctx.peers.emplace(cfg.id, p_peer);
     return true;
 }
 
 peer::ptr find(context& ctx, server_id_t id)
 {
-    std::shared_lock<std::shared_mutex> lock(ctx.peers_mutex);
     peer::map::const_iterator it = ctx.peers.find(id);
     if (it != ctx.peers.cend()) {
         return it->second;
@@ -126,7 +123,6 @@ size_t quorum_for_election(context& ctx)
 
 void swap(context& ctx, peer::map& peers)
 {
-    std::unique_lock<std::shared_mutex> lock(ctx.peers_mutex);
     ctx.peers.swap(peers);
 }
 
@@ -159,7 +155,6 @@ size_t voting_members_count(context& ctx)
 
     assert(ctx.role.is_voter);
 
-    std::shared_lock<std::shared_mutex> lock(ctx.peers_mutex);
     return 1 + std::count_if(ctx.peers.cbegin(), ctx.peers.cend(),
         [](const peer_value& v) -> bool { return v.second->is_voter(); });
 }
@@ -218,6 +213,16 @@ bool load(context& ctx)
         }
     }
     return true;
+}
+
+void reconfigure(context& ctx, const config& cfg, const cluster_config& cluster_cfg)
+{
+    ctx.election_distribution = std::uniform_int_distribution<size_t>(cfg.vote_timeout_min_ms, cfg.vote_timeout_max_ms);
+
+    ctx.heartbeat_interval_ms = cfg.heartbeat_interval_ms;
+    ctx.heartbeat_probes_count = cfg.heartbeat_probes_count;
+
+    details::peers::update(ctx, cluster_cfg);
 }
 
 } // namespace utils

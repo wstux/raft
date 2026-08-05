@@ -53,7 +53,7 @@ void handle_request(context& ctx, term_t term, server_id_t src_id, const heartbe
     // Raft Paper, Section 5.1: AppendEntries RPC: 1. Reply false if term < currentTerm
     if (ctx.term > term) {
         RAFT_HB_LOG_DEBUG(ctx, "Handle heartbeat. Local term " << ctx.term << " is higher then request term " << term);
-        return utils::wrap_send(ctx, p_src_peer, &peer::send_heartbeat_response, ctx.term.load(), ctx.id, false);
+        return utils::wrap_send(ctx, p_src_peer, &peer::send_heartbeat_response, ctx.term, ctx.id, false);
     }
 
     assert(ctx.role.is_follower() || ctx.role.is_candidate());
@@ -75,7 +75,7 @@ void handle_request(context& ctx, term_t term, server_id_t src_id, const heartbe
     role::update_leader(ctx, src_id);
     timeout::election_restart_task(ctx);
 
-    utils::wrap_send(ctx, p_src_peer, &peer::send_heartbeat_response, ctx.term.load(), ctx.id, true);
+    utils::wrap_send(ctx, p_src_peer, &peer::send_heartbeat_response, ctx.term, ctx.id, true);
 }
 
 void handle_response(context& ctx, term_t term, server_id_t src_id, const heartbeat_response_message& /*msg*/)
@@ -121,14 +121,13 @@ void request(context& ctx)
 
     assert(ctx.role.is_leader());
 
-    std::shared_lock<std::shared_mutex> lock(ctx.peers_mutex);
     for (const peer::map::value_type& v : ctx.peers) {
         const peer::list::value_type& p = v.second;
 
         assert(p->id() != ctx.id);
 
         RAFT_HB_LOG_TRACE(ctx, "Sending heartbeat request to server " << p->id() << ". " << ctx << ", current term " << ctx.term);
-        utils::wrap_send(ctx, p, &peer::send_heartbeat_request, ctx.term.load(), ctx.id);
+        utils::wrap_send(ctx, p, &peer::send_heartbeat_request, ctx.term, ctx.id);
     }
 }
 
