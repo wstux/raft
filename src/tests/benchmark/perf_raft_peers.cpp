@@ -80,7 +80,6 @@ constexpr size_t gk_cluster_size = 7;
 
     raft::details::peer::list peers;
     {
-        std::shared_lock<std::shared_mutex> lock(ctx.peers_mutex);
         peers.reserve(ctx.peers.size());
         std::transform(ctx.peers.begin(), ctx.peers.end(), std::back_inserter(peers),
             [](const raft::details::peer::map::value_type& p) -> raft::details::peer::ptr { return p.second; });
@@ -118,7 +117,6 @@ static void request_lock_map(benchmark::State& state)
     namespace raft = ::wstux::raft::le;
 
     for (auto _ : state) {
-        std::shared_lock<std::shared_mutex> lock(g_p_ctx->peers_mutex);
         for (const raft::details::peer::map::value_type& v : g_p_ctx->peers) {
             bool is_voter = v.second->is_voter();
             benchmark::DoNotOptimize(is_voter);

@@ -63,9 +63,8 @@ struct context final : public std::enable_shared_from_this<context>
 
     role::state role;
 
-    std::atomic<term_t> term;
+    term_t term;
 
-    std::shared_mutex peers_mutex;
     peer::map peers;
 
     scheduler::ptr p_scheduler;

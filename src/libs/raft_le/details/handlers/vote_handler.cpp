@@ -104,7 +104,7 @@ void handle_request(context& ctx, term_t term, server_id_t src_id, const vote_me
     // For standard Vote, the return term is always the receiver's current term.
     // For Pre-Vote, the standard dictates returning the candidate's term if
     // rejected, or the receiver's current term if it's higher.
-    term_t cur_term = (msg.is_prevote) ? term : ctx.term.load();
+    term_t cur_term = (msg.is_prevote) ? term : ctx.term;
 
     // Raft Dissertation, Section 9.6 (Leader Stickiness / Pre-vote):
     // If a node believes the current leader is active (lease timer has not
@@ -123,7 +123,7 @@ void handle_request(context& ctx, term_t term, server_id_t src_id, const vote_me
         // For standard Vote, the return term is always the receiver's current term.
         // For Pre-Vote, the standard dictates returning the candidate's term if
         // rejected, or the receiver's current term if it's higher.
-        cur_term = ctx.term.load();
+        cur_term = ctx.term;
     }
 
     if (ctx.term > term) {
@@ -264,13 +264,6 @@ void request(context& ctx)
 
     const bool is_prevote = ctx.role.candidate_state.is_prevote;
 
-    /*peer::list peers = peers::to_list(ctx);
-    for (peer::ptr& p : peers) {
-        if (p->is_voter()) {
-            utils::wrap_send(ctx, p, &peer::send_vote_request, term, ctx.id, is_prevote);
-        }
-    }*/
-    std::shared_lock<std::shared_mutex> lock(ctx.peers_mutex);
     for (const peer::map::value_type& v : ctx.peers) {
         if (v.second->is_voter()) {
             utils::wrap_send(ctx, v.second, &peer::send_vote_request, term, ctx.id, is_prevote);
