@@ -165,6 +165,33 @@ public:
     virtual logger get_logger(const std::string& ch) = 0;
 };
 
+struct logging_handler
+{
+    using ptr = std::unique_ptr<logging_handler>;
+
+    enum severity_level
+    {
+        emerg   = 0, ///< System is unusable
+        fatal   = 1, ///< Critical error
+        crit    = 2, ///< Critical condition
+        error   = 3, ///< Runtime error
+        warning = 4, ///< Warning
+        notice  = 5, ///< Important notification
+        info    = 6, ///< Informational message
+        debug   = 7, ///< Debugging message
+        trace   = 8  ///< Execution trace
+    };
+
+    using can_log_fn_t = bool (*)(void* p_this, severity_level lvl);
+    using log_fn_t     = void (*)(void* p_this, severity_level lvl, const char* p_msg);
+
+    virtual ~logging_handler() {}
+
+    void* p_this = nullptr;
+    can_log_fn_t can_log_fn = nullptr;
+    log_fn_t log_fn = nullptr;
+};
+
 } // namespace le
 } // namespace raft
 } // namespace wstux
