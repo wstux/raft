@@ -61,11 +61,10 @@ public:
     using ptr = std::shared_ptr<client>;
 
 public:
-    client(const std::string &endpoint, raft::le::ilogger_factory::ptr p_factory)
+    client(const std::string &endpoint, raft::le::logging_handler::severity_level lvl)
         : m_address(endpoint)
         , m_p_stub(service_type::NewStub(make_channel(m_address)))
-        , m_p_factory(p_factory)
-        , m_logger(p_factory->get_logger("Counter::Client"))
+        , m_logger(lvl)
     {}
 
     virtual ~client() {}
@@ -108,8 +107,7 @@ private:
     const std::string m_address;
     std::unique_ptr<stub_type> m_p_stub;
 
-    raft::le::ilogger_factory::ptr m_p_factory;
-    raft::le::logger m_logger;
+    logging_handler m_logger;
 };
 
 } // namespace details

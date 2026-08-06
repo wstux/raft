@@ -25,7 +25,7 @@
 #include <cassert>
 #include <algorithm>
 
-#include "raft_le/details/logging.h"
+#include "raft_le/details/logger.h"
 #include "raft_le/details/handlers/heartbeat_handler.h"
 #include "raft_le/details/handlers/timeout_handler.h"
 #include "raft_le/details/role/convert.h"

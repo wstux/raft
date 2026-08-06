@@ -43,7 +43,7 @@ public:
     using ptr = std::shared_ptr<server>;
 
 public:
-    server(const server_id_t id, const io::ptr& p_io, const ilogger_factory::ptr p_factory, const is_stop_fn_t& is_stop_fn);
+    server(const server_id_t id, const io::ptr& p_io, logging_handler::ptr p_handler, const is_stop_fn_t& is_stop_fn);
 
     ~server();
 
@@ -66,8 +66,6 @@ public:
     bool start();
 
     void stop();
-
-    static std::vector<std::string> logging_channels();
 
 private:
     using context_ptr = std::unique_ptr<details::context>;

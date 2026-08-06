@@ -35,6 +35,7 @@
 #include "raft_le/details/context.h"
 
 #include "stub/io_stub.h"
+#include "stub/logging_handler_stub.h"
 
 #if ! defined(TEST_DATA_DIR)
     #error "TEST_DATA_DIR must be defined"
@@ -188,7 +189,7 @@ private:
     {
         std::function<bool()> is_stop_fn = []()->bool { return false; };
 
-        server_ptr p_srv = std::make_shared<server>(id, p_io, std::make_shared<logger_factory>(log_file(id)), is_stop_fn);
+        server_ptr p_srv = std::make_shared<server>(id, p_io, std::make_unique<tests::logging_handler_file>(log_file(id)), is_stop_fn);
 
         m_io_map.emplace(id, p_io);
         m_servers.emplace(id, p_srv);
@@ -200,7 +201,7 @@ private:
     {
         namespace fs = std::filesystem;
 
-        std::string logdir_str = logger_factory::log_dir(TEST_DATA_DIR, m_test_fixture, m_test_name);
+        std::string logdir_str = tests::logging_handler_file::log_dir(TEST_DATA_DIR, m_test_fixture, m_test_name);
         if (logdir_str.empty()) {
             return std::string();
         }

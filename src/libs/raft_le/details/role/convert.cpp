@@ -24,7 +24,7 @@
 
 #include <cassert>
 
-#include "raft_le/details/logging.h"
+#include "raft_le/details/logger.h"
 #include "raft_le/details/handlers/timeout_handler.h"
 #include "raft_le/details/role/convert.h"
 #include "raft_le/details/role/election.h"
@@ -37,7 +37,7 @@ namespace role {
 
 void become_follower(context& ctx)
 {
-    RAFT_ROOT_LOG_INFO(ctx, "Server " << ctx << " is becoming follower, term " << ctx.term);
+    RAFT_LOG_INFO(ctx, "Server " << ctx << " is becoming follower, term " << ctx.term);
 
     ctx.role.role = role_type::follower;
     ctx.role.follower_state.leader_id = gk_invalid_id;
@@ -46,7 +46,7 @@ void become_follower(context& ctx)
 
 void become_candidate(context& ctx)
 {
-    RAFT_ROOT_LOG_INFO(ctx, "Server " << ctx << " is becoming candidate, term " << ctx.term);
+    RAFT_LOG_INFO(ctx, "Server " << ctx << " is becoming candidate, term " << ctx.term);
 
     assert(ctx.role.is_follower());
     assert(ctx.role.is_voter);
@@ -65,7 +65,7 @@ void become_candidate(context& ctx)
 
 void become_leader(context& ctx)
 {
-    RAFT_ROOT_LOG_INFO(ctx, "Server " << ctx << " is becoming leader, term " << ctx.term);
+    RAFT_LOG_INFO(ctx, "Server " << ctx << " is becoming leader, term " << ctx.term);
 
     assert(ctx.role.is_candidate());
 
@@ -77,7 +77,7 @@ void update_leader(context& ctx, server_id_t leader_id)
     assert(ctx.role.is_follower());
 
     if (ctx.role.follower_state.leader_id != leader_id) {
-        RAFT_ROOT_LOG_INFO(ctx, "Updating leader for server " << ctx << " to server with id " << leader_id);
+        RAFT_LOG_INFO(ctx, "Updating leader for server " << ctx << " to server with id " << leader_id);
         ctx.role.follower_state.leader_id = leader_id;
     }
     timeout::election_restart_task(ctx);
@@ -86,7 +86,7 @@ void update_leader(context& ctx, server_id_t leader_id)
 void update_term(context& ctx, term_t term)
 {
     if (term > ctx.term) {
-        RAFT_ROOT_LOG_TRACE(ctx, "Updating term for server " << ctx << " with local term " << ctx.term << " to term " << term);
+        RAFT_LOG_TRACE(ctx, "Updating term for server " << ctx << " with local term " << ctx.term << " to term " << term);
         ctx.p_io->set_term(term);
 
         ctx.term = term;

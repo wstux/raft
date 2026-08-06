@@ -47,7 +47,7 @@ public:
         tests::empty_io* p_raw_io = m_p_io.get();
         std::function<bool()> is_stop_fn = [p_raw_io]()->bool { return p_raw_io->is_stop; };
 
-        m_p_ctx = std::make_unique<details::context>(1, m_p_io, std::make_shared<tests::logger_factory>(), is_stop_fn);
+        m_p_ctx = std::make_unique<details::context>(1, m_p_io, raft::logging_handler::ptr(), is_stop_fn);
     }
 
     virtual void TearDown() override {}

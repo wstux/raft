@@ -39,49 +39,37 @@ namespace examples {
 namespace counter {
 namespace details {
 
-enum log_level : int
-{
-    error = 0,
-    warning = 1,
-    info = 2,
-    debug = 3,
-    trace = 4
-};
-
-class logger : public raft::le::logger
+class logging_handler final : public raft::le::logging_handler
 {
 public:
-    logger(log_level lvl, const std::string& ch)
-        : raft::le::logger()
+    explicit logging_handler(severity_level lvl)
+        : raft::le::logging_handler()
+        , m_severity_level(lvl)
     {
-        can_error_log_fn   = std::bind(&logger::can_log, lvl, log_level::error);
-        log_error_fn       = std::bind(&logger::log, "ERROR", ch, std::placeholders::_1);
-        can_warning_log_fn = std::bind(&logger::can_log, lvl, log_level::warning);
-        log_warning_fn     = std::bind(&logger::log, "WARN ", ch, std::placeholders::_1);
-        can_info_log_fn    = std::bind(&logger::can_log, lvl, log_level::info);
-        log_info_fn        = std::bind(&logger::log, "INFO ", ch, std::placeholders::_1);
-        can_debug_log_fn   = std::bind(&logger::can_log, lvl, log_level::debug);
-        log_debug_fn       = std::bind(&logger::log, "DEBUG", ch, std::placeholders::_1);
-        can_trace_log_fn   = std::bind(&logger::can_log, lvl, log_level::trace);
-        log_trace_fn       = std::bind(&logger::log, "TRACE", ch, std::placeholders::_1);
+        p_this = &m_severity_level;
+        can_log_fn = &can_log;
+        log_fn = &log;
     }
 
-private:
-    static bool can_log(log_level severity_level, log_level lvl)
+    static bool can_log(void* p_this, severity_level lvl)
     {
-        return (lvl <= severity_level);
+        if (p_this == nullptr) {
+            return false;
+        }
+        const severity_level& severity_lvl = *(static_cast<const severity_level*>(p_this));
+        return (lvl <= severity_lvl);
     }
 
-    static int log(const std::string& lvl, std::string ch, const std::string& msg)
+    static void log(void*, const severity_level lvl, const char* p_msg)
     {
         static std::mutex cout_mutex;
 
         const std::string ts = timestamp();
         std::lock_guard<std::mutex> lock(cout_mutex);
-        std::cout << ts << " <" << std::this_thread::get_id() << "> [" << lvl << "] <" << ch << "> " << msg;
-        return msg.size();
+        std::cout << ts << " <" << std::this_thread::get_id() << "> [" << lvl << "] <Raft> " << p_msg;
     }
 
+private:
     static std::string timestamp()
     {
         constexpr size_t ts_size = 24;
@@ -101,19 +89,9 @@ private:
         buf[rc] = '\0';
         return std::string(buf, ts_size - 1);
     }
-};
-
-class logger_factory : public raft::le::ilogger_factory
-{
-public:
-    explicit logger_factory(log_level lvl)
-        : m_level(lvl)
-    {}
-
-    virtual raft::le::logger get_logger(const std::string& ch) override { return logger(m_level, ch); }
 
 private:
-    log_level m_level;
+    raft::le::logging_handler::severity_level m_severity_level;
 };
 
 } // namespace details
@@ -123,19 +101,17 @@ private:
 
 #define _COUNTER_LOG(logger, level, VARS)                                   \
     do {                                                                    \
-        if (! logger.can_## level ##_log_fn()) {                            \
-            break;                                                          \
+        if (logger.can_log_fn(logger.p_this, level)) {                      \
+            std::stringstream ss;                                           \
+            ss << VARS << std::endl;                                        \
+            logger.log_fn(logger.p_this, level, ss.str().c_str());          \
         }                                                                   \
-        std::stringstream ss;                                               \
-        ss << VARS << std::endl;                                            \
-        logger.log_## level ##_fn(ss.str());                                \
-    }                                                                       \
-    while (0)
+    } while(0)
 
-#define LOG_ERROR(logger, VARS)    _COUNTER_LOG(logger, error,   VARS)
-#define LOG_WARN(logger,  VARS)    _COUNTER_LOG(logger, warning, VARS)
-#define LOG_INFO(logger,  VARS)    _COUNTER_LOG(logger, info,    VARS)
-#define LOG_DEBUG(logger, VARS)    _COUNTER_LOG(logger, debug,   VARS)
-#define LOG_TRACE(logger, VARS)    _COUNTER_LOG(logger, trace,   VARS)
+#define LOG_ERROR(logger, VARS)    _COUNTER_LOG(logger, ::wstux::raft::le::logging_handler::severity_level::error,   VARS)
+#define LOG_WARN(logger,  VARS)    _COUNTER_LOG(logger, ::wstux::raft::le::logging_handler::severity_level::warning, VARS)
+#define LOG_INFO(logger,  VARS)    _COUNTER_LOG(logger, ::wstux::raft::le::logging_handler::severity_level::info,    VARS)
+#define LOG_DEBUG(logger, VARS)    _COUNTER_LOG(logger, ::wstux::raft::le::logging_handler::severity_level::debug,   VARS)
+#define LOG_TRACE(logger, VARS)    _COUNTER_LOG(logger, ::wstux::raft::le::logging_handler::severity_level::trace,   VARS)
 
 #endif /* _EXAMPLES_RAFT_COUNTER_LOGGING_H_ */

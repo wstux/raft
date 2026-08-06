@@ -30,14 +30,25 @@
 namespace wstux {
 namespace examples {
 namespace counter {
+namespace {
+
+raft::le::server::ptr make_server(const details::io::ptr& p_io, const config::ptr& p_cfg)
+{
+    raft::le::server::ptr p_srv;
+    const std::function<bool()> is_stop_fn = []()->bool { return false; };
+    raft::le::logging_handler::ptr p_logger = std::make_unique<details::logging_handler>(p_cfg->level());
+    p_srv = std::make_shared<raft::le::server>(p_cfg->server_id(), p_io, std::move(p_logger), is_stop_fn);
+    return p_srv;
+}
+
+} // <anonymous> namespace
 
 counter_node::counter_node(const config::ptr& p_config)
     : m_p_config(p_config)
-    , m_p_logger_factory(std::make_shared<details::logger_factory>(m_p_config->level()))
-    , m_p_io(std::make_shared<details::io>(m_p_config->cluster_config(), m_p_logger_factory))
-    , m_p_server(std::make_shared<raft::le::server>(m_p_config->server_id(), m_p_io, m_p_logger_factory, []()->bool { return false; }))
+    , m_p_io(std::make_shared<details::io>(m_p_config->cluster_config(), m_p_config->level()))
+    , m_p_server(make_server(m_p_io, m_p_config))
     , m_counter(0)
-    , m_logger(m_p_logger_factory->get_logger("Counter"))
+    , m_logger(m_p_config->level())
 {}
 
 counter_node::~counter_node()

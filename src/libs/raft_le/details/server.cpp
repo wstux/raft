@@ -26,8 +26,7 @@
 
 #include "raft_le/server.h"
 #include "raft_le/details/context.h"
-#include "raft_le/details/logger_channels.h"
-#include "raft_le/details/logging.h"
+#include "raft_le/details/logger.h"
 #include "raft_le/details/connection/messages.h"
 #include "raft_le/details/connection/serialization.h"
 #include "raft_le/details/handlers/heartbeat_handler.h"
@@ -57,7 +56,7 @@ void handle_message(details::context& ctx, const details::message& msg)
         details::vote::handle_response(ctx, msg.term, msg.src_id, msg.vote_resp);
         break;
     default:
-        RAFT_ROOT_LOG_WARN(ctx, "Unsupported message type " << msg.type);
+        RAFT_LOG_WARN(ctx, "Unsupported message type " << msg.type);
         break;
     }
 }
@@ -67,11 +66,11 @@ void handle_message(details::context& ctx, const details::message& msg)
 ////////////////////////////////////////////////////////////////////////////////
 // class server
 
-server::server(const server_id_t id, const io::ptr& p_io, const ilogger_factory::ptr p_factory, const is_stop_fn_t& is_stop_fn)
+server::server(const server_id_t id, const io::ptr& p_io, logging_handler::ptr p_handler, const is_stop_fn_t& is_stop_fn)
     : m_id(id)
     , m_is_stop_fn(is_stop_fn)
     , m_is_stop(true)
-    , m_p_ctx(std::make_unique<details::context>(id, p_io, p_factory, is_stop_fn))
+    , m_p_ctx(std::make_unique<details::context>(id, p_io, std::move(p_handler), is_stop_fn))
 {
     static_assert(std::is_same<context_ptr, details::context::ptr>::value, "Invalid context pointer type");
 
@@ -91,7 +90,7 @@ bool server::init()
 {
     const bool is_inited = details::utils::init(*m_p_ctx, m_id);
     if (! is_inited) {
-        RAFT_ROOT_LOG_ERROR((*m_p_ctx), "Filed to init raft server.");
+        RAFT_LOG_ERROR((*m_p_ctx), "Filed to init raft server.");
         return false;
     }
     m_p_ctx->election_task = m_p_ctx->p_scheduler->make_task(std::bind(&details::timeout::election_timeout_task, std::ref(*m_p_ctx)));
@@ -129,17 +128,12 @@ bool server::load(details::context& ctx)
 {
     const bool is_loaded = details::utils::load(ctx);
     if (! is_loaded) {
-        RAFT_ROOT_LOG_ERROR(ctx, "Failed to load raft configuration.");
+        RAFT_LOG_ERROR(ctx, "Failed to load raft configuration.");
         return false;
     }
 
     details::role::become_follower(ctx);
     return true;
-}
-
-std::vector<std::string> server::logging_channels()
-{
-    return details::loggers::logging_channels();
 }
 
 bool server::reconfigure()
@@ -163,7 +157,7 @@ bool server::reconfigure()
 bool server::start()
 {
     if (! m_is_stop.exchange(false)) {
-        RAFT_ROOT_LOG_WARN((*m_p_ctx), "Raft server " << m_p_ctx->id << " has been already started.");
+        RAFT_LOG_WARN((*m_p_ctx), "Raft server " << m_p_ctx->id << " has been already started.");
         return false;
     }
 
@@ -177,7 +171,7 @@ bool server::start()
         return false;
     }
 
-    RAFT_ROOT_LOG_INFO((*m_p_ctx), "Starting raft server " << m_p_ctx->id << ".");
+    RAFT_LOG_INFO((*m_p_ctx), "Starting raft server " << m_p_ctx->id << ".");
     m_p_ctx->p_scheduler->start();
 
     const details::scheduler::handler_type handler = [p_ctx = m_p_ctx.get()]() -> void {
@@ -194,10 +188,10 @@ bool server::start()
 void server::stop()
 {
     if (m_is_stop.exchange(true)) {
-        RAFT_ROOT_LOG_WARN((*m_p_ctx), "Raft server " << m_p_ctx->id << " has been already stopped.");
+        RAFT_LOG_WARN((*m_p_ctx), "Raft server " << m_p_ctx->id << " has been already stopped.");
         return;
     }
-    RAFT_ROOT_LOG_INFO((*m_p_ctx), "Stopping raft server " << m_p_ctx->id << ".");
+    RAFT_LOG_INFO((*m_p_ctx), "Stopping raft server " << m_p_ctx->id << ".");
 
     m_p_ctx->p_scheduler->stop();
     details::timeout::election_cancel_task(*m_p_ctx);
