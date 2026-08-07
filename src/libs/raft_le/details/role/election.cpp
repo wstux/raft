@@ -52,7 +52,7 @@ void election_start(context& ctx)
 
     if (! ctx.role.candidate_state.is_prevote) {
         term_t term = ++ctx.term;
-        RAFT_LOG_TRACE(ctx, "Server " << ctx << " started election with local increased term " << ctx.term);
+        RAFT_LOG_INFO(ctx, "Server %llu(%s) started election with local increased term %u", ctx.id, ctx.role.str(), ctx.term);
         ctx.p_io->set_term(term);
         ctx.p_io->set_voted_for(ctx.id);
         ctx.role.voted_for = ctx.id;

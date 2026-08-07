@@ -63,14 +63,14 @@ bool got_vote(context& ctx, const server_id_t candidate_id, const vote_message& 
 
     // The node must be a full cluster participant (voter).
     if (! ctx.role.is_voter) {
-        RAFT_VOTE_LOG_DEBUG(ctx, "Voting. Server " << ctx << " is not voter. Doesn't cast his vote.");
+        RAFT_VOTE_LOG_DEBUG(ctx, "Voting. Server %llu(%s) is not voter. Doesn't cast his vote.", ctx.id, ctx.role.str());
         return false;
     }
 
     // Raft Section 5.2 & Figure 5.1 (RequestVote RPC):
     // The voted_for check is only important for real voting.
     if (! msg.is_prevote && ctx.role.voted_for != gk_invalid_id && ctx.role.voted_for != candidate_id) {
-        RAFT_VOTE_LOG_DEBUG(ctx, "Voting. Server " << ctx << " already gave vote for server " << ctx.role.voted_for << ".");
+        RAFT_VOTE_LOG_DEBUG(ctx, "Voting. Server %llu(%s) already gave vote for server %llu.", ctx.id, ctx.role.str(), ctx.role.voted_for);
         return false;
     }
 
@@ -78,7 +78,7 @@ bool got_vote(context& ctx, const server_id_t candidate_id, const vote_message& 
     // Pre-Vote requests must not modify the voted_for state or reset the
     // election timer, as they are speculative (preliminary).
     if (! msg.is_prevote) {
-        RAFT_VOTE_LOG_DEBUG(ctx, "Server " << ctx << " granted vote for server " << candidate_id << ".");
+        RAFT_VOTE_LOG_DEBUG(ctx, "Server %llu(%s) granted vote for server %llu.", ctx.id, ctx.role.str(), candidate_id);
 
         // Raft Paper, Figure 2 (State): voted_for in current term
         ctx.role.voted_for = candidate_id;
@@ -92,11 +92,11 @@ bool got_vote(context& ctx, const server_id_t candidate_id, const vote_message& 
 
 void handle_request(context& ctx, term_t term, server_id_t src_id, const vote_message& msg)
 {
-    RAFT_VOTE_LOG_DEBUG(ctx, "Handle " << (msg.is_prevote ? "prevote" : "vote")
-        << ". Request from server " << src_id << " to server " << ctx << ", current term " << ctx.term);
+    RAFT_VOTE_LOG_DEBUG(ctx, "Handle %s. Request from server %llu to server %llu(%s), current term %u",
+        (msg.is_prevote ? "prevote" : "vote"), src_id, ctx.id, ctx.role.str(), ctx.term);
     peer::ptr p_src_peer = peers::find(ctx, src_id);
     if (! p_src_peer) {
-        RAFT_VOTE_LOG_DEBUG(ctx, "Got vote message from removed server " << src_id);
+        RAFT_VOTE_LOG_DEBUG(ctx, "Got vote message from removed server %llu", src_id);
         return;
     }
 
@@ -127,8 +127,8 @@ void handle_request(context& ctx, term_t term, server_id_t src_id, const vote_me
     }
 
     if (ctx.term > term) {
-        RAFT_VOTE_LOG_DEBUG(ctx, (msg.is_prevote ? "Prevote" : "Vote") << " request. Server "
-            << ctx << ". Local term (" << ctx.term << ") is higher than source term (" << term << ").");
+        RAFT_VOTE_LOG_DEBUG(ctx, "%s request. Server %llu(%s). Local term (%u) is higher than source term (%u).",
+            (msg.is_prevote ? "Prevote" : "Vote"), ctx.id, ctx.role.str(), ctx.term, term);
         utils::wrap_send(ctx, p_src_peer, &peer::send_vote_response, cur_term, ctx.id, msg.is_prevote, false);
         return;
     }
@@ -138,17 +138,17 @@ void handle_request(context& ctx, term_t term, server_id_t src_id, const vote_me
     }
 
     const bool accept = got_vote(ctx, src_id, msg);
-    RAFT_VOTE_LOG_DEBUG(ctx, (msg.is_prevote ? "Prevote" : "Vote") << " request. Server " << ctx
-        << (accept ? "" : " not") << " supported candidate " << src_id << " at the "
-        << (msg.is_prevote ? "prevote" : "vote") << ".");
+    RAFT_VOTE_LOG_DEBUG(ctx, "%s request. Server %llu(%s)%s supported candidate %llu at the %s.",
+        (msg.is_prevote ? "Prevote" : "Vote"), ctx.id, ctx.role.str(), (accept ? "" : " not"),
+        src_id, (msg.is_prevote ? "prevote" : "vote"));
 
     utils::wrap_send(ctx, p_src_peer, &peer::send_vote_response, cur_term, ctx.id, msg.is_prevote, accept);
 }
 
 void handle_response(context& ctx, term_t term, server_id_t src_id, const vote_response_message& msg)
 {
-    RAFT_VOTE_LOG_DEBUG(ctx, "Handle " << (msg.is_prevote ? "prevote" : "vote")
-        << " response. Response from server " << src_id << ". " << ctx << ", current term " << ctx.term);
+    RAFT_VOTE_LOG_DEBUG(ctx, "Handle %s response. Response from server %llu to server %llu(%s), current term %u",
+        (msg.is_prevote ? "prevote" : "vote"), src_id, ctx.id, ctx.role.str(), ctx.term);
 
     // Raft Paper, Section 5.2: A candidate can only process responses as long
     // as it remains a candidate.
@@ -160,7 +160,7 @@ void handle_response(context& ctx, term_t term, server_id_t src_id, const vote_r
 
     peer::ptr p_src_peer = peers::find(ctx, src_id);
     if (! p_src_peer) {
-        RAFT_VOTE_LOG_DEBUG(ctx, "Got vote response message from removed server " << src_id);
+        RAFT_VOTE_LOG_DEBUG(ctx, "Got vote response message from removed server %llu", src_id);
         return;
     }
 
@@ -176,9 +176,9 @@ void handle_response(context& ctx, term_t term, server_id_t src_id, const vote_r
     // Raft Paper, Section 5.1: If the response comes from an older term, it
     // must be ignored immediately.
     if (ctx.term > term) {
-        RAFT_VOTE_LOG_DEBUG(ctx, (msg.is_prevote ? "Prevote" : "Vote") << " response. Response from server "
-            << src_id << " to server " << ctx << ". Local term (" << ctx.term
-            << ") is higher than source term (" << term << ").");
+        RAFT_VOTE_LOG_DEBUG(ctx, "%s response. Response from server %llu to server %llu(%s). "
+            "Local term (%u) is higher than source term (%u).",
+            (msg.is_prevote ? "Prevote" : "Vote"), src_id, ctx.id, ctx.role.str(), ctx.term, term);
         return;
     }
 
@@ -193,8 +193,8 @@ void handle_response(context& ctx, term_t term, server_id_t src_id, const vote_r
     if (ctx.role.candidate_state.is_prevote) {
         if (term > ctx.term + 1) {
             assert(! msg.accept);
-            RAFT_VOTE_LOG_DEBUG(ctx, "Prevote response. Server " << ctx << " has local term ("
-                << ctx.term << ") lass than source term (" << term << ").");
+            RAFT_VOTE_LOG_DEBUG(ctx, "Prevote response. Server %llu(%s) has local term (%u) lass than source term (%u).",
+                ctx.id, ctx.role.str(), ctx.term, term);
             role::update_term(ctx, term);
             return;
         }
@@ -204,8 +204,8 @@ void handle_response(context& ctx, term_t term, server_id_t src_id, const vote_r
         assert(ctx.term == term);
     }
 
-    RAFT_VOTE_LOG_DEBUG(ctx, (msg.is_prevote ? "Prevote" : "Vote") << " response. Server "
-        << ctx << (msg.accept ? " got" : " did not get") << " vote from server " << src_id << ".");
+    RAFT_VOTE_LOG_DEBUG(ctx, "%s response. Server %llu(%s) %s vote from server %llu.",
+        (msg.is_prevote ? "Prevote" : "Vote"), ctx.id, ctx.role.str(), (msg.accept ? "got" : "did not get"), src_id);
 
     if (msg.accept) {
         // Raft Paper, Section 5.2: Candidate receives a vote from a network node.
@@ -216,14 +216,16 @@ void handle_response(context& ctx, term_t term, server_id_t src_id, const vote_r
         // Check if a majority (quorum) has been reached: (N/2) + 1
         if (role::election_results(ctx)) {
             if (ctx.role.candidate_state.is_prevote) {
-                RAFT_VOTE_LOG_DEBUG(ctx, "Votes quorum reached. Prevote successful. " << ctx << ", current term " << ctx.term);
+                RAFT_VOTE_LOG_DEBUG(ctx, "Votes quorum reached. Prevote successful. Server %llu(%s), current term %u",
+                    ctx.id, ctx.role.str(), ctx.term);
                 // Raft Dissertation, Section 9.6: A successful Pre-Vote allows
                 // the candidate to officially increment the term and start the
                 // real election.
                 ctx.role.candidate_state.is_prevote = false;
                 role::election_start(ctx);
             } else {
-                RAFT_VOTE_LOG_DEBUG(ctx, "Votes quorum reached. Convert to leader. " << ctx << ", current term " << ctx.term);
+                RAFT_VOTE_LOG_DEBUG(ctx, "Votes quorum reached. Convert to leader. Server %llu(%s), current term %u",
+                    ctx.id, ctx.role.str(), ctx.term);
 
                 // Raft Paper, Section 5.2: A candidate wins the election if it
                 // receives votes from a majority of servers.
@@ -243,8 +245,8 @@ void request(context& ctx)
 {
     assert(ctx.role.is_candidate());
 
-    RAFT_VOTE_LOG_DEBUG(ctx, "Request " << (ctx.role.candidate_state.is_prevote ? "prevote" : "vote")
-        << ". " << ctx << ", current term " << ctx.term);
+    RAFT_VOTE_LOG_DEBUG(ctx, "Request %s. Server %llu(%s), current term %u",
+        (ctx.role.candidate_state.is_prevote ? "prevote" : "vote"), ctx.id, ctx.role.str(), ctx.term);
 
     // Raft Paper, Section 5.2: For a real vote: The server MUST increment its
     // current term (`ctx.term++`) before starting the election. For a pre-vote:

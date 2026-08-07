@@ -56,7 +56,7 @@ void handle_message(details::context& ctx, const details::message& msg)
         details::vote::handle_response(ctx, msg.term, msg.src_id, msg.vote_resp);
         break;
     default:
-        RAFT_LOG_WARN(ctx, "Unsupported message type " << msg.type);
+        RAFT_LOG_WARN(ctx, "Unsupported message type %d", msg.type);
         break;
     }
 }
@@ -157,7 +157,7 @@ bool server::reconfigure()
 bool server::start()
 {
     if (! m_is_stop.exchange(false)) {
-        RAFT_LOG_WARN((*m_p_ctx), "Raft server " << m_p_ctx->id << " has been already started.");
+        RAFT_LOG_WARN((*m_p_ctx), "Raft server %llu has been already started.", m_p_ctx->id);
         return false;
     }
 
@@ -171,7 +171,7 @@ bool server::start()
         return false;
     }
 
-    RAFT_LOG_INFO((*m_p_ctx), "Starting raft server " << m_p_ctx->id << ".");
+    RAFT_LOG_INFO((*m_p_ctx), "Starting raft server %llu.", m_p_ctx->id);
     m_p_ctx->p_scheduler->start();
 
     const details::scheduler::handler_type handler = [p_ctx = m_p_ctx.get()]() -> void {
@@ -188,10 +188,10 @@ bool server::start()
 void server::stop()
 {
     if (m_is_stop.exchange(true)) {
-        RAFT_LOG_WARN((*m_p_ctx), "Raft server " << m_p_ctx->id << " has been already stopped.");
+        RAFT_LOG_WARN((*m_p_ctx), "Raft server %llu has been already stopped.", m_p_ctx->id);
         return;
     }
-    RAFT_LOG_INFO((*m_p_ctx), "Stopping raft server " << m_p_ctx->id << ".");
+    RAFT_LOG_INFO((*m_p_ctx), "Stopping raft server %llu.", m_p_ctx->id);
 
     m_p_ctx->p_scheduler->stop();
     details::timeout::election_cancel_task(*m_p_ctx);

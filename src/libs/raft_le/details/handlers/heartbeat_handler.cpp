@@ -40,11 +40,12 @@ void handle_request(context& ctx, term_t term, server_id_t src_id, const heartbe
 {
     peer::ptr p_src_peer = peers::find(ctx, src_id);
     if (! p_src_peer) {
-        RAFT_HB_LOG_TRACE(ctx, "Server " << src_id << " does not exists");
+        RAFT_HB_LOG_TRACE(ctx, "Server %llu does not exists", src_id);
         return;
     }
 
-    RAFT_HB_LOG_TRACE(ctx, "Handle heartbeat. Request from server " << src_id << " to server " << ctx << ", current term " << ctx.term);
+    RAFT_HB_LOG_TRACE(ctx, "Handle heartbeat. Request from server %llu to server %llu(%s), current term %u",
+        src_id, ctx.id, ctx.role.str(), ctx.term);
 
     p_src_peer->update_last_response();
 
@@ -52,7 +53,7 @@ void handle_request(context& ctx, term_t term, server_id_t src_id, const heartbe
     role::update_term(ctx, term);
     // Raft Paper, Section 5.1: AppendEntries RPC: 1. Reply false if term < currentTerm
     if (ctx.term > term) {
-        RAFT_HB_LOG_DEBUG(ctx, "Handle heartbeat. Local term " << ctx.term << " is higher then request term " << term);
+        RAFT_HB_LOG_DEBUG(ctx, "Handle heartbeat. Local term %u is higher then request term %u", ctx.term, term);
         return utils::wrap_send(ctx, p_src_peer, &peer::send_heartbeat_response, ctx.term, ctx.id, false);
     }
 
@@ -80,7 +81,8 @@ void handle_request(context& ctx, term_t term, server_id_t src_id, const heartbe
 
 void handle_response(context& ctx, term_t term, server_id_t src_id, const heartbeat_response_message& /*msg*/)
 {
-    RAFT_HB_LOG_TRACE(ctx, "Handle heartbeat. Response from server " << src_id << " to server " << ctx << ", current term " << ctx.term);
+    RAFT_HB_LOG_TRACE(ctx, "Handle heartbeat. Response from server %llu to server %llu(%s), current term %u",
+        src_id, ctx.id, ctx.role.str(), ctx.term);
 
     // Stale response that arrived after we already lost leadership
     if (! ctx.role.is_leader()) {
@@ -89,7 +91,7 @@ void handle_response(context& ctx, term_t term, server_id_t src_id, const heartb
 
     // Outdated response from previous terms — ignore
     if (ctx.term > term) {
-        RAFT_HB_LOG_DEBUG(ctx, "Handle heartbeat response. Local term " << ctx.term << " is higher then request term " << term);
+        RAFT_HB_LOG_DEBUG(ctx, "Handle heartbeat response. Local term %u is higher then request term %u", ctx.term, term);
         return;
     }
 
@@ -106,7 +108,7 @@ void handle_response(context& ctx, term_t term, server_id_t src_id, const heartb
 
     peer::ptr p_src_peer = peers::find(ctx, src_id);
     if (! p_src_peer) {
-        RAFT_HB_LOG_DEBUG(ctx, "Got heartbeat response message from removed server " << src_id);
+        RAFT_HB_LOG_DEBUG(ctx, "Got heartbeat response message from removed server %llu", src_id);
         return;
     }
 
@@ -117,7 +119,7 @@ void handle_response(context& ctx, term_t term, server_id_t src_id, const heartb
 
 void request(context& ctx)
 {
-    RAFT_HB_LOG_TRACE(ctx, "Request heartbeat. " << ctx << ", current term " << ctx.term);
+    RAFT_HB_LOG_TRACE(ctx, "Request heartbeat. %llu(%s), current term %u", ctx.id, ctx.role.str(), ctx.term);
 
     assert(ctx.role.is_leader());
 
@@ -126,7 +128,7 @@ void request(context& ctx)
 
         assert(p->id() != ctx.id);
 
-        RAFT_HB_LOG_TRACE(ctx, "Sending heartbeat request to server " << p->id() << ". " << ctx << ", current term " << ctx.term);
+        RAFT_HB_LOG_TRACE(ctx, "Sending heartbeat request to server %llu. %llu(%s), current term %u", p->id(), ctx.id, ctx.role.str(), ctx.term);
         utils::wrap_send(ctx, p, &peer::send_heartbeat_request, ctx.term, ctx.id);
     }
 }

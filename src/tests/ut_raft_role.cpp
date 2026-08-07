@@ -35,6 +35,11 @@ public:
     virtual void TearDown() override {}
 };
 
+std::string to_string(const ::wstux::raft::le::details::role::state& role)
+{
+    return std::string(role.str());
+}
+
 } // <anonymous> namespace
 
 /**
@@ -51,7 +56,7 @@ TEST_F(raft_role, follower)
     EXPECT_TRUE(role.is_follower()) << "role: " << role.role;
     EXPECT_FALSE(role.is_candidate()) << "role: " << role.role;
     EXPECT_FALSE(role.is_leader()) << "role: " << role.role;
-    EXPECT_TRUE(role.str() == "follower") << "role: " << role.str();
+    EXPECT_TRUE(to_string(role) == "follower") << "role: " << role.str();
 }
 
 /**
@@ -68,7 +73,7 @@ TEST_F(raft_role, candidate)
     EXPECT_FALSE(role.is_follower()) << "role: " << role.role;
     EXPECT_TRUE(role.is_candidate()) << "role: " << role.role;
     EXPECT_FALSE(role.is_leader()) << "role: " << role.role;
-    EXPECT_TRUE(role.str() == "candidate") << "role: " << role.str();
+    EXPECT_TRUE(to_string(role) == "candidate") << "role: " << role.str();
 }
 
 /**
@@ -85,7 +90,7 @@ TEST_F(raft_role, leader)
     EXPECT_FALSE(role.is_follower()) << "role: " << role.role;
     EXPECT_FALSE(role.is_candidate()) << "role: " << role.role;
     EXPECT_TRUE(role.is_leader()) << "role: " << role.role;
-    EXPECT_TRUE(role.str() == "leader") << "role: " << role.str();
+    EXPECT_TRUE(to_string(role) == "leader") << "role: " << role.str();
 }
 
 /**
@@ -102,7 +107,7 @@ TEST_F(raft_role, undefined)
     EXPECT_FALSE(role.is_follower()) << "role: " << role.role;
     EXPECT_FALSE(role.is_candidate()) << "role: " << role.role;
     EXPECT_FALSE(role.is_leader()) << "role: " << role.role;
-    EXPECT_TRUE(role.str() == "undefined") << "role: " << role.str();
+    EXPECT_TRUE(to_string(role) == "undefined") << "role: " << role.str();
 }
 
 TEST_F(raft_role, has_leader)
