@@ -82,7 +82,7 @@ constexpr size_t gk_cluster_size = 7;
     {
         peers.reserve(ctx.peers.size());
         std::transform(ctx.peers.begin(), ctx.peers.end(), std::back_inserter(peers),
-            [](const raft::details::peer::map::value_type& p) -> raft::details::peer::ptr { return p.second; });
+            [](const raft::details::peer& p) -> raft::details::peer { return p; });
     }
     return peers;
 }
@@ -105,20 +105,20 @@ static void request_to_list(benchmark::State& state)
 
     for (auto _ : state) {
         raft::details::peer::list peers = to_list(*g_p_ctx);
-        for (const raft::details::peer::ptr& p : peers) {
-            bool is_voter = p->is_voter();
+        for (const raft::details::peer& p : peers) {
+            bool is_voter = p.is_voter();
             benchmark::DoNotOptimize(is_voter);
         }
     }
 }
 
-static void request_lock_map(benchmark::State& state)
+static void request_lock_list(benchmark::State& state)
 {
     namespace raft = ::wstux::raft::le;
 
     for (auto _ : state) {
-        for (const raft::details::peer::map::value_type& v : g_p_ctx->peers) {
-            bool is_voter = v.second->is_voter();
+        for (const raft::details::peer& p : g_p_ctx->peers) {
+            bool is_voter = p.is_voter();
             benchmark::DoNotOptimize(is_voter);
         }
     }
@@ -127,6 +127,6 @@ static void request_lock_map(benchmark::State& state)
 BENCHMARK(check_contact_quorum)->Threads(1)->Threads(2)->Threads(4)->Threads(8);
 
 BENCHMARK(request_to_list)->Threads(1)->Threads(2)->Threads(4)->Threads(8);
-BENCHMARK(request_lock_map)->Threads(1)->Threads(2)->Threads(4)->Threads(8);
+BENCHMARK(request_lock_list)->Threads(1)->Threads(2)->Threads(4)->Threads(8);
 
 BENCHMARK_MAIN();

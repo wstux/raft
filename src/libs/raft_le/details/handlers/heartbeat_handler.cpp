@@ -123,12 +123,10 @@ void request(context& ctx)
 
     assert(ctx.role.is_leader());
 
-    for (const peer::map::value_type& v : ctx.peers) {
-        const peer::list::value_type& p = v.second;
+    for (peer& p : ctx.peers) {
+        assert(p.id() != ctx.id);
 
-        assert(p->id() != ctx.id);
-
-        RAFT_HB_LOG_TRACE(ctx, "Sending heartbeat request to server %llu. %llu(%s), current term %u", p->id(), ctx.id, ctx.role.str(), ctx.term);
+        RAFT_HB_LOG_TRACE(ctx, "Sending heartbeat request to server %llu. %llu(%s), current term %u", p.id(), ctx.id, ctx.role.str(), ctx.term);
         utils::wrap_send(ctx, p, &peer::send_heartbeat_request, ctx.term, ctx.id);
     }
 }

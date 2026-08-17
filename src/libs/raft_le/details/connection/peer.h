@@ -26,7 +26,6 @@
 #define _LIBS_RAFT_LEADER_ELECTION_CONNECTION_PEER_H_
 
 #include <cstdint>
-#include <map>
 #include <memory>
 #include <shared_mutex>
 #include <vector>
@@ -41,9 +40,8 @@ namespace details {
 class peer final
 {
 public:
-    using ptr = std::shared_ptr<peer>;
-    using list = std::vector<ptr>;
-    using map = std::map<server_id_t, ptr>;
+    using ptr = peer*;
+    using list = std::vector<peer>;
 
 public:
     peer(const server_config& cfg, const io::ptr& p_io, size_t hb_expired_interval_ms);

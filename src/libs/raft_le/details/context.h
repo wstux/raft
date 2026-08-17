@@ -64,7 +64,7 @@ struct context final : public std::enable_shared_from_this<context>
 
     term_t term;
 
-    peer::map peers;
+    peer::list peers;
 
     scheduler::ptr p_scheduler;
 
@@ -101,15 +101,11 @@ namespace peers {
  */
 bool check_contact_quorum(context& ctx);
 
-bool emplace(context& ctx, const server_config& cfg);
-
 peer::ptr find(context& ctx, server_id_t id);
 
 size_t quorum_for_election(context& ctx);
 
-void swap(context& ctx, peer::map& peers);
-
-void update(context& ctx, const cluster_config& cluster_cfg);
+bool update(context& ctx, const cluster_config& cluster_cfg);
 
 size_t voting_members_count(context& ctx);
 
@@ -129,7 +125,16 @@ template<typename TFn, typename... TArgs>
 inline void wrap_send(context& ctx, peer::ptr p_peer, const TFn& func, TArgs&&... args)
 {
     const scheduler::handler_type handler = [p_peer, func, args...]() -> void {
-        (p_peer.get()->*func)(std::move(args)...);
+        (p_peer->*func)(std::move(args)...);
+    };
+    ctx.p_scheduler->execute_async(handler);
+}
+
+template<typename TFn, typename... TArgs>
+inline void wrap_send(context& ctx, peer& p, const TFn& func, TArgs&&... args)
+{
+    const scheduler::handler_type handler = [&p, func, args...]() -> void {
+        (p.*func)(std::move(args)...);
     };
     ctx.p_scheduler->execute_async(handler);
 }
