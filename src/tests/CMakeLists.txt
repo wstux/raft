@@ -21,15 +21,6 @@ TestTarget(ut_raft_handlers
         googletest
 )
 
-TestTarget(ut_raft_logger_channels
-    SOURCES
-        ut_raft_logger_channels.cpp
-    LIBRARIES
-        raft_le
-    DEPENDS
-        googletest
-)
-
 TestTarget(ut_raft_peers
     SOURCES
         ut_raft_peers.cpp

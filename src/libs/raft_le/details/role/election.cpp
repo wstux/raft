@@ -24,7 +24,7 @@
 
 #include <cassert>
 
-#include "raft_le/details/logging.h"
+#include "raft_le/details/logger.h"
 #include "raft_le/details/handlers/timeout_handler.h"
 #include "raft_le/details/handlers/vote_handler.h"
 #include "raft_le/details/role/convert.h"
@@ -52,7 +52,7 @@ void election_start(context& ctx)
 
     if (! ctx.role.candidate_state.is_prevote) {
         term_t term = ++ctx.term;
-        RAFT_ROOT_LOG_TRACE(ctx, "Server " << ctx << " started election with local increased term " << ctx.term);
+        RAFT_LOG_INFO(ctx, "Server %llu(%s) started election with local increased term %u", ctx.id, ctx.role.str(), ctx.term);
         ctx.p_io->set_term(term);
         ctx.p_io->set_voted_for(ctx.id);
         ctx.role.voted_for = ctx.id;

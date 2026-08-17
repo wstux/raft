@@ -57,7 +57,7 @@ bool load_peers(context& ctx, const cluster_config& cluster_cfg)
 ////////////////////////////////////////////////////////////////////////////////
 // class context
 
-context::context(server_id_t id, const io::ptr p_io, const ilogger_factory::ptr p_factory, const is_stop_fn_t& is_stop)
+context::context(server_id_t id, const io::ptr p_io, logging_handler::ptr p_handler, const is_stop_fn_t& is_stop)
     : id(id)
     , is_stop_fn(is_stop)
     , is_async_io(false)
@@ -67,7 +67,7 @@ context::context(server_id_t id, const io::ptr p_io, const ilogger_factory::ptr 
     , heartbeat_probes_count(10)
     , rand_engine(std::chrono::system_clock::now().time_since_epoch().count() * id)
     , election_distribution(250, 500)
-    , l(p_factory)
+    , raft_logger(std::move(p_handler))
 {}
 
 std::ostream& operator<<(std::ostream& os, const context& ctx)

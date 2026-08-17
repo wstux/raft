@@ -30,6 +30,7 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <vector>
 
@@ -124,45 +125,31 @@ public:
     virtual server_id_t voted_for() const = 0;
 };
 
-struct logger
+struct logging_handler
 {
-    using can_log_fn_t = std::function<bool()>;
-    using log_fn_t     = std::function<int(const std::string&)>;
+    using ptr = std::unique_ptr<logging_handler>;
 
-    logger()
-        : can_error_log_fn([]() -> bool { return false; })
-        , log_error_fn([](const std::string&) -> int { return 0; })
-        , can_warning_log_fn([]() -> bool { return false; })
-        , log_warning_fn([](const std::string&) -> int { return 0; })
-        , can_info_log_fn([]() -> bool { return false; })
-        , log_info_fn([](const std::string&) -> int { return 0; })
-        , can_debug_log_fn([]() -> bool { return false; })
-        , log_debug_fn([](const std::string&) -> int { return 0; })
-        , can_trace_log_fn([]() -> bool { return false; })
-        , log_trace_fn([](const std::string&) -> int { return 0; })
-    {}
+    enum severity_level
+    {
+        emerg   = 0, ///< System is unusable
+        fatal   = 1, ///< Critical error
+        crit    = 2, ///< Critical condition
+        error   = 3, ///< Runtime error
+        warning = 4, ///< Warning
+        notice  = 5, ///< Important notification
+        info    = 6, ///< Informational message
+        debug   = 7, ///< Debugging message
+        trace   = 8  ///< Execution trace
+    };
 
-    can_log_fn_t can_error_log_fn;
-    log_fn_t log_error_fn;
-    can_log_fn_t can_warning_log_fn;
-    log_fn_t log_warning_fn;
-    can_log_fn_t can_info_log_fn;
-    log_fn_t log_info_fn;
-    can_log_fn_t can_debug_log_fn;
-    log_fn_t log_debug_fn;
-    can_log_fn_t can_trace_log_fn;
-    log_fn_t log_trace_fn;
-};
+    using can_log_fn_t = bool (*)(void* p_this, severity_level lvl);
+    using log_fn_t     = void (*)(void* p_this, severity_level lvl, const char* p_msg);
 
-class ilogger_factory
-{
-public:
-    using ptr = std::shared_ptr<ilogger_factory>;
+    virtual ~logging_handler() {}
 
-public:
-    virtual ~ilogger_factory() {}
-
-    virtual logger get_logger(const std::string& ch) = 0;
+    void* p_this = nullptr;
+    can_log_fn_t can_log_fn = nullptr;
+    log_fn_t log_fn = nullptr;
 };
 
 } // namespace le

@@ -45,7 +45,7 @@ public:
         tests::empty_io* p_raw_io = m_p_io.get();
         std::function<bool()> is_stop_fn = [p_raw_io]()->bool { return p_raw_io->is_stop; };
 
-        m_p_srv = std::make_shared<raft::server>(1, m_p_io, std::make_shared<tests::logger_factory>(), is_stop_fn);
+        m_p_srv = std::make_shared<raft::server>(1, m_p_io, raft::logging_handler::ptr(), is_stop_fn);
     }
 
     virtual void TearDown() override {}
@@ -70,12 +70,6 @@ TEST_F(raft_server, failed_load)
 
     EXPECT_TRUE(m_p_srv->init());
     EXPECT_FALSE(m_p_srv->start());
-}
-
-TEST_F(raft_server, logging_channels)
-{
-    const std::vector<std::string> ethalon = {"Raft::Root", "Raft::Heartbeat", "Raft::Timeout", "Raft::Vote"};
-    EXPECT_TRUE(m_p_srv->logging_channels() == ethalon);
 }
 
 TEST_F(raft_server, double_start)

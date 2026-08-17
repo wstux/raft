@@ -24,7 +24,7 @@
 
 #include <cassert>
 
-#include "raft_le/details/logging.h"
+#include "raft_le/details/logger.h"
 #include "raft_le/details/handlers/heartbeat_handler.h"
 #include "raft_le/details/handlers/timeout_handler.h"
 #include "raft_le/details/handlers/vote_handler.h"
@@ -47,7 +47,7 @@ size_t election_timeout_ms(context& ctx)
 
 void election_cancel_task(context& ctx)
 {
-    RAFT_TO_LOG_DEBUG(ctx, "Election task cancel. " << ctx << ", current term " << ctx.term);
+    RAFT_TO_LOG_DEBUG(ctx, "Election task cancel. %llu(%s), current term %u", ctx.id, ctx.role.str(), ctx.term);
     ctx.p_scheduler->cancel(ctx.election_task);
 }
 
@@ -61,11 +61,11 @@ void election_timeout_task(context& ctx)
     assert(ctx.role.is_voter);
 
     if (ctx.is_stop_fn()) {
-        RAFT_TO_LOG_DEBUG(ctx, "Election task timeout. Server " << ctx << " has been stopped.");
+        RAFT_TO_LOG_DEBUG(ctx, "Election task timeout. Server %llu(%s) has been stopped.", ctx.id, ctx.role.str());
         return;
     }
 
-    RAFT_TO_LOG_TRACE(ctx, "Election task timeout. " << ctx << ", current term " << ctx.term);
+    RAFT_TO_LOG_TRACE(ctx, "Election task timeout. %llu(%s), current term %u", ctx.id, ctx.role.str(), ctx.term);
 
     if (ctx.role.is_leader()) {
         // Raft Paper, Section 6 (Leader lease): "A leader steps down if it does
@@ -92,7 +92,7 @@ void election_timeout_task(context& ctx)
 
 void heartbeat_cancel_task(context& ctx)
 {
-    RAFT_TO_LOG_DEBUG(ctx, "Heartbeat task cancel. " << ctx << ", current term " << ctx.term);
+    RAFT_TO_LOG_DEBUG(ctx, "Heartbeat task cancel. %llu(%s), current term %u", ctx.id, ctx.role.str(), ctx.term);
     ctx.p_scheduler->cancel(ctx.heartbeat_task);
 }
 

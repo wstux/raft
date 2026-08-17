@@ -110,13 +110,12 @@ private:
     std::unique_ptr<::grpc::Server> m_p_rpc_server;
     std::unique_ptr<std::thread> m_thread;
 
-    raft::le::ilogger_factory::ptr m_p_logger_factory;
     details::io::ptr m_p_io;
     raft::le::server::ptr m_p_server;
 
     std::atomic_uint64_t m_counter;
 
-    raft::le::logger m_logger;
+    details::logging_handler m_logger;
 };
 
 } // namespace counter

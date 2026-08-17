@@ -30,8 +30,6 @@
 
 #include "raft_le/io.h"
 
-#include "counter/details/logging.h"
-
 namespace wstux {
 namespace examples {
 namespace counter {
@@ -48,7 +46,7 @@ public:
 
     raft::le::server_id_t server_id() const { return m_server_id; }
 
-    details::log_level level() const { return m_level; }
+    raft::le::logging_handler::severity_level level() const { return m_level; }
 
     bool load(int argc, char** argv);
 
@@ -61,7 +59,7 @@ private:
     std::string m_endpoint;
 
     raft::le::server_id_t m_server_id = raft::le::gk_invalid_id;
-    details::log_level m_level = details::log_level::info;
+    raft::le::logging_handler::severity_level m_level = raft::le::logging_handler::severity_level::info;
     raft::le::cluster_config m_cluster_config;
 
     std::string m_cfg_file;

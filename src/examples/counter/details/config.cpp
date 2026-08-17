@@ -69,15 +69,15 @@ bool config::parse_args(int argc, char** argv)
             if (i + 1 < argc) {
                 std::string lvl = argv[++i];
                 if (lvl == "trace") {
-                    m_level = details::log_level::trace;
+                    m_level = raft::le::logging_handler::severity_level::trace;
                 } else if (lvl == "debug") {
-                    m_level = details::log_level::debug;
+                    m_level = raft::le::logging_handler::severity_level::debug;
                 } else if (lvl == "info") {
-                    m_level = details::log_level::info;
+                    m_level = raft::le::logging_handler::severity_level::info;
                 } else if (lvl == "warning") {
-                    m_level = details::log_level::warning;
+                    m_level = raft::le::logging_handler::severity_level::warning;
                 } else if (lvl == "error") {
-                    m_level = details::log_level::error;
+                    m_level = raft::le::logging_handler::severity_level::error;
                 }
             }
         }

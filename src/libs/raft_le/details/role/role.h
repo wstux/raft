@@ -67,16 +67,21 @@ struct state final
 
     inline bool has_leader() const { return is_follower() && follower_state.leader_id != gk_invalid_id; }
 
-    std::string str() const
+    const char* str() const
     {
+        static const char* p_follower_str = "follower";
+        static const char* p_candidate_str = "candidate";
+        static const char* p_leader_str = "leader";
+        static const char* p_undefined_str = "undefined";
+
         if (is_follower()) {
-            return "follower";
+            return p_follower_str;
         } else if (is_candidate()) {
-            return "candidate";
+            return p_candidate_str;
         } else if (is_leader()) {
-            return "leader";
+            return p_leader_str;
         }
-        return "undefined";
+        return p_undefined_str;
     }
 
     std::atomic<role_type> role = {role_type::undefined};

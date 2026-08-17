@@ -45,12 +45,12 @@ public:
     using ptr = std::shared_ptr<io>;
 
 public:
-    io(const raft::le::cluster_config& p_cluster_cfg, raft::le::ilogger_factory::ptr p_factory)
+    io(const raft::le::cluster_config& p_cluster_cfg, raft::le::logging_handler::severity_level lvl)
         : m_cluster_cfg(p_cluster_cfg)
         , m_term(0)
         , m_voted_for(raft::le::gk_invalid_id)
-        , m_p_factory(p_factory)
-        , m_logger(p_factory->get_logger("Counter::Io"))
+        , m_level(lvl)
+        , m_logger(m_level)
     {
         m_cfg.scheduler_threads_count = 4;
     }
@@ -67,7 +67,7 @@ public:
 
         std::map<raft::le::server_id_t, client::ptr>::iterator it = m_clients.find(id);
         if (it == m_clients.cend()) {
-            p_client = std::make_shared<client>(endpoint, m_p_factory);
+            p_client = std::make_shared<client>(endpoint, m_level);
             m_clients.emplace(id, p_client);
         } else {
             p_client = it->second;
@@ -105,8 +105,8 @@ private:
 
     mutable std::map<raft::le::server_id_t, client::ptr> m_clients;
 
-    raft::le::ilogger_factory::ptr m_p_factory;
-    raft::le::logger m_logger;
+    raft::le::logging_handler::severity_level m_level;
+    logging_handler m_logger;
 };
 
 } // namespace details

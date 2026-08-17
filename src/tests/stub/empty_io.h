@@ -55,12 +55,6 @@ public:
     buffer_type buffer;
 };
 
-class logger_factory : public ilogger_factory
-{
-public:
-    virtual logger get_logger(const std::string&) override { return logger(); }
-};
-
 class empty_io final : public io
 {
 public:

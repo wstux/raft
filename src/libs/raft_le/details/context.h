@@ -36,7 +36,7 @@
 #include <type_traits>
 
 #include "raft_le/io.h"
-#include "raft_le/details/logger_channels.h"
+#include "raft_le/details/logger.h"
 #include "raft_le/details/scheduler.h"
 #include "raft_le/details/connection/peer.h"
 #include "raft_le/details/role/role.h"
@@ -50,7 +50,7 @@ struct context final : public std::enable_shared_from_this<context>
 {
     using ptr = std::unique_ptr<context>;
 
-    context(server_id_t id, const io::ptr p_io, const ilogger_factory::ptr p_factory, const is_stop_fn_t& is_stop);
+    context(server_id_t id, const io::ptr p_io, logging_handler::ptr p_handler, const is_stop_fn_t& is_stop);
 
     const server_id_t id;
     const is_stop_fn_t is_stop_fn;
@@ -77,7 +77,7 @@ struct context final : public std::enable_shared_from_this<context>
     std::uniform_int_distribution<size_t> election_distribution;
     scheduler::task_type election_task;
 
-    loggers l;
+    logger raft_logger;
 };
 
 std::ostream& operator<<(std::ostream& os, const context& ctx);
