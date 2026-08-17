@@ -83,17 +83,6 @@ TEST_F(raft_peers, probe_expired)
     EXPECT_TRUE(peer.is_probe_expired());
 }
 
-TEST_F(raft_peers, emplace)
-{
-    details::context& ctx = init();
-
-    raft::server_config self_cfg(1, "1", true);
-    EXPECT_FALSE(details::peers::emplace(ctx, self_cfg));
-
-    raft::server_config new_cfg(2, "2", true);
-    EXPECT_TRUE(details::peers::emplace(ctx, new_cfg));
-}
-
 TEST_F(raft_peers, find)
 {
     details::context& ctx = init(2);
@@ -145,8 +134,8 @@ TEST_F(raft_peers, check_contact_quorum)
     details::role::become_follower(ctx);
     details::role::become_candidate(ctx);
     details::role::become_leader(ctx);
-    for (details::peer::map::value_type& v : ctx.peers) {
-        v.second->mark_recent_recv();
+    for (details::peer& p : ctx.peers) {
+        p.mark_recent_recv();
     }
 
     EXPECT_TRUE(details::peers::check_contact_quorum(ctx));
@@ -158,7 +147,7 @@ TEST_F(raft_peers, failed_check_contact_quorum)
     details::role::become_follower(ctx);
     details::role::become_candidate(ctx);
     details::role::become_leader(ctx);
-    ctx.peers.at(2)->mark_recent_recv();
+    details::peers::find(ctx, 2)->mark_recent_recv();
 
     EXPECT_FALSE(details::peers::check_contact_quorum(ctx));
 }

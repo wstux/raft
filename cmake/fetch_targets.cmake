@@ -132,6 +132,7 @@ function(FetchTarget EXT_TARGET_NAME)
             SOURCE_DIR      "${_src_dir}"
             BINARY_DIR      "${_bin_dir}"
             SUBBUILD_DIR    "${_subbuild_dir}"
+            UPDATE_DISCONNECTED ON
             OVERRIDE_FIND_PACKAGE
             EXCLUDE_FROM_ALL
         )

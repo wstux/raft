@@ -266,9 +266,9 @@ void request(context& ctx)
 
     const bool is_prevote = ctx.role.candidate_state.is_prevote;
 
-    for (const peer::map::value_type& v : ctx.peers) {
-        if (v.second->is_voter()) {
-            utils::wrap_send(ctx, v.second, &peer::send_vote_request, term, ctx.id, is_prevote);
+    for (peer& p : ctx.peers) {
+        if (p.is_voter()) {
+            utils::wrap_send(ctx, p, &peer::send_vote_request, term, ctx.id, is_prevote);
         }
     }
 }

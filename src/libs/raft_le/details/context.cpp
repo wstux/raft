@@ -35,21 +35,40 @@ namespace le {
 namespace details {
 namespace {
 
-bool load_peers(context& ctx, const cluster_config& cluster_cfg)
+peer::ptr find_peer(peer::list& peers, server_id_t id)
 {
-    bool is_loaded = false;
+    peer::list::iterator it = std::find_if(peers.begin(), peers.end(), [id](const peer& p) {
+        return p.id() == id;
+    });
+    if (it != peers.cend()) {
+        return &(*it);
+    }
+    return peer::ptr();
+}
+
+bool load_peers(context& ctx, peer::list& peers, const cluster_config& cluster_cfg)
+{
+    const size_t hb_expired_interval_ms = ctx.heartbeat_interval_ms * ctx.heartbeat_probes_count;
+
+    const server_config* p_cur_cfg = nullptr;
+    peers.reserve(cluster_cfg.servers.size() - 1);
     for (const server_config& cfg : cluster_cfg.servers) {
         if (ctx.id == cfg.id) {
-            is_loaded = true;
+            p_cur_cfg = &cfg;
             ctx.config = cfg;
             ctx.role.is_voter = cfg.is_voter;
-        } else if (peers::find(ctx, cfg.id).get() == nullptr) {
-            peers::emplace(ctx, cfg);
+        } else if (find_peer(peers, cfg.id) == nullptr) {
+            peers.emplace_back(cfg, ctx.p_io, hb_expired_interval_ms);
         } else {
             return false;
         }
     }
-    return is_loaded;
+    if (p_cur_cfg == nullptr) {
+        return false;
+    }
+    ctx.config = *p_cur_cfg;
+    ctx.role.is_voter = ctx.config.is_voter;
+    return true;
 }
 
 } // <anonymous> namespace
@@ -84,35 +103,18 @@ bool check_contact_quorum(context& ctx)
 
     size_t contacts = 1;
     size_t voting_count = 1;
-    for (const peer::map::value_type& v : ctx.peers) {
-        const bool recent_recv = v.second->reset_recent_recv();
-        contacts += (v.second->is_voter() && recent_recv) ? 1 : 0;
-        voting_count += (v.second->is_voter()) ? 1 : 0;
+    for (peer& p : ctx.peers) {
+        const bool recent_recv = p.reset_recent_recv();
+        contacts += (p.is_voter() && recent_recv) ? 1 : 0;
+        voting_count += (p.is_voter()) ? 1 : 0;
     }
     const size_t quorum_for_election_size = (voting_count / 2);
     return contacts > quorum_for_election_size;
 }
 
-bool emplace(context& ctx, const server_config& cfg)
-{
-    if (ctx.id == cfg.id) {
-        return false;
-    }
-
-    const size_t hb_expired_interval_ms = ctx.heartbeat_interval_ms * ctx.heartbeat_probes_count;
-    peer::ptr p_peer = std::make_shared<peer>(cfg, ctx.p_io, hb_expired_interval_ms);
-
-    ctx.peers.emplace(cfg.id, p_peer);
-    return true;
-}
-
 peer::ptr find(context& ctx, server_id_t id)
 {
-    peer::map::const_iterator it = ctx.peers.find(id);
-    if (it != ctx.peers.cend()) {
-        return it->second;
-    }
-    return peer::ptr();
+    return find_peer(ctx.peers, id);
 }
 
 size_t quorum_for_election(context& ctx)
@@ -121,42 +123,23 @@ size_t quorum_for_election(context& ctx)
     return (members_count / 2);
 }
 
-void swap(context& ctx, peer::map& peers)
+bool update(context& ctx, const cluster_config& cluster_cfg)
 {
-    ctx.peers.swap(peers);
-}
-
-void update(context& ctx, const cluster_config& cluster_cfg)
-{
-    const size_t hb_expired_interval_ms = ctx.heartbeat_interval_ms * ctx.heartbeat_probes_count;
-
-    peer::map peers;
-    for (const server_config& cfg : cluster_cfg.servers) {
-        if (ctx.id == cfg.id) {
-            continue;
-        }
-        peer::ptr p_peer = find(ctx, cfg.id);
-        if (! p_peer) {
-            p_peer = std::make_shared<peer>(cfg, ctx.p_io, hb_expired_interval_ms);
-        } else if (p_peer->config().endpoint != cfg.endpoint || p_peer->config().id != cfg.id || p_peer->config().is_voter != cfg.is_voter) {
-            p_peer = std::make_shared<peer>(cfg, ctx.p_io, hb_expired_interval_ms);
-        } else {
-            p_peer->update(hb_expired_interval_ms);
-        }
-        peers.emplace(cfg.id, p_peer);
+    peer::list peers;
+    if (! load_peers(ctx, peers, cluster_cfg)) {
+        return false;
     }
 
-    swap(ctx, peers);
+    ctx.peers.swap(peers);
+    return true;
 }
 
 size_t voting_members_count(context& ctx)
 {
-    using peer_value = peer::map::value_type;
-
     assert(ctx.role.is_voter);
 
     return 1 + std::count_if(ctx.peers.cbegin(), ctx.peers.cend(),
-        [](const peer_value& v) -> bool { return v.second->is_voter(); });
+        [](const peer& p) -> bool { return p.is_voter(); });
 }
 
 } // namespace peers
@@ -208,7 +191,7 @@ bool load(context& ctx)
     ctx.role.voted_for = p_io->voted_for();
     if (ctx.peers.empty()) {
         const cluster_config cluster_cfg = p_io->bootstrap();
-        if (! load_peers(ctx, cluster_cfg)) {
+        if (! load_peers(ctx, ctx.peers, cluster_cfg)) {
             return false;
         }
     }

@@ -26,8 +26,6 @@
 #define _LIBS_RAFT_LEADER_ELECTION_CONNECTION_PEER_H_
 
 #include <cstdint>
-#include <atomic>
-#include <map>
 #include <memory>
 #include <shared_mutex>
 #include <vector>
@@ -42,9 +40,8 @@ namespace details {
 class peer final
 {
 public:
-    using ptr = std::shared_ptr<peer>;
-    using list = std::vector<ptr>;
-    using map = std::map<server_id_t, ptr>;
+    using ptr = peer*;
+    using list = std::vector<peer>;
 
 public:
     peer(const server_config& cfg, const io::ptr& p_io, size_t hb_expired_interval_ms);
@@ -63,7 +60,12 @@ public:
 
     bool recent_recv() const { return m_recent_recv; }
 
-    bool reset_recent_recv() { return m_recent_recv.exchange(false); }
+    bool reset_recent_recv()
+    {
+        const bool recent_recv = m_recent_recv;
+        m_recent_recv = false;
+        return recent_recv;
+    }
 
     void send_heartbeat_request(uint64_t term, int32_t src_id);
 
@@ -82,8 +84,8 @@ private:
     size_t m_heartbeat_expired_interval_ms;
     iclient::ptr m_p_client;
 
-    std::atomic_size_t m_last_response_ms;
-    std::atomic_bool m_recent_recv;
+    size_t m_last_response_ms;
+    bool m_recent_recv;
 };
 
 } // namespace details

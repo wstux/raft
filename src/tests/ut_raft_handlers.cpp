@@ -130,7 +130,7 @@ TEST_F(raft_heartbeat_handler, handle_response_not_leader)
     details::context& ctx = init(2);
     ctx.term = 1;
     ASSERT_TRUE(ctx.peers.size() == 1) << ctx.peers.size();
-    details::peer::ptr p_peer = ctx.peers.at(2);
+    details::peer::ptr p_peer = details::peers::find(ctx, 2);
     ASSERT_FALSE(p_peer->recent_recv());
 
     details::role::become_follower(ctx);
@@ -147,7 +147,7 @@ TEST_F(raft_heartbeat_handler, handle_response_local_higher_term)
     details::context& ctx = init(2);
     ctx.term = 5;
     ASSERT_TRUE(ctx.peers.size() == 1) << ctx.peers.size();
-    details::peer::ptr p_peer = ctx.peers.at(2);
+    details::peer::ptr p_peer = details::peers::find(ctx, 2);
     ASSERT_FALSE(p_peer->recent_recv());
 
     details::role::become_follower(ctx);
@@ -166,7 +166,7 @@ TEST_F(raft_heartbeat_handler, handle_response_src_higher_term)
     details::context& ctx = init(2);
     ctx.term = 1;
     ASSERT_TRUE(ctx.peers.size() == 1) << ctx.peers.size();
-    details::peer::ptr p_peer = ctx.peers.at(2);
+    details::peer::ptr p_peer = details::peers::find(ctx, 2);
     ASSERT_FALSE(p_peer->recent_recv());
 
     details::role::become_follower(ctx);
@@ -187,7 +187,7 @@ TEST_F(raft_heartbeat_handler, handle_response_invalid_peer)
     details::context& ctx = init(2);
     ctx.term = 1;
     ASSERT_TRUE(ctx.peers.size() == 1) << ctx.peers.size();
-    details::peer::ptr p_peer = ctx.peers.at(2);
+    details::peer::ptr p_peer = details::peers::find(ctx, 2);
     ASSERT_FALSE(p_peer->recent_recv());
 
     details::role::become_follower(ctx);
