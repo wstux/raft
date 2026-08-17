@@ -25,7 +25,6 @@
 #ifndef _LIBS_RAFT_LEADER_ELECTION_CONTEXT_H_
 #define _LIBS_RAFT_LEADER_ELECTION_CONTEXT_H_
 
-#include <atomic>
 #include <functional>
 #include <iostream>
 #include <memory>

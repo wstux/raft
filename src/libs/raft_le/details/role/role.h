@@ -26,7 +26,6 @@
 #define _LIBS_RAFT_LEADER_ELECTION_ROLE_ROLE_H_
 
 #include <cstdint>
-#include <atomic>
 
 #include "raft_le/io.h"
 
@@ -84,7 +83,7 @@ struct state final
         return p_undefined_str;
     }
 
-    std::atomic<role_type> role = {role_type::undefined};
+    role_type role = role_type::undefined;
 
     union {
         follower_role  follower_state;

@@ -26,7 +26,6 @@
 #define _LIBS_RAFT_LEADER_ELECTION_CONNECTION_PEER_H_
 
 #include <cstdint>
-#include <atomic>
 #include <map>
 #include <memory>
 #include <shared_mutex>
@@ -63,7 +62,12 @@ public:
 
     bool recent_recv() const { return m_recent_recv; }
 
-    bool reset_recent_recv() { return m_recent_recv.exchange(false); }
+    bool reset_recent_recv()
+    {
+        const bool recent_recv = m_recent_recv;
+        m_recent_recv = false;
+        return recent_recv;
+    }
 
     void send_heartbeat_request(uint64_t term, int32_t src_id);
 
@@ -82,8 +86,8 @@ private:
     size_t m_heartbeat_expired_interval_ms;
     iclient::ptr m_p_client;
 
-    std::atomic_size_t m_last_response_ms;
-    std::atomic_bool m_recent_recv;
+    size_t m_last_response_ms;
+    bool m_recent_recv;
 };
 
 } // namespace details
