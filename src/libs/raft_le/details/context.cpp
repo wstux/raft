@@ -24,7 +24,6 @@
 
 #include <cassert>
 #include <algorithm>
-#include <chrono>
 #include <mutex>
 
 #include "raft_le/details/context.h"
@@ -33,43 +32,6 @@ namespace wstux {
 namespace raft {
 namespace le {
 namespace details {
-namespace {
-
-peer::ptr find_peer(peer::list& peers, server_id_t id)
-{
-    peer::list::iterator it = std::find_if(peers.begin(), peers.end(), [id](const peer& p) {
-        return p.id() == id;
-    });
-    if (it != peers.cend()) {
-        return &(*it);
-    }
-    return peer::ptr();
-}
-
-bool load_peers(context& ctx, peer::list& peers, const cluster_config& cluster_cfg)
-{
-    const server_config* p_cur_cfg = nullptr;
-    peers.reserve(cluster_cfg.servers.size() - 1);
-    for (const server_config& cfg : cluster_cfg.servers) {
-        if (ctx.id == cfg.id) {
-            p_cur_cfg = &cfg;
-            ctx.config = cfg;
-            ctx.role.is_voter = cfg.is_voter;
-        } else if (find_peer(peers, cfg.id) == nullptr) {
-            peers.emplace_back(cfg);
-        } else {
-            return false;
-        }
-    }
-    if (p_cur_cfg == nullptr) {
-        return false;
-    }
-    ctx.config = *p_cur_cfg;
-    ctx.role.is_voter = ctx.config.is_voter;
-    return true;
-}
-
-} // <anonymous> namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 // class context
@@ -103,8 +65,8 @@ bool check_contact_quorum(context& ctx)
     size_t voting_count = 1;
     for (peer& p : ctx.peers) {
         const bool recent_recv = p.reset_recent_recv();
-        contacts += (p.is_voter() && recent_recv) ? 1 : 0;
-        voting_count += (p.is_voter()) ? 1 : 0;
+        contacts += (p.is_voter && recent_recv) ? 1 : 0;
+        voting_count += (p.is_voter) ? 1 : 0;
     }
     const size_t quorum_for_election_size = (voting_count / 2);
     return contacts > quorum_for_election_size;
@@ -112,7 +74,11 @@ bool check_contact_quorum(context& ctx)
 
 peer::ptr find(context& ctx, server_id_t id)
 {
-    return find_peer(ctx.peers, id);
+    peer::list::iterator it = std::find_if(ctx.peers.begin(), ctx.peers.end(), [id](const peer& p) { return p.id == id; });
+    if (it != ctx.peers.cend()) {
+        return &(*it);
+    }
+    return peer::ptr();
 }
 
 size_t quorum_for_election(context& ctx)
@@ -121,44 +87,36 @@ size_t quorum_for_election(context& ctx)
     return (members_count / 2);
 }
 
-bool update(context& ctx, const cluster_config& cluster_cfg)
+void update(context& ctx, const cluster_config& cluster_cfg)
 {
-    peer::list peers;
-    if (! load_peers(ctx, peers, cluster_cfg)) {
-        return false;
-    }
+    ctx.peers.clear();
+    assert(ctx.peers.capacity() > 31);
 
-    ctx.peers.swap(peers);
-    return true;
+    for (const server_config& cfg : cluster_cfg.servers) {
+        if (ctx.id != cfg.id) {
+            assert(peers::find(ctx, cfg.id) == nullptr);
+            ctx.peers.emplace_back(cfg);
+        } else {
+            ctx.config = cfg;
+            ctx.role.is_voter = cfg.is_voter;
+        }
+    }
 }
 
 size_t voting_members_count(context& ctx)
 {
     assert(ctx.role.is_voter);
-
     return 1 + std::count_if(ctx.peers.cbegin(), ctx.peers.cend(),
-        [](const peer& p) -> bool { return p.is_voter(); });
+        [](const peer& p) -> bool { return p.is_voter; });
 }
 
 } // namespace peers
 
 namespace utils {
 
-size_t current_time_ms()
+bool init(context& ctx)
 {
-    using clock_t = std::chrono::steady_clock;
-    using time_point_t = std::chrono::time_point<clock_t>;
-
-    time_point_t cur = clock_t::now();
-    std::chrono::duration<size_t, std::milli> cur_ms = std::chrono::duration_cast<std::chrono::milliseconds>(cur.time_since_epoch());
-    return static_cast<std::size_t>(cur_ms.count());
-}
-
-bool init(context& ctx, server_id_t id)
-{
-    assert(ctx.id == id);
-
-    if (! ctx.p_io->init(id)) {
+    if (! ctx.p_io->init(ctx.id)) {
         return false;
     }
 
@@ -174,11 +132,34 @@ bool init(context& ctx, server_id_t id)
     ctx.election_distribution = std::uniform_int_distribution<size_t>(cfg.vote_timeout_min_ms, cfg.vote_timeout_max_ms);
     ctx.heartbeat_interval_ms = cfg.heartbeat_interval_ms;
 
+    // Reserve memory. Statistically, the cluster has less than or equal to 32
+    // nodes. Therefore, memory is reserved for 32 nodes. If more is needed,
+    // just reallocation will occur.
+    ctx.peers.reserve(32);
+
     return true;
+}
+
+bool is_valid_cluster(const server_id_t id, const cluster_config& cluster_cfg)
+{
+    assert(std::is_sorted(cluster_cfg.servers.cbegin(), cluster_cfg.servers.cend(),
+        [](const server_config& l, const server_config& r) -> bool { return l.id < r.id; }));
+
+    std::vector<server_config>::const_iterator it =
+        std::adjacent_find(cluster_cfg.servers.cbegin(), cluster_cfg.servers.cend(),
+            [](const server_config& l, const server_config& r) { return l.id == r.id; });
+    if (it != cluster_cfg.servers.cend()) {
+        return false;
+    }
+    it = std::find_if(cluster_cfg.servers.cbegin(), cluster_cfg.servers.cend(),
+        [id](const server_config& cfg) -> bool { return cfg.id == id; });
+    return it != cluster_cfg.servers.cend();
 }
 
 bool load(context& ctx)
 {
+    assert(ctx.peers.capacity() > 31);
+
     if (! ctx.peers.empty()) {
         return false;
     }
@@ -187,9 +168,22 @@ bool load(context& ctx)
 
     ctx.term = p_io->load_term();
     ctx.role.voted_for = p_io->voted_for();
-    const cluster_config cluster_cfg = p_io->bootstrap();
-    if (! load_peers(ctx, ctx.peers, cluster_cfg)) {
+    cluster_config cluster_cfg = p_io->bootstrap();
+    std::sort(cluster_cfg.servers.begin(), cluster_cfg.servers.end(),
+        [](const server_config& l, const server_config& r) -> bool { return l.id < r.id; });
+
+    if (! is_valid_cluster(ctx.id, cluster_cfg)) {
         return false;
+    }
+
+    for (const server_config& cfg : cluster_cfg.servers) {
+        if (ctx.id != cfg.id) {
+            assert(peers::find(ctx, cfg.id) == nullptr);
+            ctx.peers.emplace_back(cfg);
+        } else {
+            ctx.config = cfg;
+            ctx.role.is_voter = cfg.is_voter;
+        }
     }
     return true;
 }

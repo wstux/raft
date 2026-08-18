@@ -37,37 +37,30 @@ namespace raft {
 namespace le {
 namespace details {
 
-class peer final
+struct peer final
 {
-public:
     using ptr = peer*;
     using list = std::vector<peer>;
 
-public:
     explicit peer(const server_config& cfg)
-        : m_cfg(cfg)
-        , m_recent_recv(false)
+        : id(cfg.id)
+        , is_voter(cfg.is_voter)
+        , recent_recv(false)
     {}
 
-    server_id_t id() const { return m_cfg.id; }
-
-    bool is_voter() const { return m_cfg.is_voter; }
-
-    void mark_recent_recv() { m_recent_recv = true; }
-
-    bool recent_recv() const { return m_recent_recv; }
+    void mark_recent_recv() { recent_recv = true; }
 
     bool reset_recent_recv()
     {
-        const bool recent_recv = m_recent_recv;
-        m_recent_recv = false;
-        return recent_recv;
+        const bool old_recent_recv = recent_recv;
+        recent_recv = false;
+        return old_recent_recv;
     }
 
-private:
-    server_config m_cfg;
+    const server_id_t id;
+    bool is_voter;
 
-    bool m_recent_recv;
+    bool recent_recv;
 };
 
 } // namespace details
