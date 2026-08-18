@@ -96,6 +96,10 @@ check_gitignore:
 			 echo "*.kdev4"; \
 			 echo ""; \
 			 cat .gitignore) > .gitignore.tmp && mv .gitignore.tmp .gitignore; \
+		fi; \
+		if grep -Fxq "Makefile" .gitignore; then \
+			echo "Removing Makefile from .gitignore..."; \
+			sed -i.tmp '/^Makefile$$/d' .gitignore && rm -f .gitignore.tmp; \
 		fi \
 	fi
 
