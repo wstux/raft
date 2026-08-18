@@ -24,7 +24,6 @@
 
 #include <cassert>
 #include <algorithm>
-#include <chrono>
 #include <mutex>
 
 #include "raft_le/details/context.h"
@@ -135,7 +134,6 @@ bool update(context& ctx, const cluster_config& cluster_cfg)
 size_t voting_members_count(context& ctx)
 {
     assert(ctx.role.is_voter);
-
     return 1 + std::count_if(ctx.peers.cbegin(), ctx.peers.cend(),
         [](const peer& p) -> bool { return p.is_voter; });
 }
@@ -143,16 +141,6 @@ size_t voting_members_count(context& ctx)
 } // namespace peers
 
 namespace utils {
-
-size_t current_time_ms()
-{
-    using clock_t = std::chrono::steady_clock;
-    using time_point_t = std::chrono::time_point<clock_t>;
-
-    time_point_t cur = clock_t::now();
-    std::chrono::duration<size_t, std::milli> cur_ms = std::chrono::duration_cast<std::chrono::milliseconds>(cur.time_since_epoch());
-    return static_cast<std::size_t>(cur_ms.count());
-}
 
 bool init(context& ctx, server_id_t id)
 {

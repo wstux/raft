@@ -112,8 +112,6 @@ size_t voting_members_count(context& ctx);
 
 namespace utils {
 
-size_t current_time_ms();
-
 bool init(context& ctx, server_id_t id);
 
 bool load(context& ctx);
