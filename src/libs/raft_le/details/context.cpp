@@ -179,18 +179,17 @@ bool init(context& ctx, server_id_t id)
 
 bool load(context& ctx)
 {
-    io::ptr p_io = ctx.p_io;
-    if (! p_io->load()) {
+    if (! ctx.peers.empty()) {
         return false;
     }
 
+    io::ptr p_io = ctx.p_io;
+
     ctx.term = p_io->load_term();
     ctx.role.voted_for = p_io->voted_for();
-    if (ctx.peers.empty()) {
-        const cluster_config cluster_cfg = p_io->bootstrap();
-        if (! load_peers(ctx, ctx.peers, cluster_cfg)) {
-            return false;
-        }
+    const cluster_config cluster_cfg = p_io->bootstrap();
+    if (! load_peers(ctx, ctx.peers, cluster_cfg)) {
+        return false;
     }
     return true;
 }

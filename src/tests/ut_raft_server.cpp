@@ -64,14 +64,6 @@ TEST_F(raft_server, failed_init)
     EXPECT_FALSE(m_p_srv->init());
 }
 
-TEST_F(raft_server, failed_load)
-{
-    m_p_io->is_load = false;
-
-    EXPECT_TRUE(m_p_srv->init());
-    EXPECT_FALSE(m_p_srv->start());
-}
-
 TEST_F(raft_server, double_start)
 {
     EXPECT_TRUE(m_p_srv->init());

@@ -51,8 +51,6 @@ constexpr server_id_t gk_invalid_id = 0;
 
 struct config final
 {
-    using ptr = std::shared_ptr<config>;
-
     size_t vote_timeout_min_ms = 250;
     size_t vote_timeout_max_ms = 500;
 
@@ -92,8 +90,6 @@ public:
     virtual void deinit() = 0;
 
     virtual bool init(server_id_t id) = 0;
-
-    virtual bool load() = 0;
 
     virtual term_t load_term() = 0;
 

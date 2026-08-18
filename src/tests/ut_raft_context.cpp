@@ -100,10 +100,10 @@ TEST_F(raft_context, load)
 
 TEST_F(raft_context, load_failed)
 {
-    details::context& ctx = init(1);
-
-    m_p_io->is_load = false;
+    details::context& ctx = init(1);;
     EXPECT_TRUE(details::utils::init(ctx, 1));
+
+    ctx.peers.emplace_back(raft::server_config(2, true));
     EXPECT_FALSE(details::utils::load(ctx));
 }
 

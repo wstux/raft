@@ -80,7 +80,6 @@ public:
         return is_init;
     }
 
-    virtual bool load() override final { return is_load; }
     virtual term_t load_term() override final { return 0; }
     virtual void send(server_id_t id, const buffer_type& msg) override final { clients.at(id)->send(msg); }
     virtual void set_term(term_t) override final {}
@@ -94,7 +93,6 @@ public:
     std::unordered_map<server_id_t, empty_client::ptr> clients;
 
     bool is_init = true;
-    bool is_load = true;
     bool is_stop = false;
 };
 

@@ -86,8 +86,6 @@ public:
         return true;
     }
 
-    virtual bool load() override final { return true; }
-
     virtual raft::le::term_t load_term() override final { return m_term; }
 
     virtual void send(raft::le::server_id_t id, const raft::le::buffer_type& msg) override final { m_clients.at(id)->send(msg); }
