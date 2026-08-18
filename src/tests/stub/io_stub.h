@@ -233,6 +233,8 @@ public:
 
     virtual term_t load_term() override final { return m_term; }
 
+    virtual bool reconfigure(server_id_t) override final { return true; }
+
     virtual void send(server_id_t id, const buffer_type& msg) override final { m_clients.at(id)->send(msg); }
 
     virtual void set_term(term_t term) override final { m_term = term; }
