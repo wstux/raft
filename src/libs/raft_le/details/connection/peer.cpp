@@ -27,6 +27,7 @@
 
 #include "raft_le/details/context.h"
 #include "raft_le/details/connection/peer.h"
+#include "raft_le/details/connection/send.h"
 #include "raft_le/details/connection/serialization.h"
 
 namespace wstux {
@@ -55,54 +56,22 @@ bool peer::is_probe_expired() const
 
 void peer::send_heartbeat_request(uint64_t term, int32_t src_id)
 {
-    message msg;
-    msg.type = message_type::heartbeat_request;
-    msg.src_id = src_id;
-    msg.dst_id = m_cfg.id;
-    msg.term = term;
-
-    buffer_data_type buffer;
-    m_p_client->send(serialize(msg, buffer));
+    send<message_type::heartbeat_request>(m_p_client, term, src_id, m_cfg.id);
 }
 
 void peer::send_heartbeat_response(uint64_t term, int32_t src_id, bool accept)
 {
-    message msg;
-    msg.type = message_type::heartbeat_response;
-    msg.src_id = src_id;
-    msg.dst_id = m_cfg.id;
-    msg.term = term;
-    msg.heartbeat_resp.accept = accept;
-
-    buffer_data_type buffer;
-    m_p_client->send(serialize(msg, buffer));
+    send<message_type::heartbeat_response>(m_p_client, term, src_id, m_cfg.id, accept);
 }
 
 void peer::send_vote_request(uint64_t term, int32_t src_id, bool is_prevote)
 {
-    message msg;
-    msg.type = message_type::vote_request;
-    msg.src_id = src_id;
-    msg.dst_id = m_cfg.id;
-    msg.term = term;
-    msg.vote_req.is_prevote = is_prevote;
-
-    buffer_data_type buffer;
-    m_p_client->send(serialize(msg, buffer));
+    send<message_type::vote_request>(m_p_client, term, src_id, m_cfg.id, is_prevote);
 }
 
 void peer::send_vote_response(uint64_t term, int32_t src_id, bool is_prevote, bool accept)
 {
-    message msg;
-    msg.type = message_type::vote_response;
-    msg.src_id = src_id;
-    msg.dst_id = m_cfg.id;
-    msg.term = term;
-    msg.vote_resp.is_prevote = is_prevote;
-    msg.vote_resp.accept = accept;
-
-    buffer_data_type buffer;
-    m_p_client->send(serialize(msg, buffer));
+    send<message_type::vote_response>(m_p_client, term, src_id, m_cfg.id, is_prevote, accept);
 }
 
 void peer::update(size_t hb_expired_interval_ms)
