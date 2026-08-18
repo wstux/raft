@@ -78,6 +78,7 @@ context::context(server_id_t id, const io::ptr p_io, logging_handler::ptr p_hand
     : id(id)
     , is_stop_fn(is_stop)
     , is_async_io(false)
+    , config(gk_invalid_id, false)
     , p_io(p_io)
     , term(0)
     , heartbeat_interval_ms(100)

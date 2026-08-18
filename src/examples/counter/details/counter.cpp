@@ -45,7 +45,7 @@ raft::le::server::ptr make_server(const details::io::ptr& p_io, const config::pt
 
 counter_node::counter_node(const config::ptr& p_config)
     : m_p_config(p_config)
-    , m_p_io(std::make_shared<details::io>(m_p_config->cluster_config(), m_p_config->level()))
+    , m_p_io(std::make_shared<details::io>(m_p_config->server_id(), m_p_config->cluster_config(), m_p_config->level()))
     , m_p_server(make_server(m_p_io, m_p_config))
     , m_counter(0)
     , m_logger(m_p_config->level())

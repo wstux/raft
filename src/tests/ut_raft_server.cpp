@@ -40,7 +40,7 @@ public:
     virtual void SetUp() override
     {
         m_p_io = std::make_shared<tests::empty_io>();
-        m_p_io->cluster_cfg.servers.emplace_back(1, "localhost:50001", true);
+        m_p_io->cluster_cfg.servers.emplace_back(1, true);
 
         tests::empty_io* p_raw_io = m_p_io.get();
         std::function<bool()> is_stop_fn = [p_raw_io]()->bool { return p_raw_io->is_stop; };

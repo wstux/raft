@@ -46,7 +46,7 @@ public:
 public:
     peer(const server_config& cfg, const io::ptr& p_io)
         : m_cfg(cfg)
-        , m_p_client(p_io->create_client(m_cfg.id, m_cfg.endpoint))
+        , m_p_client(p_io->create_client(m_cfg.id))
         , m_recent_recv(false)
     {}
 

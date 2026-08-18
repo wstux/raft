@@ -41,7 +41,7 @@ bool config::load(int argc, char** argv)
         return false;
     }
 
-    for (const raft::le::server_config& cfg : m_cluster_config.servers) {
+    for (const server_config& cfg : m_servers) {
         if (cfg.id == m_server_id) {
             m_endpoint = cfg.endpoint;
             break;
@@ -93,10 +93,8 @@ bool config::parse_args(int argc, char** argv)
 
 bool config::parse_config_file()
 {
-    const std::function<bool(const raft::le::server_config&)> is_valid_fn =
-        [](const raft::le::server_config& cfg) -> bool {
-            return (! cfg.endpoint.empty() && cfg.id != raft::le::gk_invalid_id);
-        };
+    const std::function<bool(const server_config&)> is_valid_fn =
+        [](const server_config& cfg) -> bool { return cfg.id != raft::le::gk_invalid_id; };
 
     const std::function<std::string(const std::string&)> trim_fn =
         [](const std::string& str) -> std::string {
@@ -121,15 +119,12 @@ bool config::parse_config_file()
         }
 
         if (line == "[server]") {
-            if (! m_cluster_config.servers.empty()) {
-                if (! is_valid_fn(m_cluster_config.servers.back())) {
+            if (! m_servers.empty()) {
+                if (! is_valid_fn(m_servers.back())) {
                     return false;
                 }
             }
-            raft::le::server_config srv_cfg;
-            srv_cfg.id = raft::le::gk_invalid_id;
-            srv_cfg.is_voter = false;
-            m_cluster_config.servers.push_back(srv_cfg);
+            m_servers.push_back(server_config());
         } else {
             size_t delim_pos = line.find('=');
             if (delim_pos != std::string::npos) {
@@ -139,11 +134,11 @@ bool config::parse_config_file()
                     return false;
                 }
                 if (key == "endpoint") {
-                    m_cluster_config.servers.back().endpoint = value;
+                    m_servers.back().endpoint = value;
                 } else if (key == "id") {
-                    m_cluster_config.servers.back().id = static_cast<raft::le::server_id_t>(std::stoi(value));
+                    m_servers.back().id = static_cast<raft::le::server_id_t>(std::stoi(value));
                 } else if (key == "is_voter") {
-                    m_cluster_config.servers.back().is_voter = (value == "true");
+                    m_servers.back().is_voter = (value == "true");
                 }
             }
         }

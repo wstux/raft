@@ -60,7 +60,7 @@ public:
 
     virtual ~network_stub() { stop(); }
 
-    virtual iclient::ptr create_client(server_id_t id, const std::string&) const override
+    virtual iclient::ptr create_client(server_id_t id) const override
     {
         server_ptr p_srv = get_server(id);
         iclient::ptr p_client;
@@ -104,7 +104,7 @@ public:
         for (const std::pair<server_id_t, bool>& srv_param : servers) {
             const server_id_t id = srv_param.first;
             const bool is_voter = srv_param.second;
-            m_p_cluster_cfg->servers.emplace_back(id, std::to_string(id), is_voter);
+            m_p_cluster_cfg->servers.emplace_back(id, is_voter);
         }
         for (const server_config& cfg : m_p_cluster_cfg->servers) {
             io_stub::ptr p_io = std::make_shared<io_stub>(m_p_cluster_cfg, this->shared_from_this());

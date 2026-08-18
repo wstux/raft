@@ -27,6 +27,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "raft_le/io.h"
 
@@ -39,8 +40,17 @@ class config final
 public:
     using ptr = std::shared_ptr<config>;
 
+    struct server_config
+    {
+        using list = std::vector<server_config>;
+
+        raft::le::server_id_t id = raft::le::gk_invalid_id;
+        bool is_voter = false;
+        std::string endpoint;
+    };
+
 public:
-    raft::le::cluster_config cluster_config() const  { return m_cluster_config; }
+    const server_config::list& cluster_config() const  { return m_servers; }
 
     const std::string& endpoint() const { return m_endpoint; }
 
@@ -60,8 +70,8 @@ private:
 
     raft::le::server_id_t m_server_id = raft::le::gk_invalid_id;
     raft::le::logging_handler::severity_level m_level = raft::le::logging_handler::severity_level::info;
-    raft::le::cluster_config m_cluster_config;
 
+    server_config::list m_servers;
     std::string m_cfg_file;
 };
 

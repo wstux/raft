@@ -63,19 +63,12 @@ struct config final
 
 struct server_config final
 {
-    server_config()
-        : id(gk_invalid_id)
-        , is_voter(false)
-    {}
-
-    server_config(const server_id_t id, const std::string& endpoint, bool is_voter)
+    server_config(const server_id_t id, bool is_voter)
         : id(id)
-        , endpoint(endpoint)
         , is_voter(is_voter)
     {}
 
     server_id_t id;
-    std::string endpoint;
     bool is_voter;
 };
 
@@ -107,7 +100,7 @@ public:
 
     virtual config configuration() const = 0;
 
-    virtual iclient::ptr create_client(server_id_t id, const std::string& endpoint) const = 0;
+    virtual iclient::ptr create_client(server_id_t id) const = 0;
 
     virtual void deinit() = 0;
 

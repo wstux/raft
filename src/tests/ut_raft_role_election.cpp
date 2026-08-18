@@ -55,7 +55,7 @@ public:
     details::context& init(size_t servs_count, bool is_voter = true)
     {
         for (size_t i = 0; i < servs_count; ++i) {
-            m_p_io->cluster_cfg.servers.emplace_back(i + 1, std::to_string(i), (i == 0) ? is_voter : true);
+            m_p_io->cluster_cfg.servers.emplace_back(i + 1, (i == 0) ? is_voter : true);
         }
 
         details::utils::init(*m_p_ctx, 1);

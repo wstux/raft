@@ -73,11 +73,9 @@ public:
 
     virtual void send(const buffer_type& msg) override
     {
-        std::shared_ptr<server> p_srv = m_p_srv.lock();
-        if (p_srv) {
+        if (std::shared_ptr<server> p_srv = m_p_srv.lock()) {
             p_srv->handle_message(msg);
         }
-        //m_p_srv->handle_message(msg);
     }
 
 private:
@@ -190,7 +188,7 @@ public:
     public:
         virtual ~iclient_factory() {}
 
-        virtual iclient::ptr create_client(server_id_t id, const std::string& endpoint) const = 0;
+        virtual iclient::ptr create_client(server_id_t id) const = 0;
     };
 
 public:
@@ -209,9 +207,9 @@ public:
 
     virtual config configuration() const override final { return m_cfg; };
 
-    virtual iclient::ptr create_client(server_id_t id, const std::string& endpoint) const override final
+    virtual iclient::ptr create_client(server_id_t id) const override final
     {
-        return m_p_factory->create_client(id, endpoint);
+        return m_p_factory->create_client(id);
     }
 
     virtual void deinit() override final {}

@@ -67,7 +67,7 @@ public:
     virtual cluster_config bootstrap() const override final { return cluster_cfg; }
     virtual config configuration() const override final { return cfg; };
 
-    virtual iclient::ptr create_client(server_id_t id, const std::string&) const override final
+    virtual iclient::ptr create_client(server_id_t id) const override final
     {
         using rc_t = std::pair<std::map<server_id_t, empty_client::ptr>::iterator, bool>;
 

@@ -25,12 +25,15 @@
 #ifndef _EXAMPLES_RAFT_COUNTER_IO_H_
 #define _EXAMPLES_RAFT_COUNTER_IO_H_
 
+#include <cassert>
+#include <algorithm>
 #include <map>
 #include <memory>
 #include <mutex>
 
 #include "raft_le/io.h"
 
+#include "counter/config.h"
 #include "counter/details/client.h"
 #include "counter/details/logging.h"
 
@@ -45,34 +48,47 @@ public:
     using ptr = std::shared_ptr<io>;
 
 public:
-    io(const raft::le::cluster_config& p_cluster_cfg, raft::le::logging_handler::severity_level lvl)
-        : m_cluster_cfg(p_cluster_cfg)
+    io(const raft::le::server_id_t id, const config::server_config::list& servers, raft::le::logging_handler::severity_level lvl)
+        : m_servers(servers)
         , m_term(0)
         , m_voted_for(raft::le::gk_invalid_id)
         , m_level(lvl)
         , m_logger(m_level)
     {
         m_cfg.scheduler_threads_count = 4;
+
+        for (const config::server_config& cfg : m_servers) {
+            std::map<raft::le::server_id_t, client::ptr>::iterator it = m_clients.find(cfg.id);
+            assert(it == m_clients.end());
+            if (id == cfg.id) {
+                continue;
+            }
+            client::ptr p_client = std::make_shared<client>(cfg.endpoint, m_level);
+            m_clients.emplace(cfg.id, p_client);
+        }
     }
 
     virtual ~io() {}
 
-    virtual raft::le::cluster_config bootstrap() const override final { return m_cluster_cfg; }
+    virtual raft::le::cluster_config bootstrap() const override final
+    {
+        raft::le::cluster_config cluster_cfg;
+        std::transform(m_servers.cbegin(), m_servers.cend(), std::back_inserter(cluster_cfg.servers),
+            [](const config::server_config& cfg) -> raft::le::server_config {
+                return raft::le::server_config(cfg.id, cfg.is_voter);
+            });
+        return cluster_cfg;
+    }
 
     virtual raft::le::config configuration() const override final { return m_cfg; };
 
-    virtual raft::le::iclient::ptr create_client(raft::le::server_id_t id, const std::string& endpoint) const override final
+    virtual raft::le::iclient::ptr create_client(raft::le::server_id_t id) const override final
     {
         client::ptr p_client;
 
         std::map<raft::le::server_id_t, client::ptr>::iterator it = m_clients.find(id);
-        if (it == m_clients.cend()) {
-            p_client = std::make_shared<client>(endpoint, m_level);
-            m_clients.emplace(id, p_client);
-        } else {
-            p_client = it->second;
-        }
-        return p_client;
+        assert(it != m_clients.cend());
+        return it->second;
     }
 
     virtual void deinit() override final {}
@@ -85,9 +101,9 @@ public:
 
     virtual void set_term(raft::le::term_t term) override final { m_term = term; }
 
-    virtual void set_voted_for(raft::le::server_id_t id) { m_voted_for = id; }
+    virtual void set_voted_for(raft::le::server_id_t id) override final { m_voted_for = id; }
 
-    virtual raft::le::server_id_t voted_for() const  { return m_voted_for; }
+    virtual raft::le::server_id_t voted_for() const override final { return m_voted_for; }
 
     void update_counter(const uint64_t counter)
     {
@@ -97,7 +113,7 @@ public:
     }
 
 private:
-    raft::le::cluster_config m_cluster_cfg;
+    config::server_config::list m_servers;
     raft::le::config m_cfg;
 
     raft::le::term_t m_term;
