@@ -27,9 +27,9 @@
 
 #include <cassert>
 #include <algorithm>
-#include <map>
 #include <memory>
 #include <mutex>
+#include <unordered_map>
 
 #include "raft_le/io.h"
 
@@ -72,21 +72,12 @@ public:
 
     virtual raft::le::config configuration() const override final { return m_cfg; };
 
-    virtual raft::le::iclient::ptr create_client(raft::le::server_id_t id) const override final
-    {
-        client::ptr p_client;
-
-        std::map<raft::le::server_id_t, client::ptr>::iterator it = m_clients.find(id);
-        assert(it != m_clients.cend());
-        return it->second;
-    }
-
     virtual void deinit() override final {}
 
     virtual bool init(raft::le::server_id_t id) override final
     {
         for (const config::server_config& cfg : m_servers) {
-            std::map<raft::le::server_id_t, client::ptr>::iterator it = m_clients.find(cfg.id);
+            std::unordered_map<raft::le::server_id_t, client::ptr>::iterator it = m_clients.find(cfg.id);
             assert(it == m_clients.end());
             if (cfg.id != id) {
                 m_clients.emplace(cfg.id, std::make_shared<client>(cfg.endpoint, m_level));
@@ -99,6 +90,8 @@ public:
 
     virtual raft::le::term_t load_term() override final { return m_term; }
 
+    virtual void send(raft::le::server_id_t id, const raft::le::buffer_type& msg) override final { m_clients.at(id)->send(msg); }
+
     virtual void set_term(raft::le::term_t term) override final { m_term = term; }
 
     virtual void set_voted_for(raft::le::server_id_t id) override final { m_voted_for = id; }
@@ -107,7 +100,7 @@ public:
 
     void update_counter(const uint64_t counter)
     {
-        for (std::map<raft::le::server_id_t, client::ptr>::value_type& v : m_clients) {
+        for (std::unordered_map<raft::le::server_id_t, client::ptr>::value_type& v : m_clients) {
             v.second->send_counter(counter);
         }
     }
@@ -119,7 +112,7 @@ private:
     raft::le::term_t m_term;
     raft::le::server_id_t m_voted_for;
 
-    mutable std::map<raft::le::server_id_t, client::ptr> m_clients;
+    std::unordered_map<raft::le::server_id_t, client::ptr> m_clients;
 
     raft::le::logging_handler::severity_level m_level;
     logging_handler m_logger;

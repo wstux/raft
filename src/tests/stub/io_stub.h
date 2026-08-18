@@ -33,11 +33,11 @@
 #include <filesystem>
 #include <functional>
 #include <iostream>
-#include <map>
 #include <memory>
 #include <mutex>
 #include <random>
 #include <thread>
+#include <unordered_map>
 
 #include <boost/lockfree/queue.hpp>
 
@@ -56,6 +56,16 @@ enum client_type
     single,
     threaded,
     random_threaded
+};
+
+class iclient
+{
+public:
+    using ptr = std::shared_ptr<iclient>;
+
+public:
+    virtual ~iclient() {}
+    virtual void send(const buffer_type& msg) = 0;
 };
 
 class client_stub final : public iclient
@@ -207,8 +217,6 @@ public:
 
     virtual config configuration() const override final { return m_cfg; };
 
-    virtual iclient::ptr create_client(server_id_t id) const override final { return m_clients.at(id); }
-
     virtual void deinit() override final {}
 
     virtual bool init(server_id_t id) override final
@@ -227,6 +235,8 @@ public:
 
     virtual term_t load_term() override final { return m_term; }
 
+    virtual void send(server_id_t id, const buffer_type& msg) override final { m_clients.at(id)->send(msg); }
+
     virtual void set_term(term_t term) override final { m_term = term; }
 
     virtual void set_voted_for(server_id_t id) override final { m_voted_for = id; }
@@ -235,7 +245,7 @@ public:
 
 public:
     std::shared_ptr<cluster_config> m_p_cluster_cfg;
-    std::map<server_id_t, iclient::ptr> m_clients;
+    std::unordered_map<server_id_t, iclient::ptr> m_clients;
     iclient_factory::ptr m_p_factory;
     config m_cfg;
 

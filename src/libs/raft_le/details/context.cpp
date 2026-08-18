@@ -56,7 +56,7 @@ bool load_peers(context& ctx, peer::list& peers, const cluster_config& cluster_c
             ctx.config = cfg;
             ctx.role.is_voter = cfg.is_voter;
         } else if (find_peer(peers, cfg.id) == nullptr) {
-            peers.emplace_back(cfg, ctx.p_io);
+            peers.emplace_back(cfg);
         } else {
             return false;
         }

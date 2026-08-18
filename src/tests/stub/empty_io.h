@@ -27,7 +27,7 @@
 
 #include <algorithm>
 #include <atomic>
-#include <map>
+#include <unordered_map>
 
 #include "raft_le/io.h"
 #include "raft_le/details/connection/messages.h"
@@ -38,15 +38,14 @@ namespace raft {
 namespace le {
 namespace tests {
 
-class empty_client final : public iclient
+class empty_client final
 {
 public:
     using ptr = std::shared_ptr<empty_client>;
 
 public:
     empty_client() : buffer(buf.begin(), buf.end()) {}
-    virtual ~empty_client() {}
-    virtual void send(const buffer_type& b) override { std::copy(b.begin(), b.end(), buf.begin()); } //buffer = b; }
+    void send(const buffer_type& b) { std::copy(b.begin(), b.end(), buf.begin()); }
 
     static empty_client::ptr make() { return std::make_shared<empty_client>(); }
 
@@ -67,8 +66,6 @@ public:
     virtual cluster_config bootstrap() const override final { return cluster_cfg; }
     virtual config configuration() const override final { return cfg; };
 
-    virtual iclient::ptr create_client(server_id_t id) const override final {return clients.at(id); }
-
     virtual void deinit() override final {}
 
     virtual bool init(server_id_t id) override final
@@ -85,6 +82,7 @@ public:
 
     virtual bool load() override final { return is_load; }
     virtual term_t load_term() override final { return 0; }
+    virtual void send(server_id_t id, const buffer_type& msg) override final { clients.at(id)->send(msg); }
     virtual void set_term(term_t) override final {}
     virtual void set_voted_for(server_id_t) override final {}
     virtual server_id_t voted_for() const override final { return gk_invalid_id; }
@@ -93,7 +91,7 @@ public:
     config cfg;
     cluster_config cluster_cfg;
 
-    mutable std::map<server_id_t, empty_client::ptr> clients;
+    std::unordered_map<server_id_t, empty_client::ptr> clients;
 
     bool is_init = true;
     bool is_load = true;

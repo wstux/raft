@@ -77,17 +77,6 @@ struct cluster_config final
     std::vector<server_config> servers;
 };
 
-class iclient
-{
-public:
-    using ptr = std::shared_ptr<iclient>;
-
-public:
-    virtual ~iclient() {}
-
-    virtual void send(const buffer_type& msg) = 0;
-};
-
 class io
 {
 public:
@@ -100,8 +89,6 @@ public:
 
     virtual config configuration() const = 0;
 
-    virtual iclient::ptr create_client(server_id_t id) const = 0;
-
     virtual void deinit() = 0;
 
     virtual bool init(server_id_t id) = 0;
@@ -109,6 +96,8 @@ public:
     virtual bool load() = 0;
 
     virtual term_t load_term() = 0;
+
+    virtual void send(server_id_t id, const buffer_type& msg) = 0;
 
     virtual void set_term(term_t term) = 0;
 

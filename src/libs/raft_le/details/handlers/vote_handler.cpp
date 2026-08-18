@@ -112,7 +112,7 @@ void handle_request(context& ctx, term_t term, server_id_t src_id, const vote_me
     // expired/heartbeats are ongoing), it must reject any Pre-Vote requests to
     // protect the cluster from disruptions caused by partitioned nodes.
     if (ctx.role.is_leader() || ctx.role.has_leader()) {
-        return utils::send<message_type::vote_response>(ctx, p_src_peer, cur_term, ctx.id, msg.is_prevote, false);
+        return utils::send<message_type::vote_response>(ctx, p_src_peer->id(), cur_term, ctx.id, msg.is_prevote, false);
     }
 
     // If this is a pre-vote request, don't actually increment our term or persist the vote.
@@ -129,7 +129,7 @@ void handle_request(context& ctx, term_t term, server_id_t src_id, const vote_me
     if (ctx.term > term) {
         RAFT_VOTE_LOG_DEBUG(ctx, "%s request. Server %llu(%s). Local term (%u) is higher than source term (%u).",
             (msg.is_prevote ? "Prevote" : "Vote"), ctx.id, ctx.role.str(), ctx.term, term);
-        return utils::send<message_type::vote_response>(ctx, p_src_peer, cur_term, ctx.id, msg.is_prevote, false);
+        return utils::send<message_type::vote_response>(ctx, p_src_peer->id(), cur_term, ctx.id, msg.is_prevote, false);
     }
 
     if (! msg.is_prevote) {
@@ -141,7 +141,7 @@ void handle_request(context& ctx, term_t term, server_id_t src_id, const vote_me
         (msg.is_prevote ? "Prevote" : "Vote"), ctx.id, ctx.role.str(), (accept ? "" : " not"),
         src_id, (msg.is_prevote ? "prevote" : "vote"));
 
-    utils::send<message_type::vote_response>(ctx, p_src_peer, cur_term, ctx.id, msg.is_prevote, accept);
+    utils::send<message_type::vote_response>(ctx, p_src_peer->id(), cur_term, ctx.id, msg.is_prevote, accept);
 }
 
 void handle_response(context& ctx, term_t term, server_id_t src_id, const vote_response_message& msg)
@@ -267,7 +267,7 @@ void request(context& ctx)
 
     for (peer& p : ctx.peers) {
         if (p.is_voter()) {
-            utils::send<message_type::vote_request>(ctx, p, term, ctx.id, is_prevote);
+            utils::send<message_type::vote_request>(ctx, p.id(), term, ctx.id, is_prevote);
         }
     }
 }

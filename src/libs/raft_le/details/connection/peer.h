@@ -44,13 +44,10 @@ public:
     using list = std::vector<peer>;
 
 public:
-    peer(const server_config& cfg, const io::ptr& p_io)
+    explicit peer(const server_config& cfg)
         : m_cfg(cfg)
-        , m_p_client(p_io->create_client(m_cfg.id))
         , m_recent_recv(false)
     {}
-
-    iclient::ptr client() const { return m_p_client; }
 
     server_id_t id() const { return m_cfg.id; }
 
@@ -69,7 +66,6 @@ public:
 
 private:
     server_config m_cfg;
-    iclient::ptr m_p_client;
 
     bool m_recent_recv;
 };

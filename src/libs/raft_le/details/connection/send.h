@@ -69,7 +69,7 @@ template<> struct message_filler<message_type::vote_response>
 };
 
 template<message_type TMsgType, typename... TArgs>
-void send(iclient::ptr p_client, server_id_t dst_id, term_t term, server_id_t src_id, TArgs&&... args)
+void send(io::ptr p_io, server_id_t dst_id, term_t term, server_id_t src_id, TArgs&&... args)
 {
     message msg;
 
@@ -81,23 +81,15 @@ void send(iclient::ptr p_client, server_id_t dst_id, term_t term, server_id_t sr
     message_filler<TMsgType>::fill(msg, std::forward<TArgs>(args)...);
 
     buffer_data_type buffer;
-    p_client->send(serialize(msg, buffer));
+    p_io->send(dst_id, serialize(msg, buffer));
 }
 
 template<message_type TMsgType, typename... TArgs>
-inline void send(context& ctx, peer::ptr p_peer, TArgs&&... args)
+inline void send(context& ctx, server_id_t dst_id, TArgs&&... args)
 {
-    const scheduler::handler_type handler = [p_client = p_peer->client(), dst_id = p_peer->id(), args...]() -> void {
-        send<TMsgType>(p_client, dst_id, std::move(args)...);
-    };
-    ctx.p_scheduler->execute_async(handler);
-}
-
-template<message_type TMsgType, typename... TArgs>
-inline void send(context& ctx, peer& p, TArgs&&... args)
-{
-    const scheduler::handler_type handler = [p_client = p.client(), dst_id = p.id(), args...]() -> void {
-        send<TMsgType>(p_client, dst_id, std::move(args)...);
+    assert(ctx.id != dst_id);
+    const scheduler::handler_type handler = [p_io = ctx.p_io, dst_id, args...]() -> void {
+        send<TMsgType>(std::move(p_io), dst_id, std::move(args)...);
     };
     ctx.p_scheduler->execute_async(handler);
 }

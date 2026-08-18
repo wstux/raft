@@ -50,7 +50,7 @@ namespace examples {
 namespace counter {
 namespace details {
 
-class client final : public raft::le::iclient
+class client final
 {
 private:
     using context_type = ::grpc::ClientContext;
@@ -67,9 +67,9 @@ public:
         , m_logger(lvl)
     {}
 
-    virtual ~client() {}
+    ~client() {}
 
-    virtual void send(const raft::le::buffer_type& buf) override final
+    void send(const raft::le::buffer_type& buf)
     {
         context_type ctx;
 
