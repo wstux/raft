@@ -104,7 +104,7 @@ peer::ptr find(context& ctx, server_id_t id);
 
 size_t quorum_for_election(context& ctx);
 
-bool update(context& ctx, const cluster_config& cluster_cfg);
+void update(context& ctx, const cluster_config& cluster_cfg);
 
 size_t voting_members_count(context& ctx);
 
@@ -113,6 +113,8 @@ size_t voting_members_count(context& ctx);
 namespace utils {
 
 bool init(context& ctx, server_id_t id);
+
+bool is_valid_cluster(const server_id_t id, const cluster_config& cluster_cfg);
 
 bool load(context& ctx);
 
