@@ -38,7 +38,7 @@ namespace {
 peer::ptr find_peer(peer::list& peers, server_id_t id)
 {
     peer::list::iterator it = std::find_if(peers.begin(), peers.end(), [id](const peer& p) {
-        return p.id() == id;
+        return p.id == id;
     });
     if (it != peers.cend()) {
         return &(*it);
@@ -103,8 +103,8 @@ bool check_contact_quorum(context& ctx)
     size_t voting_count = 1;
     for (peer& p : ctx.peers) {
         const bool recent_recv = p.reset_recent_recv();
-        contacts += (p.is_voter() && recent_recv) ? 1 : 0;
-        voting_count += (p.is_voter()) ? 1 : 0;
+        contacts += (p.is_voter && recent_recv) ? 1 : 0;
+        voting_count += (p.is_voter) ? 1 : 0;
     }
     const size_t quorum_for_election_size = (voting_count / 2);
     return contacts > quorum_for_election_size;
@@ -137,7 +137,7 @@ size_t voting_members_count(context& ctx)
     assert(ctx.role.is_voter);
 
     return 1 + std::count_if(ctx.peers.cbegin(), ctx.peers.cend(),
-        [](const peer& p) -> bool { return p.is_voter(); });
+        [](const peer& p) -> bool { return p.is_voter; });
 }
 
 } // namespace peers

@@ -39,8 +39,8 @@ namespace heartbeat {
 
 void handle_request(context& ctx, term_t term, server_id_t src_id, const heartbeat_message& /*msg*/)
 {
-    peer::ptr p_src_peer = peers::find(ctx, src_id);
-    if (! p_src_peer) {
+    peer::ptr p_src = peers::find(ctx, src_id);
+    if (! p_src) {
         RAFT_HB_LOG_TRACE(ctx, "Server %llu does not exists", src_id);
         return;
     }
@@ -53,7 +53,7 @@ void handle_request(context& ctx, term_t term, server_id_t src_id, const heartbe
     // Raft Paper, Section 5.1: AppendEntries RPC: 1. Reply false if term < currentTerm
     if (ctx.term > term) {
         RAFT_HB_LOG_DEBUG(ctx, "Handle heartbeat. Local term %u is higher then request term %u", ctx.term, term);
-        return utils::send<message_type::heartbeat_response>(ctx, p_src_peer->id(), ctx.term, ctx.id, false);
+        return utils::send<message_type::heartbeat_response>(ctx, p_src->id, ctx.term, ctx.id, false);
     }
 
     assert(ctx.role.is_follower() || ctx.role.is_candidate());
@@ -75,7 +75,7 @@ void handle_request(context& ctx, term_t term, server_id_t src_id, const heartbe
     role::update_leader(ctx, src_id);
     timeout::election_restart_task(ctx);
 
-    utils::send<message_type::heartbeat_response>(ctx, p_src_peer->id(), ctx.term, ctx.id, true);
+    utils::send<message_type::heartbeat_response>(ctx, p_src->id, ctx.term, ctx.id, true);
 }
 
 void handle_response(context& ctx, term_t term, server_id_t src_id, const heartbeat_response_message& /*msg*/)
@@ -105,14 +105,14 @@ void handle_response(context& ctx, term_t term, server_id_t src_id, const heartb
     assert(ctx.term == term);
     assert(ctx.role.is_leader());
 
-    peer::ptr p_src_peer = peers::find(ctx, src_id);
-    if (! p_src_peer) {
+    peer::ptr p_src = peers::find(ctx, src_id);
+    if (! p_src) {
         RAFT_HB_LOG_DEBUG(ctx, "Got heartbeat response message from removed server %llu", src_id);
         return;
     }
 
     // Reset the node availability timeout
-    p_src_peer->mark_recent_recv();
+    p_src->mark_recent_recv();
 }
 
 void request(context& ctx)
@@ -121,11 +121,11 @@ void request(context& ctx)
 
     assert(ctx.role.is_leader());
 
-    for (peer& p : ctx.peers) {
-        assert(p.id() != ctx.id);
+    for (const peer& p : ctx.peers) {
+        assert(p.id != ctx.id);
 
-        RAFT_HB_LOG_TRACE(ctx, "Sending heartbeat request to server %llu. %llu(%s), current term %u", p.id(), ctx.id, ctx.role.str(), ctx.term);
-        utils::send<message_type::heartbeat_request>(ctx, p.id(), ctx.term, ctx.id);
+        RAFT_HB_LOG_TRACE(ctx, "Sending heartbeat request to server %llu. %llu(%s), current term %u", p.id, ctx.id, ctx.role.str(), ctx.term);
+        utils::send<message_type::heartbeat_request>(ctx, p.id, ctx.term, ctx.id);
     }
 }
 

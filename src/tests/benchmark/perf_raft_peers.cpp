@@ -106,7 +106,7 @@ static void request_to_list(benchmark::State& state)
     for (auto _ : state) {
         raft::details::peer::list peers = to_list(*g_p_ctx);
         for (const raft::details::peer& p : peers) {
-            bool is_voter = p.is_voter();
+            bool is_voter = p.is_voter;
             benchmark::DoNotOptimize(is_voter);
         }
     }
@@ -118,7 +118,7 @@ static void request_lock_list(benchmark::State& state)
 
     for (auto _ : state) {
         for (const raft::details::peer& p : g_p_ctx->peers) {
-            bool is_voter = p.is_voter();
+            bool is_voter = p.is_voter;
             benchmark::DoNotOptimize(is_voter);
         }
     }

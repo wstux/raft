@@ -131,13 +131,13 @@ TEST_F(raft_heartbeat_handler, handle_response_not_leader)
     ctx.term = 1;
     ASSERT_TRUE(ctx.peers.size() == 1) << ctx.peers.size();
     details::peer::ptr p_peer = details::peers::find(ctx, 2);
-    ASSERT_FALSE(p_peer->recent_recv());
+    ASSERT_FALSE(p_peer->recent_recv);
 
     details::role::become_follower(ctx);
     EXPECT_TRUE(ctx.role.is_follower());
 
     details::heartbeat::handle_response(ctx, 1, 2, details::heartbeat_response_message());
-    EXPECT_FALSE(p_peer->recent_recv());
+    EXPECT_FALSE(p_peer->recent_recv);
 }
 
 TEST_F(raft_heartbeat_handler, handle_response_local_higher_term)
@@ -148,7 +148,7 @@ TEST_F(raft_heartbeat_handler, handle_response_local_higher_term)
     ctx.term = 5;
     ASSERT_TRUE(ctx.peers.size() == 1) << ctx.peers.size();
     details::peer::ptr p_peer = details::peers::find(ctx, 2);
-    ASSERT_FALSE(p_peer->recent_recv());
+    ASSERT_FALSE(p_peer->recent_recv);
 
     details::role::become_follower(ctx);
     details::role::become_candidate(ctx);
@@ -156,7 +156,7 @@ TEST_F(raft_heartbeat_handler, handle_response_local_higher_term)
     EXPECT_TRUE(ctx.role.is_leader());
 
     details::heartbeat::handle_response(ctx, 1, 2, details::heartbeat_response_message());
-    EXPECT_FALSE(p_peer->recent_recv());
+    EXPECT_FALSE(p_peer->recent_recv);
 }
 
 TEST_F(raft_heartbeat_handler, handle_response_src_higher_term)
@@ -167,7 +167,7 @@ TEST_F(raft_heartbeat_handler, handle_response_src_higher_term)
     ctx.term = 1;
     ASSERT_TRUE(ctx.peers.size() == 1) << ctx.peers.size();
     details::peer::ptr p_peer = details::peers::find(ctx, 2);
-    ASSERT_FALSE(p_peer->recent_recv());
+    ASSERT_FALSE(p_peer->recent_recv);
 
     details::role::become_follower(ctx);
     details::role::become_candidate(ctx);
@@ -175,7 +175,7 @@ TEST_F(raft_heartbeat_handler, handle_response_src_higher_term)
     EXPECT_TRUE(ctx.role.is_leader());
 
     details::heartbeat::handle_response(ctx, 5, 2, details::heartbeat_response_message());
-    EXPECT_FALSE(p_peer->recent_recv());
+    EXPECT_FALSE(p_peer->recent_recv);
     EXPECT_TRUE(ctx.role.is_follower()) << ctx;
     EXPECT_TRUE(ctx.term == 5) << ctx.term;
 }
@@ -188,7 +188,7 @@ TEST_F(raft_heartbeat_handler, handle_response_invalid_peer)
     ctx.term = 1;
     ASSERT_TRUE(ctx.peers.size() == 1) << ctx.peers.size();
     details::peer::ptr p_peer = details::peers::find(ctx, 2);
-    ASSERT_FALSE(p_peer->recent_recv());
+    ASSERT_FALSE(p_peer->recent_recv);
 
     details::role::become_follower(ctx);
     details::role::become_candidate(ctx);
@@ -196,7 +196,7 @@ TEST_F(raft_heartbeat_handler, handle_response_invalid_peer)
     EXPECT_TRUE(ctx.role.is_leader());
 
     details::heartbeat::handle_response(ctx, 1, 5, details::heartbeat_response_message());
-    EXPECT_FALSE(p_peer->recent_recv());
+    EXPECT_FALSE(p_peer->recent_recv);
 }
 
 TEST_F(raft_timeout_handler, timeout_stopped_servicce)
