@@ -93,6 +93,8 @@ public:
 
     virtual term_t load_term() = 0;
 
+    virtual bool reconfigure(server_id_t id) = 0;
+
     virtual void send(server_id_t id, const buffer_type& msg) = 0;
 
     virtual void set_term(term_t term) = 0;
