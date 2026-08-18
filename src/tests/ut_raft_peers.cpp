@@ -96,6 +96,9 @@ TEST_F(raft_peers, update)
         cluster_cfg.servers.emplace_back(i + 1, true);
     }
     EXPECT_TRUE(ctx.peers.size() == 2) << ctx.peers.size();
+    m_p_io->cluster_cfg = cluster_cfg;
+    m_p_io->clients.clear();
+    m_p_io->init(1);
     details::peers::update(ctx, cluster_cfg);
     EXPECT_TRUE(ctx.peers.size() == 4) << ctx.peers.size();
 }
@@ -112,6 +115,9 @@ TEST_F(raft_peers, voting_members_count)
         cluster_cfg.servers.emplace_back(i + 1, is_voter);
     }
     EXPECT_TRUE(details::peers::voting_members_count(ctx) == 3) << details::peers::voting_members_count(ctx);
+    m_p_io->cluster_cfg = cluster_cfg;
+    m_p_io->clients.clear();
+    m_p_io->init(1);
     details::peers::update(ctx, cluster_cfg);
     EXPECT_TRUE(details::peers::voting_members_count(ctx) == voters_count) << details::peers::voting_members_count(ctx);
 }

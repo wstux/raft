@@ -48,7 +48,7 @@ public:
     using ptr = std::shared_ptr<io>;
 
 public:
-    io(const raft::le::server_id_t id, const config::server_config::list& servers, raft::le::logging_handler::severity_level lvl)
+    io(const config::server_config::list& servers, raft::le::logging_handler::severity_level lvl)
         : m_servers(servers)
         , m_term(0)
         , m_voted_for(raft::le::gk_invalid_id)
@@ -56,16 +56,6 @@ public:
         , m_logger(m_level)
     {
         m_cfg.scheduler_threads_count = 4;
-
-        for (const config::server_config& cfg : m_servers) {
-            std::map<raft::le::server_id_t, client::ptr>::iterator it = m_clients.find(cfg.id);
-            assert(it == m_clients.end());
-            if (id == cfg.id) {
-                continue;
-            }
-            client::ptr p_client = std::make_shared<client>(cfg.endpoint, m_level);
-            m_clients.emplace(cfg.id, p_client);
-        }
     }
 
     virtual ~io() {}
@@ -93,7 +83,17 @@ public:
 
     virtual void deinit() override final {}
 
-    virtual bool init(raft::le::server_id_t) override final { return true; }
+    virtual bool init(raft::le::server_id_t id) override final
+    {
+        for (const config::server_config& cfg : m_servers) {
+            std::map<raft::le::server_id_t, client::ptr>::iterator it = m_clients.find(cfg.id);
+            assert(it == m_clients.end());
+            if (cfg.id != id) {
+                m_clients.emplace(cfg.id, std::make_shared<client>(cfg.endpoint, m_level));
+            }
+        }
+        return true;
+    }
 
     virtual bool load() override final { return true; }
 

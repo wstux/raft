@@ -67,16 +67,22 @@ public:
     virtual cluster_config bootstrap() const override final { return cluster_cfg; }
     virtual config configuration() const override final { return cfg; };
 
-    virtual iclient::ptr create_client(server_id_t id) const override final
-    {
-        using rc_t = std::pair<std::map<server_id_t, empty_client::ptr>::iterator, bool>;
-
-        rc_t rc = clients.emplace(id, empty_client::make());
-        return rc.first->second;
-    }
+    virtual iclient::ptr create_client(server_id_t id) const override final {return clients.at(id); }
 
     virtual void deinit() override final {}
-    virtual bool init(server_id_t) override final { return is_init; }
+
+    virtual bool init(server_id_t id) override final
+    {
+        if (clients.empty() && ! cluster_cfg.servers.empty()) {
+            for (const server_config& cfg : cluster_cfg.servers) {
+                if (cfg.id != id) {
+                    clients.emplace(cfg.id, empty_client::make());
+                }
+            }
+        }
+        return is_init;
+    }
+
     virtual bool load() override final { return is_load; }
     virtual term_t load_term() override final { return 0; }
     virtual void set_term(term_t) override final {}

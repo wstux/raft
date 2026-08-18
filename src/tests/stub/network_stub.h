@@ -108,10 +108,10 @@ public:
         }
         for (const server_config& cfg : m_p_cluster_cfg->servers) {
             io_stub::ptr p_io = std::make_shared<io_stub>(m_p_cluster_cfg, this->shared_from_this());
-            server_ptr p_srv = create_server_impl(cfg.id, p_io);
-            if (is_init) {
-                p_srv->init();
-            }
+            create_server_impl(cfg.id, p_io);
+        }
+        if (is_init) {
+            init();
         }
     }
 

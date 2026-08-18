@@ -102,7 +102,7 @@ struct logging_handler_file : public ::wstux::raft::le::logging_handler
         if (p_line_number != nullptr) {
             sout << (*p_line_number) << " ";
         }
-        sout << timestamp() << " <" << std::this_thread::get_id() << "> [" << lvl << "] " << msg;
+        sout << timestamp() << " <" << std::this_thread::get_id() << "> [" << lvl << "] " << msg << std::endl;
         sout.flush();
     }
 

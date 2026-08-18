@@ -66,7 +66,7 @@ public:
 
         const std::string ts = timestamp();
         std::lock_guard<std::mutex> lock(cout_mutex);
-        std::cout << ts << " <" << std::this_thread::get_id() << "> [" << lvl << "] <Raft> " << p_msg;
+        std::cout << ts << " <" << std::this_thread::get_id() << "> [" << lvl << "] <Raft> " << p_msg << std::endl;
     }
 
 private:
@@ -103,7 +103,7 @@ private:
     do {                                                                    \
         if (logger.can_log_fn(logger.p_this, level)) {                      \
             std::stringstream ss;                                           \
-            ss << VARS << std::endl;                                        \
+            ss << VARS;                                                     \
             logger.log_fn(logger.p_this, level, ss.str().c_str());          \
         }                                                                   \
     } while(0)

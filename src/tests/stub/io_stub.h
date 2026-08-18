@@ -207,14 +207,21 @@ public:
 
     virtual config configuration() const override final { return m_cfg; };
 
-    virtual iclient::ptr create_client(server_id_t id) const override final
-    {
-        return m_p_factory->create_client(id);
-    }
+    virtual iclient::ptr create_client(server_id_t id) const override final { return m_clients.at(id); }
 
     virtual void deinit() override final {}
 
-    virtual bool init(server_id_t) override final { return true; }
+    virtual bool init(server_id_t id) override final
+    {
+        if (m_clients.empty() && ! m_p_cluster_cfg->servers.empty()) {
+            for (const server_config& cfg : m_p_cluster_cfg->servers) {
+                if (cfg.id != id) {
+                    m_clients.emplace(cfg.id, m_p_factory->create_client(cfg.id));
+                }
+            }
+        }
+        return true;
+    }
 
     virtual bool load() override final { return true; }
 
@@ -228,6 +235,7 @@ public:
 
 public:
     std::shared_ptr<cluster_config> m_p_cluster_cfg;
+    std::map<server_id_t, iclient::ptr> m_clients;
     iclient_factory::ptr m_p_factory;
     config m_cfg;
 
