@@ -56,7 +56,7 @@ public:
     details::context& init(size_t servs_count = 1, bool is_voter = true)
     {
         for (size_t i = 0; i < servs_count; ++i) {
-            m_p_io->cluster_cfg.servers.emplace_back(i + 1, std::to_string(i), (i == 0) ? is_voter : true);
+            m_p_io->cluster_cfg.servers.emplace_back(i + 1, (i == 0) ? is_voter : true);
         }
 
         details::utils::init(*m_p_ctx, 1);
@@ -70,18 +70,6 @@ protected:
 };
 
 } // <anonymous> namespace
-
-TEST_F(raft_peers, probe_expired)
-{
-    using namespace std::chrono_literals;
-
-    details::peer peer(raft::server_config(1, "1", true), std::make_shared<tests::empty_io>(), 5);
-    EXPECT_FALSE(peer.is_probe_expired());
-
-    peer.update_last_response();
-    std::this_thread::sleep_for(10ms);
-    EXPECT_TRUE(peer.is_probe_expired());
-}
 
 TEST_F(raft_peers, find)
 {
@@ -105,7 +93,7 @@ TEST_F(raft_peers, update)
 
     raft::cluster_config cluster_cfg;
     for (size_t i = 0; i < 5; ++i) {
-        cluster_cfg.servers.emplace_back(i + 1, std::to_string(i), true);
+        cluster_cfg.servers.emplace_back(i + 1, true);
     }
     EXPECT_TRUE(ctx.peers.size() == 2) << ctx.peers.size();
     details::peers::update(ctx, cluster_cfg);
@@ -121,7 +109,7 @@ TEST_F(raft_peers, voting_members_count)
     for (size_t i = 0; i < 7; ++i) {
         const bool is_voter = (i + 1) % 2 == 1;
         voters_count += is_voter ? 1 : 0;
-        cluster_cfg.servers.emplace_back(i + 1, std::to_string(i), is_voter);
+        cluster_cfg.servers.emplace_back(i + 1, is_voter);
     }
     EXPECT_TRUE(details::peers::voting_members_count(ctx) == 3) << details::peers::voting_members_count(ctx);
     details::peers::update(ctx, cluster_cfg);

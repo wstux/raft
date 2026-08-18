@@ -33,11 +33,11 @@
 #include <filesystem>
 #include <functional>
 #include <iostream>
-#include <map>
 #include <memory>
 #include <mutex>
 #include <random>
 #include <thread>
+#include <unordered_map>
 
 #include <boost/lockfree/queue.hpp>
 
@@ -58,6 +58,16 @@ enum client_type
     random_threaded
 };
 
+class iclient
+{
+public:
+    using ptr = std::shared_ptr<iclient>;
+
+public:
+    virtual ~iclient() {}
+    virtual void send(const buffer_type& msg) = 0;
+};
+
 class client_stub final : public iclient
 {
 public:
@@ -73,11 +83,9 @@ public:
 
     virtual void send(const buffer_type& msg) override
     {
-        std::shared_ptr<server> p_srv = m_p_srv.lock();
-        if (p_srv) {
+        if (std::shared_ptr<server> p_srv = m_p_srv.lock()) {
             p_srv->handle_message(msg);
         }
-        //m_p_srv->handle_message(msg);
     }
 
 private:
@@ -190,7 +198,7 @@ public:
     public:
         virtual ~iclient_factory() {}
 
-        virtual iclient::ptr create_client(server_id_t id, const std::string& endpoint) const = 0;
+        virtual iclient::ptr create_client(server_id_t id) const = 0;
     };
 
 public:
@@ -209,18 +217,23 @@ public:
 
     virtual config configuration() const override final { return m_cfg; };
 
-    virtual iclient::ptr create_client(server_id_t id, const std::string& endpoint) const override final
-    {
-        return m_p_factory->create_client(id, endpoint);
-    }
-
     virtual void deinit() override final {}
 
-    virtual bool init(server_id_t) override final { return true; }
-
-    virtual bool load() override final { return true; }
+    virtual bool init(server_id_t id) override final
+    {
+        if (m_clients.empty() && ! m_p_cluster_cfg->servers.empty()) {
+            for (const server_config& cfg : m_p_cluster_cfg->servers) {
+                if (cfg.id != id) {
+                    m_clients.emplace(cfg.id, m_p_factory->create_client(cfg.id));
+                }
+            }
+        }
+        return true;
+    }
 
     virtual term_t load_term() override final { return m_term; }
+
+    virtual void send(server_id_t id, const buffer_type& msg) override final { m_clients.at(id)->send(msg); }
 
     virtual void set_term(term_t term) override final { m_term = term; }
 
@@ -230,6 +243,7 @@ public:
 
 public:
     std::shared_ptr<cluster_config> m_p_cluster_cfg;
+    std::unordered_map<server_id_t, iclient::ptr> m_clients;
     iclient_factory::ptr m_p_factory;
     config m_cfg;
 

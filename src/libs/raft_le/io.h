@@ -51,49 +51,28 @@ constexpr server_id_t gk_invalid_id = 0;
 
 struct config final
 {
-    using ptr = std::shared_ptr<config>;
-
     size_t vote_timeout_min_ms = 250;
     size_t vote_timeout_max_ms = 500;
 
     size_t heartbeat_interval_ms = 100;
-    size_t heartbeat_probes_count = 10;
 
     size_t scheduler_threads_count = 4;
 };
 
 struct server_config final
 {
-    server_config()
-        : id(gk_invalid_id)
-        , is_voter(false)
-    {}
-
-    server_config(const server_id_t id, const std::string& endpoint, bool is_voter)
+    server_config(const server_id_t id, bool is_voter)
         : id(id)
-        , endpoint(endpoint)
         , is_voter(is_voter)
     {}
 
     server_id_t id;
-    std::string endpoint;
     bool is_voter;
 };
 
 struct cluster_config final
 {
     std::vector<server_config> servers;
-};
-
-class iclient
-{
-public:
-    using ptr = std::shared_ptr<iclient>;
-
-public:
-    virtual ~iclient() {}
-
-    virtual void send(const buffer_type& msg) = 0;
 };
 
 class io
@@ -108,15 +87,13 @@ public:
 
     virtual config configuration() const = 0;
 
-    virtual iclient::ptr create_client(server_id_t id, const std::string& endpoint) const = 0;
-
     virtual void deinit() = 0;
 
     virtual bool init(server_id_t id) = 0;
 
-    virtual bool load() = 0;
-
     virtual term_t load_term() = 0;
+
+    virtual void send(server_id_t id, const buffer_type& msg) = 0;
 
     virtual void set_term(term_t term) = 0;
 

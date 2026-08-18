@@ -44,17 +44,14 @@ public:
     using list = std::vector<peer>;
 
 public:
-    peer(const server_config& cfg, const io::ptr& p_io, size_t hb_expired_interval_ms);
-
-    const server_config& config() const { return m_cfg; }
+    explicit peer(const server_config& cfg)
+        : m_cfg(cfg)
+        , m_recent_recv(false)
+    {}
 
     server_id_t id() const { return m_cfg.id; }
 
-    bool is_probe_expired() const;
-
     bool is_voter() const { return m_cfg.is_voter; }
-
-    size_t last_response_ms() const { return m_last_response_ms; }
 
     void mark_recent_recv() { m_recent_recv = true; }
 
@@ -67,24 +64,9 @@ public:
         return recent_recv;
     }
 
-    void send_heartbeat_request(uint64_t term, int32_t src_id);
-
-    void send_heartbeat_response(uint64_t term, int32_t src_id, bool accept);
-
-    void send_vote_request(uint64_t term, int32_t src_id, bool is_prevote);
-
-    void send_vote_response(uint64_t term, int32_t src_id, bool is_prevote, bool accept);
-
-    void update(size_t hb_expired_interval_ms);
-
-    void update_last_response();
-
 private:
     server_config m_cfg;
-    size_t m_heartbeat_expired_interval_ms;
-    iclient::ptr m_p_client;
 
-    size_t m_last_response_ms;
     bool m_recent_recv;
 };
 

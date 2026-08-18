@@ -40,7 +40,7 @@ public:
     virtual void SetUp() override
     {
         m_p_io = std::make_shared<tests::empty_io>();
-        m_p_io->cluster_cfg.servers.emplace_back(1, "localhost:50001", true);
+        m_p_io->cluster_cfg.servers.emplace_back(1, true);
 
         tests::empty_io* p_raw_io = m_p_io.get();
         std::function<bool()> is_stop_fn = [p_raw_io]()->bool { return p_raw_io->is_stop; };
@@ -62,14 +62,6 @@ TEST_F(raft_server, failed_init)
     m_p_io->is_init = false;
 
     EXPECT_FALSE(m_p_srv->init());
-}
-
-TEST_F(raft_server, failed_load)
-{
-    m_p_io->is_load = false;
-
-    EXPECT_TRUE(m_p_srv->init());
-    EXPECT_FALSE(m_p_srv->start());
 }
 
 TEST_F(raft_server, double_start)

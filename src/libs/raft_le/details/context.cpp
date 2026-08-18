@@ -48,8 +48,6 @@ peer::ptr find_peer(peer::list& peers, server_id_t id)
 
 bool load_peers(context& ctx, peer::list& peers, const cluster_config& cluster_cfg)
 {
-    const size_t hb_expired_interval_ms = ctx.heartbeat_interval_ms * ctx.heartbeat_probes_count;
-
     const server_config* p_cur_cfg = nullptr;
     peers.reserve(cluster_cfg.servers.size() - 1);
     for (const server_config& cfg : cluster_cfg.servers) {
@@ -58,7 +56,7 @@ bool load_peers(context& ctx, peer::list& peers, const cluster_config& cluster_c
             ctx.config = cfg;
             ctx.role.is_voter = cfg.is_voter;
         } else if (find_peer(peers, cfg.id) == nullptr) {
-            peers.emplace_back(cfg, ctx.p_io, hb_expired_interval_ms);
+            peers.emplace_back(cfg);
         } else {
             return false;
         }
@@ -80,10 +78,10 @@ context::context(server_id_t id, const io::ptr p_io, logging_handler::ptr p_hand
     : id(id)
     , is_stop_fn(is_stop)
     , is_async_io(false)
+    , config(gk_invalid_id, false)
     , p_io(p_io)
     , term(0)
     , heartbeat_interval_ms(100)
-    , heartbeat_probes_count(10)
     , rand_engine(std::chrono::system_clock::now().time_since_epoch().count() * id)
     , election_distribution(250, 500)
     , raft_logger(std::move(p_handler))
@@ -175,25 +173,23 @@ bool init(context& ctx, server_id_t id)
 
     ctx.election_distribution = std::uniform_int_distribution<size_t>(cfg.vote_timeout_min_ms, cfg.vote_timeout_max_ms);
     ctx.heartbeat_interval_ms = cfg.heartbeat_interval_ms;
-    ctx.heartbeat_probes_count = cfg.heartbeat_probes_count;
 
     return true;
 }
 
 bool load(context& ctx)
 {
-    io::ptr p_io = ctx.p_io;
-    if (! p_io->load()) {
+    if (! ctx.peers.empty()) {
         return false;
     }
 
+    io::ptr p_io = ctx.p_io;
+
     ctx.term = p_io->load_term();
     ctx.role.voted_for = p_io->voted_for();
-    if (ctx.peers.empty()) {
-        const cluster_config cluster_cfg = p_io->bootstrap();
-        if (! load_peers(ctx, ctx.peers, cluster_cfg)) {
-            return false;
-        }
+    const cluster_config cluster_cfg = p_io->bootstrap();
+    if (! load_peers(ctx, ctx.peers, cluster_cfg)) {
+        return false;
     }
     return true;
 }
@@ -203,7 +199,6 @@ void reconfigure(context& ctx, const config& cfg, const cluster_config& cluster_
     ctx.election_distribution = std::uniform_int_distribution<size_t>(cfg.vote_timeout_min_ms, cfg.vote_timeout_max_ms);
 
     ctx.heartbeat_interval_ms = cfg.heartbeat_interval_ms;
-    ctx.heartbeat_probes_count = cfg.heartbeat_probes_count;
 
     details::peers::update(ctx, cluster_cfg);
 }
