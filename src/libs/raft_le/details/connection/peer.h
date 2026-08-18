@@ -44,7 +44,13 @@ public:
     using list = std::vector<peer>;
 
 public:
-    peer(const server_config& cfg, const io::ptr& p_io);
+    peer(const server_config& cfg, const io::ptr& p_io)
+        : m_cfg(cfg)
+        , m_p_client(p_io->create_client(m_cfg.id, m_cfg.endpoint))
+        , m_recent_recv(false)
+    {}
+
+    iclient::ptr client() const { return m_p_client; }
 
     server_id_t id() const { return m_cfg.id; }
 
@@ -60,14 +66,6 @@ public:
         m_recent_recv = false;
         return recent_recv;
     }
-
-    void send_heartbeat_request(uint64_t term, int32_t src_id);
-
-    void send_heartbeat_response(uint64_t term, int32_t src_id, bool accept);
-
-    void send_vote_request(uint64_t term, int32_t src_id, bool is_prevote);
-
-    void send_vote_response(uint64_t term, int32_t src_id, bool is_prevote, bool accept);
 
 private:
     server_config m_cfg;

@@ -31,13 +31,16 @@
 #include <vector>
 
 #include "raft_le/io.h"
+#include "raft_le/details/context.h"
 #include "raft_le/details/connection/messages.h"
+#include "raft_le/details/connection/peer.h"
 #include "raft_le/details/connection/serialization.h"
 
 namespace wstux {
 namespace raft {
 namespace le {
 namespace details {
+namespace utils {
 
 template<message_type TMsgType> struct message_filler;
 
@@ -66,7 +69,7 @@ template<> struct message_filler<message_type::vote_response>
 };
 
 template<message_type TMsgType, typename... TArgs>
-void send(iclient::ptr p_client, uint64_t term, int32_t src_id, int32_t dst_id, TArgs&&... args)
+void send(iclient::ptr p_client, server_id_t dst_id, term_t term, server_id_t src_id, TArgs&&... args)
 {
     message msg;
 
@@ -81,6 +84,25 @@ void send(iclient::ptr p_client, uint64_t term, int32_t src_id, int32_t dst_id, 
     p_client->send(serialize(msg, buffer));
 }
 
+template<message_type TMsgType, typename... TArgs>
+inline void send(context& ctx, peer::ptr p_peer, TArgs&&... args)
+{
+    const scheduler::handler_type handler = [p_client = p_peer->client(), dst_id = p_peer->id(), args...]() -> void {
+        send<TMsgType>(p_client, dst_id, std::move(args)...);
+    };
+    ctx.p_scheduler->execute_async(handler);
+}
+
+template<message_type TMsgType, typename... TArgs>
+inline void send(context& ctx, peer& p, TArgs&&... args)
+{
+    const scheduler::handler_type handler = [p_client = p.client(), dst_id = p.id(), args...]() -> void {
+        send<TMsgType>(p_client, dst_id, std::move(args)...);
+    };
+    ctx.p_scheduler->execute_async(handler);
+}
+
+} // namespace utils
 } // namespace details
 } // namespace le
 } // namespace raft

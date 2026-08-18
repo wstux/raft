@@ -26,6 +26,7 @@
 #include <algorithm>
 
 #include "raft_le/details/logger.h"
+#include "raft_le/details/connection/send.h"
 #include "raft_le/details/handlers/heartbeat_handler.h"
 #include "raft_le/details/handlers/timeout_handler.h"
 #include "raft_le/details/role/convert.h"
@@ -52,7 +53,7 @@ void handle_request(context& ctx, term_t term, server_id_t src_id, const heartbe
     // Raft Paper, Section 5.1: AppendEntries RPC: 1. Reply false if term < currentTerm
     if (ctx.term > term) {
         RAFT_HB_LOG_DEBUG(ctx, "Handle heartbeat. Local term %u is higher then request term %u", ctx.term, term);
-        return utils::wrap_send(ctx, p_src_peer, &peer::send_heartbeat_response, ctx.term, ctx.id, false);
+        return utils::send<message_type::heartbeat_response>(ctx, p_src_peer, ctx.term, ctx.id, false);
     }
 
     assert(ctx.role.is_follower() || ctx.role.is_candidate());
@@ -74,7 +75,7 @@ void handle_request(context& ctx, term_t term, server_id_t src_id, const heartbe
     role::update_leader(ctx, src_id);
     timeout::election_restart_task(ctx);
 
-    utils::wrap_send(ctx, p_src_peer, &peer::send_heartbeat_response, ctx.term, ctx.id, true);
+    utils::send<message_type::heartbeat_response>(ctx, p_src_peer, ctx.term, ctx.id, true);
 }
 
 void handle_response(context& ctx, term_t term, server_id_t src_id, const heartbeat_response_message& /*msg*/)
@@ -124,7 +125,7 @@ void request(context& ctx)
         assert(p.id() != ctx.id);
 
         RAFT_HB_LOG_TRACE(ctx, "Sending heartbeat request to server %llu. %llu(%s), current term %u", p.id(), ctx.id, ctx.role.str(), ctx.term);
-        utils::wrap_send(ctx, p, &peer::send_heartbeat_request, ctx.term, ctx.id);
+        utils::send<message_type::heartbeat_request>(ctx, p, ctx.term, ctx.id);
     }
 }
 

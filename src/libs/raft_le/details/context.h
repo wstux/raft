@@ -120,24 +120,6 @@ bool load(context& ctx);
 
 void reconfigure(context& ctx, const config& cfg, const cluster_config& cluster_cfg);
 
-template<typename TFn, typename... TArgs>
-inline void wrap_send(context& ctx, peer::ptr p_peer, const TFn& func, TArgs&&... args)
-{
-    const scheduler::handler_type handler = [p_peer, func, args...]() -> void {
-        (p_peer->*func)(std::move(args)...);
-    };
-    ctx.p_scheduler->execute_async(handler);
-}
-
-template<typename TFn, typename... TArgs>
-inline void wrap_send(context& ctx, peer& p, const TFn& func, TArgs&&... args)
-{
-    const scheduler::handler_type handler = [&p, func, args...]() -> void {
-        (p.*func)(std::move(args)...);
-    };
-    ctx.p_scheduler->execute_async(handler);
-}
-
 } // namespace utils
 
 } // namespace details
