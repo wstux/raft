@@ -21,6 +21,9 @@ $(1): $(1)/all
 $(1)/clean: check_gitignore
 	@rm -rf build_$(1)
 
+.PHONY: $(1)/rebuild
+$(1)/rebuild: $(1)/clean $(1)/all
+
 .PHONY: $(1)/help
 $(1)/help: build_$(1)/Makefile
 	@echo "--- List of all cmake targets ---"
@@ -45,6 +48,9 @@ $(1)/%: build_$(1)/Makefile
 $(1)/clean: check_gitignore
 	@rm -rf build_$(1)
 
+.PHONY: $(1)/rebuild
+$(1)/rebuild: $(1)/clean $(1)/all
+
 .PHONY: $(1)/help
 $(1)/help: build_$(1)/Makefile
 	@echo "--- List of all cmake targets ---"
@@ -66,6 +72,9 @@ all: release/all
 
 .PHONY: clean
 clean: release/clean
+
+.PHONY: rebuild
+rebuild: release/clean release/all
 
 .PHONY: help
 help: release/help

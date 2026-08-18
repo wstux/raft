@@ -99,6 +99,7 @@ function(ExternalTarget EXT_TARGET_NAME)
 
     set(_patch_cmd "true")
     if (${EXT_TARGET_NAME}_PATCHES)
+        file(WRITE ${_target_dir}/${_target_name}-prefix/patch_target.sh "")
         foreach (_patch IN LISTS ${EXT_TARGET_NAME}_PATCHES)
             set(_patch_command  "bash -c \"patch -p1 --dry-run < ${_patch}\"\n")
             file(APPEND ${_target_dir}/${_target_name}-prefix/patch_target.sh "${_patch_command}")
@@ -118,6 +119,7 @@ function(ExternalTarget EXT_TARGET_NAME)
         INSTALL_DIR         ${_install_dir}
         BUILD_COMMAND       ${_build_cmd}
         PATCH_COMMAND       ${_patch_cmd}
+        UPDATE_COMMAND      ""
         DEPENDS             ${_depends}
     )
 
