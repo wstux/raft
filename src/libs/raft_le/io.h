@@ -57,7 +57,6 @@ struct config final
     size_t vote_timeout_max_ms = 500;
 
     size_t heartbeat_interval_ms = 100;
-    size_t heartbeat_probes_count = 10;
 
     size_t scheduler_threads_count = 4;
 };

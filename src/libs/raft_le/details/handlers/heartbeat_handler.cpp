@@ -47,8 +47,6 @@ void handle_request(context& ctx, term_t term, server_id_t src_id, const heartbe
     RAFT_HB_LOG_TRACE(ctx, "Handle heartbeat. Request from server %llu to server %llu(%s), current term %u",
         src_id, ctx.id, ctx.role.str(), ctx.term);
 
-    p_src_peer->update_last_response();
-
     // Raft Paper, Section 5.1: If RPC request or response contains term T > currentTerm: set currentTerm = T
     role::update_term(ctx, term);
     // Raft Paper, Section 5.1: AppendEntries RPC: 1. Reply false if term < currentTerm
@@ -114,7 +112,6 @@ void handle_response(context& ctx, term_t term, server_id_t src_id, const heartb
 
     // Reset the node availability timeout
     p_src_peer->mark_recent_recv();
-    p_src_peer->update_last_response();
 }
 
 void request(context& ctx)

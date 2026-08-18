@@ -69,7 +69,6 @@ struct context final : public std::enable_shared_from_this<context>
     scheduler::ptr p_scheduler;
 
     size_t heartbeat_interval_ms;
-    size_t heartbeat_probes_count;
     scheduler::task_type heartbeat_task;
 
     std::mt19937 rand_engine;

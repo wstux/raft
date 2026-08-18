@@ -71,18 +71,6 @@ protected:
 
 } // <anonymous> namespace
 
-TEST_F(raft_peers, probe_expired)
-{
-    using namespace std::chrono_literals;
-
-    details::peer peer(raft::server_config(1, "1", true), std::make_shared<tests::empty_io>(), 5);
-    EXPECT_FALSE(peer.is_probe_expired());
-
-    peer.update_last_response();
-    std::this_thread::sleep_for(10ms);
-    EXPECT_TRUE(peer.is_probe_expired());
-}
-
 TEST_F(raft_peers, find)
 {
     details::context& ctx = init(2);

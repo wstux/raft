@@ -38,21 +38,11 @@ namespace details {
 ////////////////////////////////////////////////////////////////////////////////
 // class peer
 
-peer::peer(const server_config& cfg, const io::ptr& p_io, size_t hb_expired_interval_ms)
+peer::peer(const server_config& cfg, const io::ptr& p_io)
     : m_cfg(cfg)
-    , m_heartbeat_expired_interval_ms(hb_expired_interval_ms)
     , m_p_client(p_io->create_client(m_cfg.id, m_cfg.endpoint))
-    , m_last_response_ms(0)
     , m_recent_recv(false)
 {}
-
-bool peer::is_probe_expired() const
-{
-    if (m_last_response_ms == 0) {
-        return false;
-    }
-    return (utils::current_time_ms() - m_last_response_ms > m_heartbeat_expired_interval_ms);
-}
 
 void peer::send_heartbeat_request(uint64_t term, int32_t src_id)
 {
@@ -72,16 +62,6 @@ void peer::send_vote_request(uint64_t term, int32_t src_id, bool is_prevote)
 void peer::send_vote_response(uint64_t term, int32_t src_id, bool is_prevote, bool accept)
 {
     send<message_type::vote_response>(m_p_client, term, src_id, m_cfg.id, is_prevote, accept);
-}
-
-void peer::update(size_t hb_expired_interval_ms)
-{
-    m_heartbeat_expired_interval_ms = hb_expired_interval_ms;
-}
-
-void peer::update_last_response()
-{
-    m_last_response_ms = utils::current_time_ms();
 }
 
 } // namespace details
