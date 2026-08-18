@@ -62,7 +62,7 @@ public:
             m_p_io->cluster_cfg.servers.emplace_back(i + 1, (i == 0) ? is_voter : true);
         }
 
-        details::utils::init(*m_p_ctx, 1);
+        details::utils::init(*m_p_ctx);
         details::utils::load(*m_p_ctx);
         m_p_ctx->p_scheduler->start();
         return *m_p_ctx;

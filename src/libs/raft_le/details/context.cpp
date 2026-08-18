@@ -114,11 +114,9 @@ size_t voting_members_count(context& ctx)
 
 namespace utils {
 
-bool init(context& ctx, server_id_t id)
+bool init(context& ctx)
 {
-    assert(ctx.id == id);
-
-    if (! ctx.p_io->init(id)) {
+    if (! ctx.p_io->init(ctx.id)) {
         return false;
     }
 

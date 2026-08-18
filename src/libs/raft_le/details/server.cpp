@@ -89,7 +89,7 @@ void server::deinit()
 
 bool server::init()
 {
-    const bool is_inited = details::utils::init(*m_p_ctx, m_id);
+    const bool is_inited = details::utils::init(*m_p_ctx);
     if (! is_inited) {
         RAFT_LOG_ERROR((*m_p_ctx), "Filed to init raft server.");
         return false;

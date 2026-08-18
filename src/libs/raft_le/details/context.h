@@ -112,7 +112,7 @@ size_t voting_members_count(context& ctx);
 
 namespace utils {
 
-bool init(context& ctx, server_id_t id);
+bool init(context& ctx);
 
 bool is_valid_cluster(const server_id_t id, const cluster_config& cluster_cfg);
 

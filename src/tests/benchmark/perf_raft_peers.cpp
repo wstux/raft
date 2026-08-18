@@ -51,7 +51,7 @@ constexpr size_t gk_cluster_size = 7;
     tests::empty_io* p_raw_io = p_io.get();
     std::function<bool()> is_stop_fn = [p_raw_io]()->bool { return p_raw_io->is_stop; };
     details::context::ptr p_ctx = std::make_unique<details::context>(1, p_io, raft::logging_handler::ptr(), is_stop_fn);
-    if (! raft::details::utils::init(*p_ctx, 1)) {
+    if (! raft::details::utils::init(*p_ctx)) {
         return nullptr;
     }
     p_ctx->election_task = p_ctx->p_scheduler->make_task(std::bind(&raft::details::timeout::election_timeout_task, std::ref(*p_ctx)));
