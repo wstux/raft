@@ -88,10 +88,10 @@ template<message_type TMsgType, typename... TArgs>
 inline void send(context& ctx, server_id_t dst_id, TArgs&&... args)
 {
     assert(ctx.id != dst_id);
-    const scheduler::handler_type handler = [p_io = ctx.p_io, dst_id, args...]() -> void {
+    scheduler::handler_type handler = [p_io = ctx.p_io, dst_id, args...]() -> void {
         send<TMsgType>(std::move(p_io), dst_id, std::move(args)...);
     };
-    ctx.schd.execute_async(handler);
+    ctx.schd.execute_async(std::move(handler));
 }
 
 } // namespace utils

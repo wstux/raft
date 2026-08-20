@@ -66,11 +66,11 @@ public:
 
     /// \brief  Creates and schedules the immediate asynchronous execution of a new handler.
     /// \param  handler - the handler function to execute.
-    void execute_async(const handler_type& handler);
+    void execute_async(handler_type&& handler);
 
     /// \brief  Executes the handler strictly sequentially within the strand.
     /// \param  handler - the handler function to execute.
-    void execute_strand(const handler_type& handler);
+    void execute_strand(handler_type&& handler);
 
     /// \brief  Scheduler initialization
     /// \param  pool_size - number of asio worker threads. If 0 is passed, the
@@ -84,7 +84,7 @@ public:
     /// \brief  Factory method to create a task object without starting it.
     /// \param  handler - the handler function to bind to the task.
     /// \return The created task.
-    task_type make_task(const handler_type& handler);
+    task_type make_task(handler_type&& handler);
 
     /// \brief  Dynamically changes the size of the worker thread pool.
     /// \param  new_size - the new size of the thread pool.

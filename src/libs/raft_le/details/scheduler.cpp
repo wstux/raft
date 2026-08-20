@@ -45,9 +45,9 @@ struct scheduler::task final
     /// \brief  Constructor.
     /// \param  h - user handler.
     /// \param  io - asio asynchronous context.
-    task(const scheduler::handler_type& h, boost::asio::io_context& io)
+    task(scheduler::handler_type&& h, boost::asio::io_context& io)
         : is_cancelled(true)
-        , exec(h)
+        , exec(std::move(h))
         , timer(io)
     {}
 
@@ -110,20 +110,24 @@ void scheduler::cancel(const task_type& task)
     }
 }
 
-void scheduler::execute_async(const handler_type& handler)
+void scheduler::execute_async(handler_type&& handler)
 {
+    using asio_allocator_type = boost::asio::recycling_allocator<void>;
+
     if (m_is_stop.load(std::memory_order_acquire)) {
         return;
     }
-    boost::asio::post(m_io_ctx, handler);
+    boost::asio::post(m_io_ctx, boost::asio::bind_allocator(asio_allocator_type(), std::move(handler)));
 }
 
-void scheduler::execute_strand(const handler_type& handler)
+void scheduler::execute_strand(handler_type&& handler)
 {
+    using asio_allocator_type = boost::asio::recycling_allocator<void>;
+
     if (m_is_stop.load(std::memory_order_acquire)) {
         return;
     }
-    boost::asio::post(m_strand, handler);
+    boost::asio::post(m_strand, boost::asio::bind_allocator(asio_allocator_type(), std::move(handler)));
 }
 
 void scheduler::init(size_t pool_size)
@@ -156,9 +160,9 @@ bool scheduler::is_canceled(const task_type& task) const
     return task->is_cancelled.load();
 }
 
-scheduler::task_type scheduler::make_task(const handler_type& handler)
+scheduler::task_type scheduler::make_task(handler_type&& handler)
 {
-    return std::make_shared<task>(handler, m_io_ctx);
+    return std::make_shared<task>(std::move(handler), m_io_ctx);
 }
 
 void scheduler::reconfigure(size_t new_size)
@@ -191,6 +195,8 @@ void scheduler::reschedule(const task_type& task, int32_t ms)
 
 void scheduler::schedule(const task_type& task, int32_t ms)
 {
+    using asio_allocator_type = boost::asio::recycling_allocator<void>;
+
     if (m_is_stop.load(std::memory_order_acquire)) {
         return;
     }
@@ -204,7 +210,15 @@ void scheduler::schedule(const task_type& task, int32_t ms)
 
     task->resume();
     task->timer.expires_after(std::chrono::milliseconds(ms));
-    task->timer.async_wait(boost::asio::bind_executor(m_strand, std::bind(&task::handler, task, std::placeholders::_1)));
+    task->timer.async_wait(
+        boost::asio::bind_executor(
+            m_strand,
+            boost::asio::bind_allocator(
+                asio_allocator_type(),
+                [task](const boost::system::error_code& ec) { task::handler(std::move(task), ec); }
+            )
+        )
+    );
 }
 
 void scheduler::start()
@@ -220,9 +234,11 @@ void scheduler::start()
 
 void scheduler::start_asio()
 {
+    using asio_allocator_type = boost::asio::recycling_allocator<void>;
+
     // Restart io_ctx processing on the new pool threads
     for (size_t i = 0; i < m_threads_size; ++i) {
-        boost::asio::post(*m_thread_pool, [this]() { m_io_ctx.run(); });
+        boost::asio::post(*m_thread_pool, boost::asio::bind_allocator(asio_allocator_type(), [this]() { m_io_ctx.run(); }));
     }
 }
 

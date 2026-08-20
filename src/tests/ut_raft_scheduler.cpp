@@ -82,8 +82,7 @@ TEST(raft_scheduler, execute)
     schd.start();
 
     std::atomic_size_t counter{0};
-    raft::scheduler::handler_type handler_fn = std::bind(timer_handler, std::ref(counter));
-    raft::scheduler::task_type task = schd.make_task(handler_fn);
+    raft::scheduler::task_type task = schd.make_task(std::bind(timer_handler, std::ref(counter)));
 
     schd.schedule(task, 200);
     wait_for(300, [&counter]() -> bool { return (counter == 1); });
@@ -117,8 +116,7 @@ TEST(raft_scheduler, execute_async)
     schd.start();
 
     std::thread::id worker_id = std::this_thread::get_id();
-    raft::scheduler::handler_type handler_fn = [&worker_id]() -> void { worker_id = std::this_thread::get_id(); };
-    schd.execute_async(handler_fn);
+    schd.execute_async([&worker_id]() -> void { worker_id = std::this_thread::get_id(); });
 
     wait_for(200, [&worker_id]() -> bool { return (std::this_thread::get_id() != worker_id); });
     EXPECT_TRUE(std::this_thread::get_id() != worker_id) << worker_id;
@@ -151,8 +149,7 @@ TEST(raft_scheduler, cancel)
     schd.start();
 
     std::atomic_size_t counter{0};
-    raft::scheduler::handler_type handler_fn = std::bind(timer_handler, std::ref(counter));
-    raft::scheduler::task_type task = schd.make_task(handler_fn);
+    raft::scheduler::task_type task = schd.make_task(std::bind(timer_handler, std::ref(counter)));
 
     schd.schedule(task, 200);
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -193,9 +190,8 @@ TEST(raft_scheduler, cancel_task)
     schd.start();
 
     std::atomic_size_t counter{0};
-    raft::scheduler::handler_type handler_fn = std::bind(timer_handler, std::ref(counter));
-    raft::scheduler::task_type task_1 = schd.make_task(handler_fn);
-    raft::scheduler::task_type task_2 = schd.make_task(handler_fn);
+    raft::scheduler::task_type task_1 = schd.make_task(std::bind(timer_handler, std::ref(counter)));
+    raft::scheduler::task_type task_2 = schd.make_task(std::bind(timer_handler, std::ref(counter)));
 
     schd.schedule(task_1, 400);
     schd.schedule(task_2, 50);
@@ -235,8 +231,7 @@ TEST(raft_scheduler, stop)
     schd.start();
 
     std::atomic_size_t counter{0};
-    raft::scheduler::handler_type handler_fn = std::bind(timer_handler, std::ref(counter));
-    raft::scheduler::task_type task = schd.make_task(handler_fn);
+    raft::scheduler::task_type task = schd.make_task(std::bind(timer_handler, std::ref(counter)));
 
     schd.schedule(task, 200);
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -275,8 +270,7 @@ TEST(raft_scheduler, reconfigure)
     EXPECT_TRUE(schd.threads_size() == 9) << schd.threads_size();
 
     std::atomic_size_t counter{0};
-    raft::scheduler::handler_type handler_fn = std::bind(timer_handler, std::ref(counter));
-    raft::scheduler::task_type task = schd.make_task(handler_fn);
+    raft::scheduler::task_type task = schd.make_task(std::bind(timer_handler, std::ref(counter)));
 
     schd.schedule(task, 200);
     wait_for(300, [&counter]() -> bool { return (counter == 1); });
@@ -309,8 +303,7 @@ TEST(raft_scheduler, reconfigure_with_waiting_task)
     schd.start();
 
     std::atomic_size_t counter{0};
-    raft::scheduler::handler_type handler_fn = std::bind(timer_handler, std::ref(counter));
-    raft::scheduler::task_type task = schd.make_task(handler_fn);
+    raft::scheduler::task_type task = schd.make_task(std::bind(timer_handler, std::ref(counter)));
 
     schd.schedule(task, 300);
 
@@ -348,8 +341,7 @@ TEST(raft_scheduler, reconfigure_with_long_task)
     schd.start();
 
     std::atomic_size_t counter{0};
-    raft::scheduler::handler_type handler_fn = std::bind(long_timer_handler, std::ref(counter));
-    raft::scheduler::task_type task = schd.make_task(handler_fn);
+    raft::scheduler::task_type task = schd.make_task(std::bind(long_timer_handler, std::ref(counter)));
 
     schd.schedule(task, 200);
 
@@ -391,9 +383,8 @@ TEST(raft_scheduler, reconfigure_with_active_task)
     schd.start();
 
     std::atomic_size_t counter{0};
-    raft::scheduler::handler_type handler_fn = std::bind(long_timer_handler, std::ref(counter));
 
-    schd.execute_async(handler_fn);
+    schd.execute_async(std::bind(long_timer_handler, std::ref(counter)));
     wait_for(100, [&counter]() -> bool { return (counter == 1); });
 
     schd.reconfigure(9);
@@ -432,9 +423,8 @@ TEST(raft_scheduler, reconfigure_after_stop)
     EXPECT_TRUE(schd.threads_size() == 5) << schd.threads_size();
 
     std::atomic_size_t counter{0};
-    raft::scheduler::handler_type handler_fn = std::bind(long_timer_handler, std::ref(counter));
 
-    schd.execute_async(handler_fn);
+    schd.execute_async(std::bind(long_timer_handler, std::ref(counter)));
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     EXPECT_TRUE(counter == 0) << counter;
 }
