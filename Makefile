@@ -10,7 +10,10 @@ define common_rule
 build_$(1)/Makefile: check_gitignore
 	@mkdir -p $$(@D) && cd $$(@D) && cmake -DCMAKE_BUILD_TYPE="$(1)" ../
 
-$(1)/%: build_$(1)/Makefile
+.PHONY: $(1)/configure
+$(1)/configure: build_$(1)/Makefile
+
+$(1)/%: $(1)/configure
 	@make -j $(NJOB) --output-sync=target --no-print-directory -C build_$(1) $$*
 
 .PHONY: $(1)
@@ -25,7 +28,7 @@ $(1)/clean: check_gitignore
 $(1)/rebuild: $(1)/clean $(1)/all
 
 .PHONY: $(1)/help
-$(1)/help: build_$(1)/Makefile
+$(1)/help: $(1)/configure
 	@echo "--- List of all cmake targets ---"
 	@make --no-print-directory -C build_$(1) help
 
@@ -41,7 +44,10 @@ define coverage_rule
 build_$(1)/Makefile: check_gitignore
 	@mkdir -p $$(@D) && cd $$(@D) && cmake -DCMAKE_BUILD_TYPE="debug" -DCOVERAGE_BUILD=ON -DBUILD_TESTS=ON ../
 
-$(1)/%: build_$(1)/Makefile
+.PHONY: $(1)/configure
+$(1)/configure: build_$(1)/Makefile
+
+$(1)/%: $(1)/configure
 	@make -j $(NJOB) --output-sync=target --no-print-directory -C build_$(1) $$*
 
 .PHONY: $(1)/clean
@@ -52,7 +58,7 @@ $(1)/clean: check_gitignore
 $(1)/rebuild: $(1)/clean $(1)/all
 
 .PHONY: $(1)/help
-$(1)/help: build_$(1)/Makefile
+$(1)/help: $(1)/configure
 	@echo "--- List of all cmake targets ---"
 	@make --no-print-directory -C build_$(1) help
 
@@ -72,6 +78,9 @@ all: release/all
 
 .PHONY: clean
 clean: release/clean
+
+.PHONY: configure
+configure: release/configure
 
 .PHONY: rebuild
 rebuild: release/clean release/all
