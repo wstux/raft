@@ -36,6 +36,17 @@ $(1)/help: $(1)/configure
 $(1)/test: $(1)/all
 	@make -j $(NJOB) -C build_$(1) test
 
+# Dynamic import of cmake targets for auto completion.
+$(if $(wildcard build_$(1)/Makefile),
+    $(eval _RAW_TARGETS := $(shell $(MAKE) --no-print-directory -C build_$(1) help 2>/dev/null | awk '/^\.\.\./ {print $$2}'))
+    $(foreach t,$(_RAW_TARGETS),
+        $(if $(filter-out configure clean rebuild help test,$(t)),
+            $(eval .PHONY: $(1)/$(t))
+            $(eval $(1)/$(t): build_$(1)/Makefile ; @\$$(MAKE) -j \$$(NJOB) --output-sync=target --no-print-directory -C build_$(1) $(t))
+        )
+    )
+)
+
 endef
 
 # Coverage rule declaration
@@ -65,6 +76,17 @@ $(1)/help: $(1)/configure
 .PHONY: $(1)/test
 $(1)/test: $(1)/all
 	@make -j $(NJOB) -C build_$(1) test
+
+# Dynamic import of cmake targets for auto completion.
+$(if $(wildcard build_$(1)/Makefile),
+    $(eval _RAW_TARGETS := $(shell $(MAKE) --no-print-directory -C build_$(1) help 2>/dev/null | awk '/^\.\.\./ {print $$2}'))
+    $(foreach t,$(_RAW_TARGETS),
+        $(if $(filter-out configure clean rebuild help test,$(t)),
+            $(eval .PHONY: $(1)/$(t))
+            $(eval $(1)/$(t): build_$(1)/Makefile ; @\$$(MAKE) -j \$$(NJOB) --output-sync=target --no-print-directory -C build_$(1) $(t))
+        )
+    )
+)
 
 endef
 
