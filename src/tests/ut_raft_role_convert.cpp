@@ -58,11 +58,11 @@ public:
         }
 
         details::utils::init(*m_p_ctx);
-        m_p_ctx->election_task = m_p_ctx->p_scheduler->make_task(std::bind(&details::timeout::election_timeout_task, std::ref(*m_p_ctx)));
-        m_p_ctx->heartbeat_task = m_p_ctx->p_scheduler->make_task(std::bind(&details::timeout::heartbeat_timeout_task, std::ref(*m_p_ctx)));
+        m_p_ctx->election_task = m_p_ctx->schd.make_task(std::bind(&details::timeout::election_timeout_task, std::ref(*m_p_ctx)));
+        m_p_ctx->heartbeat_task = m_p_ctx->schd.make_task(std::bind(&details::timeout::heartbeat_timeout_task, std::ref(*m_p_ctx)));
 
-        m_p_ctx->p_scheduler->cancel(m_p_ctx->election_task);
-        m_p_ctx->p_scheduler->cancel(m_p_ctx->heartbeat_task);
+        m_p_ctx->schd.cancel(m_p_ctx->election_task);
+        m_p_ctx->schd.cancel(m_p_ctx->heartbeat_task);
 
         details::utils::load(*m_p_ctx);
         return *m_p_ctx;

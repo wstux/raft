@@ -91,7 +91,7 @@ inline void send(context& ctx, server_id_t dst_id, TArgs&&... args)
     const scheduler::handler_type handler = [p_io = ctx.p_io, dst_id, args...]() -> void {
         send<TMsgType>(std::move(p_io), dst_id, std::move(args)...);
     };
-    ctx.p_scheduler->execute_async(handler);
+    ctx.schd.execute_async(handler);
 }
 
 } // namespace utils

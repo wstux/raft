@@ -66,7 +66,7 @@ struct context final : public std::enable_shared_from_this<context>
 
     peer::list peers;
 
-    scheduler::ptr p_scheduler;
+    scheduler schd;
 
     size_t heartbeat_interval_ms;
     scheduler::task_type heartbeat_task;
