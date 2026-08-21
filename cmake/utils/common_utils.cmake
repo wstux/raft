@@ -46,6 +46,24 @@ endfunction()
 ################################################################################
 function(_append_to_list LIST_OF_VALUES VALUE)
     if (${LIST_OF_VALUES})
+        set(${LIST_OF_VALUES} "${${LIST_OF_VALUES}}" "${VALUE}" PARENT_SCOPE)
+    else()
+        set(${LIST_OF_VALUES} "${VALUE}" PARENT_SCOPE)
+    endif()
+endfunction()
+
+################################################################################
+# Adding value at the end of string.
+# LIST_OF_VALUES - list of values ​​where a new value should be added.
+# VALUE          - a new value to add to the end of the list.
+#
+# Example:
+#   foreach (_val IN LISTS values)
+#       _push_back(_new_list "${_val}")
+#   endforeach()
+################################################################################
+function(_push_back LIST_OF_VALUES VALUE)
+    if (${LIST_OF_VALUES})
         string(REPLACE " " ";" _tmp_values_list "${${LIST_OF_VALUES}}")
         list(FIND _tmp_values_list "${VALUE}" _value_index)
         if (_value_index EQUAL -1)
