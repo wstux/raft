@@ -110,26 +110,6 @@ void scheduler::cancel(const task_type& task)
     }
 }
 
-void scheduler::execute_async(handler_type&& handler)
-{
-    using asio_allocator_type = boost::asio::recycling_allocator<void>;
-
-    if (m_is_stop.load(std::memory_order_acquire)) {
-        return;
-    }
-    boost::asio::post(m_io_ctx, boost::asio::bind_allocator(asio_allocator_type(), std::move(handler)));
-}
-
-void scheduler::execute_strand(handler_type&& handler)
-{
-    using asio_allocator_type = boost::asio::recycling_allocator<void>;
-
-    if (m_is_stop.load(std::memory_order_acquire)) {
-        return;
-    }
-    boost::asio::post(m_strand, boost::asio::bind_allocator(asio_allocator_type(), std::move(handler)));
-}
-
 void scheduler::init(size_t pool_size)
 {
     if (! m_is_stop.load(std::memory_order_acquire)) {
@@ -201,7 +181,7 @@ void scheduler::schedule(const task_type& task, int32_t ms)
         return;
     }
 
-    std::shared_lock<std::shared_mutex> lock(m_pool_mutex);
+    //std::shared_lock<std::shared_mutex> lock(m_pool_mutex);
 
     // Prevention of rescheduling an already active task
     if (! task || ! task->is_cancelled) {
@@ -262,11 +242,26 @@ void scheduler::stop_asio()
 
     // Stops the processing of new tasks in the pool immediately.
     m_io_ctx.stop();
+    /*std::unique_ptr<boost::asio::thread_pool> old_pool;
+    {
+        std::unique_lock<std::shared_mutex> lock(m_pool_mutex);
+        m_work_guard.reset();
+        m_io_ctx.stop();
+
+        if (m_thread_pool) {
+            m_thread_pool->stop();
+            old_pool = std::move(m_thread_pool);
+        }
+    }*/
 
     // Blocks the calling thread until all worker threads finish execution.
     m_thread_pool->stop();
     m_thread_pool->join();
     m_thread_pool.reset();
+    /*if (old_pool) {
+        old_pool->join();
+        old_pool.reset();
+    }*/
 
     m_io_ctx.restart();
 }

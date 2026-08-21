@@ -66,11 +66,29 @@ public:
 
     /// \brief  Creates and schedules the immediate asynchronous execution of a new handler.
     /// \param  handler - the handler function to execute.
-    void execute_async(handler_type&& handler);
+    template<typename TFn>
+    void execute_async(TFn&& handler)
+    {
+        using asio_allocator_type = boost::asio::recycling_allocator<void>;
+
+        if (m_is_stop.load(std::memory_order_acquire)) {
+            return;
+        }
+        boost::asio::post(m_io_ctx, boost::asio::bind_allocator(asio_allocator_type(), std::move(handler)));
+    }
 
     /// \brief  Executes the handler strictly sequentially within the strand.
     /// \param  handler - the handler function to execute.
-    void execute_strand(handler_type&& handler);
+    template<typename TFn>
+    void execute_strand(TFn&& handler)
+    {
+        using asio_allocator_type = boost::asio::recycling_allocator<void>;
+
+        if (m_is_stop.load(std::memory_order_acquire)) {
+            return;
+        }
+        boost::asio::post(m_strand, boost::asio::bind_allocator(asio_allocator_type(), std::move(handler)));
+    }
 
     /// \brief  Scheduler initialization
     /// \param  pool_size - number of asio worker threads. If 0 is passed, the

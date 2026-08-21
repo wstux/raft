@@ -119,10 +119,7 @@ void server::handle_message(const buffer_type& msg_buf)
     details::message msg;
     details::deserialize(msg_buf, msg);
 
-    details::scheduler::handler_type handler = [p_ctx = m_p_ctx.get(), msg = std::move(msg)]() -> void {
-        le::handle_message(*p_ctx, msg);
-    };
-    m_p_ctx->schd.execute_strand(std::move(handler));
+    m_p_ctx->schd.execute_strand([p_ctx = m_p_ctx.get(), msg = std::move(msg)]() { le::handle_message(*p_ctx, msg); });
 }
 
 bool server::load(details::context& ctx)
