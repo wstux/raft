@@ -67,7 +67,10 @@ endef
 define common_rule
 
 build_$(1)/Makefile: check_gitignore
-	@mkdir -p $$(@D) && cd $$(@D) && cmake -DCMAKE_BUILD_TYPE="$(1)" $$(SANITIZER_FLAGS) ../
+	@mkdir -p $$(@D) && \
+	touch $$(@D)/.kdev_ignore && \
+	cd $$(@D) && \
+	cmake -DCMAKE_BUILD_TYPE="$(1)" $$(SANITIZER_FLAGS) ../
 
 $$(eval $$(call base_rule,$(1)))
 
@@ -77,7 +80,10 @@ endef
 define coverage_rule
 
 build_$(1)/Makefile: check_gitignore
-	@mkdir -p $$(@D) && cd $$(@D) && cmake -DCMAKE_BUILD_TYPE="debug" -DCOVERAGE_BUILD=ON -DBUILD_TESTS=ON $$(SANITIZER_FLAGS) ../
+	@mkdir -p $$(@D) && \
+	touch $$(@D)/.kdev_ignore && \
+	cd $$(@D) && \
+	cmake -DCMAKE_BUILD_TYPE="debug" -DCOVERAGE_BUILD=ON -DBUILD_TESTS=ON $$(SANITIZER_FLAGS) ../
 
 $$(eval $$(call base_rule,$(1)))
 
