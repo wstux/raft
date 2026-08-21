@@ -22,8 +22,8 @@
 
 include(ExternalProject)
 
-include(build_utils)
-include(utils)
+include(utils/target_utils)
+include(utils/common_utils)
 
 ################################################################################
 # Setting of cmake policies

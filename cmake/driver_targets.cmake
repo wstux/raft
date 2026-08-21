@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-include(build_utils)
+include(utils/target_utils)
 
 ################################################################################
 # Keywords
@@ -38,6 +38,25 @@ set(_DRIVER_LISTS_KW    COMPILE_DEFINITIONS
 ################################################################################
 # Functions
 ################################################################################
+
+function(_IsLinuxHeadersInstalled RESULT)
+    set(${RESULT} 0 PARENT_SCOPE)
+    # 1. Get current kernel version with 'uname -r'
+    execute_process(
+        COMMAND uname -r
+        OUTPUT_VARIABLE _kernel_release
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    # 2. Check headers with standard linux path.
+    find_path(KERNEL_HEADERS_DIR
+        NAMES include/linux/kernel.h
+        PATHS "/usr/src/linux-headers-${_kernel_release}"
+        NO_DEFAULT_PATH
+    )
+    if (KERNEL_HEADERS_DIR)
+        set(${RESULT} 1 PARENT_SCOPE)
+    endif()
+endfunction()
 
 function(_LinuxDriverTarget TARGET_NAME)
     set(_module_target  "${TARGET_NAME}.ko")
@@ -183,4 +202,3 @@ function(DriverTarget TARGET_NAME)
         message(FATAL_ERROR " Unsupported platform")
     endif()
 endfunction()
-

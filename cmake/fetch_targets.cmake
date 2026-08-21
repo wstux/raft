@@ -22,8 +22,8 @@
 
 include(FetchContent)
 
-include(build_utils)
-include(utils)
+include(utils/target_utils)
+include(utils/common_utils)
 
 ################################################################################
 # Setting of cmake policies
@@ -145,6 +145,9 @@ function(FetchTarget EXT_TARGET_NAME)
             SOURCE_DIR      "${_src_dir}"
             BINARY_DIR      "${_bin_dir}"
             SUBBUILD_DIR    "${_subbuild_dir}"
+            #UPDATE_DISCONNECTED ON
+            #UPDATE_COMMAND  ""
+            #PATCH_COMMAND   ""
             OVERRIDE_FIND_PACKAGE
             EXCLUDE_FROM_ALL
         )
@@ -164,4 +167,3 @@ function(FetchTarget EXT_TARGET_NAME)
         LIBRARIES       "${_libraries}"
     )
 endfunction()
-

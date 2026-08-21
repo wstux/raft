@@ -23,57 +23,12 @@
 include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
 
-################################################################################
-# Public functions for setting global compilation options
-################################################################################
-
-macro(SetCxxStandard STANDARD)
-    set(_std_version "${STANDARD}")
-
-    string(TOLOWER ${STANDARD} STANDARD)
-    if ("${STANDARD}" STREQUAL "default")
-        set(_std_version "${CMAKE_CXX_STANDARD_COMPUTED_DEFAULT}")
-    endif()
-
-    set(_cxx_std "-std=gnu++${_std_version}")
-    #set(_cxx_std "-std=c++${_std_version}")
-    try_set_cxx_flag(CXX_STD "${_cxx_std}")
-    if (FLAG_CXX_STD)
-        log_info("Using C++${_std_version} standard")
-    else ()
-        log_fatal("Failed to set C++${_std_version} standard")
-    endif()
-endmacro()
-
-macro(SetCStandard STANDARD)
-    set(_std_version "${STANDARD}")
-
-    string(TOLOWER ${STANDARD} STANDARD)
-    if ("${STANDARD}" STREQUAL "default")
-        set(_std_version "${CMAKE_C_STANDARD_COMPUTED_DEFAULT}")
-    endif()
-
-    set(_c_std "-std=gnu${_std_version}")
-    #set(_cxx_std "-std=c${_std_version}")
-    try_set_c_flag(C_STD "${_c_std}")
-    if (FLAG_C_STD)
-        log_info("Using C${_std_version} standard")
-    else ()
-        log_fatal("Failed to set C${_std_version} standard")
-    endif()
-endmacro()
+include(logging)
+include(utils/common_utils)
 
 ################################################################################
 # Utilities
 ################################################################################
-
-function(_set_to_back LIST_OF_VALUES VALUE)
-    if (${LIST_OF_VALUES})
-        set(${LIST_OF_VALUES} "${${LIST_OF_VALUES}} ${VALUE}" PARENT_SCOPE)
-    else()
-        set(${LIST_OF_VALUES} "${VALUE}" PARENT_SCOPE)
-    endif()
-endfunction()
 
 ################################################################################
 # Macro for set build flags
@@ -83,10 +38,10 @@ endfunction()
 macro(set_c_flag FLAG)
     if(CMAKE_C_COMPILER)
         if(${ARGC} GREATER 1)
-            _set_to_back(CMAKE_C_FLAGS_${ARGV1} "${FLAG}")
+            _push_back(CMAKE_C_FLAGS_${ARGV1} "${FLAG}")
             log_trace("Macro 'set_c_flag': ARGV1='${ARGV1}', FLAG='${FLAG}'")
         else()
-            _set_to_back(CMAKE_C_FLAGS "${FLAG}")
+            _push_back(CMAKE_C_FLAGS "${FLAG}")
             log_trace("Macro 'set_c_flag': FLAG='${FLAG}'")
         endif()
     endif()
@@ -96,10 +51,10 @@ endmacro()
 macro(set_cxx_flag FLAG)
     if(CMAKE_CXX_COMPILER)
         if(${ARGC} GREATER 1)
-            _set_to_back(CMAKE_CXX_FLAGS_${ARGV1} "${FLAG}")
+            _push_back(CMAKE_CXX_FLAGS_${ARGV1} "${FLAG}")
             log_trace("Macro 'set_cxx_flag': ARGV1='${ARGV1}', FLAG='${FLAG}'")
         else()
-            _set_to_back(CMAKE_CXX_FLAGS "${FLAG}")
+            _push_back(CMAKE_CXX_FLAGS "${FLAG}")
             log_trace("Macro 'set_cxx_flag': FLAG='${FLAG}'")
         endif()
     endif()
@@ -175,9 +130,9 @@ endmacro()
 
 # Set linker flag.
 macro(set_linker_flag FLAG)
-    _set_to_back(CMAKE_EXE_LINKER_FLAGS    "${FLAG}")
-    _set_to_back(CMAKE_SHARED_LINKER_FLAGS "${FLAG}")
-    _set_to_back(CMAKE_MODULE_LINKER_FLAGS "${FLAG}")
+    _push_back(CMAKE_EXE_LINKER_FLAGS    "${FLAG}")
+    _push_back(CMAKE_SHARED_LINKER_FLAGS "${FLAG}")
+    _push_back(CMAKE_MODULE_LINKER_FLAGS "${FLAG}")
     log_trace("Macro 'set_linker_flag': FLAG='${FLAG}'")
 endmacro()
 
@@ -208,92 +163,3 @@ macro(try_set_linker_flag_by_opt OPT FLAG)
         try_set_linker_flag(${OPT} ${FLAG})
     endif()
 endmacro()
-
-################################################################################
-# Set compiler flags
-################################################################################
-
-if (CMAKE_C_COMPILER AND NOT CMAKE_CXX_COMPILER)
-    if (PROJECT_C_STANDARD)
-        # Setting the C standard version from defined variable
-        SetCStandard("${PROJECT_C_STANDARD}")
-    elseif (USE_DEFAULT_STANDARD)
-        # Setting the default C standard version
-        SetCStandard("default")
-    endif()
-endif()
-
-if (CMAKE_CXX_COMPILER)
-    if (PROJECT_CXX_STANDARD)
-        # Setting the C++ standard version from defined variable
-        SetCxxStandard("${PROJECT_CXX_STANDARD}")
-    elseif (USE_DEFAULT_STANDARD)
-        # Setting the default C++ standard version
-        SetCxxStandard("default")
-    endif()
-endif()
-
-################################################################################
-# Setting common compile flags
-################################################################################
-
-set_flag("-Os -DNDEBUG"     MINSIZEREL)
-set_flag("-O3 -DNDEBUG"     RELEASE)
-set_flag("-O2 -DNDEBUG -g3" RELWITHDEBINFO)
-set_flag("-O0 -g3"          DEBUG)
-set_flag("-Wall -Wextra")
-
-if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
-    set_flag("-rdynamic")
-    set_flag("-fPIC")
-    set_flag("-ggdb3")
-    set_flag("-ffunction-sections")
-    set_flag("-fstrict-aliasing")
-endif()
-
-#try_set_flag(FPIE "-fPIE")
-#try_set_linker_flag(LINKER_PIE "-pie")
-
-# Use hidden symbol visibility if possible.
-# void __attribute__((visibility("default"))) Exported() {...}
-#try_set_flag(FVISIBILITY_HIDDEN "-fvisibility=hidden")
-
-################################################################################
-# Protecting stack
-################################################################################
-
-# try_set_flag(FSTACK_PROTECTOR "-fstack-protector-strong")
-# if (NOT FLAG_FSTACK_PROTECTOR)
-#     try_set_flag(FSTACK_PROTECTOR "-fstack-protector-all")
-# endif()
-# try_set_flag(WSTACK_PROTECTOR "-Wstack-protector")
-
-# try_set_flag(FNO_STRICT_OVERFLOW "-fno-strict-overflow")
-
-################################################################################
-# Setting coverage compile flags
-################################################################################
-
-if (COVERAGE_BUILD)
-    set_flag("-g -O0 --coverage -fprofile-arcs -ftest-coverage")
-    set_linker_flag("-fprofile-arcs -ftest-coverage")
-endif()
-
-################################################################################
-# Set flags if isset options
-################################################################################
-
-set_flag_by_opt(USE_FAST_MAT        "--ffast-math")
-
-set_flag_by_opt(USE_LTO             "-flto=auto")
-set_linker_flag_by_opt(USE_LTO      "-flto=auto")
-
-set_flag_by_opt(USE_PEDANTIC        "-pedantic")
-set_flag_by_opt(USE_PEDANTIC        "-pedantic-errors")
-set_flag_by_opt(USE_WERROR          "-Werror")
-
-################################################################################
-# Setting linker options
-################################################################################
-
-set_linker_flag("-Wl,-rpath=${CMAKE_LIBRARY_OUTPUT_DIRECTORY}")
