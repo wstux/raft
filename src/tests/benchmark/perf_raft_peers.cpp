@@ -54,19 +54,19 @@ constexpr size_t gk_cluster_size = 7;
     if (! raft::details::utils::init(*p_ctx)) {
         return nullptr;
     }
-    p_ctx->election_task = p_ctx->p_scheduler->make_task(std::bind(&raft::details::timeout::election_timeout_task, std::ref(*p_ctx)));
-    p_ctx->heartbeat_task = p_ctx->p_scheduler->make_task(std::bind(&raft::details::timeout::heartbeat_timeout_task, std::ref(*p_ctx)));
+    p_ctx->election_task = p_ctx->schd.make_task(std::bind(&raft::details::timeout::election_timeout_task, std::ref(*p_ctx)));
+    p_ctx->heartbeat_task = p_ctx->schd.make_task(std::bind(&raft::details::timeout::heartbeat_timeout_task, std::ref(*p_ctx)));
 
-    p_ctx->p_scheduler->cancel(p_ctx->election_task);
-    p_ctx->p_scheduler->cancel(p_ctx->heartbeat_task);
+    p_ctx->schd.cancel(p_ctx->election_task);
+    p_ctx->schd.cancel(p_ctx->heartbeat_task);
 
     raft::details::utils::load(*p_ctx);
     raft::details::role::become_follower(*p_ctx);
     raft::details::role::become_candidate(*p_ctx);
     raft::details::role::become_leader(*p_ctx);
 
-    p_ctx->p_scheduler->cancel(p_ctx->election_task);
-    p_ctx->p_scheduler->cancel(p_ctx->heartbeat_task);
+    p_ctx->schd.cancel(p_ctx->election_task);
+    p_ctx->schd.cancel(p_ctx->heartbeat_task);
 
     assert(p_ctx->role.is_leader());
     return p_ctx;

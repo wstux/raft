@@ -24,7 +24,6 @@ enable_testing()
 
 include(coverage)
 include(docs)
-include(sanitizers)
+include(public)
 include(static_analysis)
-include(utils)
-
+include(utils/common_utils)

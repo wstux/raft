@@ -64,7 +64,7 @@ public:
 
         details::utils::init(*m_p_ctx);
         details::utils::load(*m_p_ctx);
-        m_p_ctx->p_scheduler->start();
+        m_p_ctx->schd.start();
         return *m_p_ctx;
     }
 
@@ -202,14 +202,14 @@ TEST_F(raft_heartbeat_handler, handle_response_invalid_peer)
 TEST_F(raft_timeout_handler, timeout_stopped_servicce)
 {
     details::context& ctx = init(2);
-    ctx.election_task = ctx.p_scheduler->make_task(std::bind(&raft::details::timeout::election_timeout_task, std::ref(ctx)));
+    ctx.election_task = ctx.schd.make_task(std::bind(&raft::details::timeout::election_timeout_task, std::ref(ctx)));
 
     details::timeout::election_cancel_task(ctx);
-    EXPECT_TRUE(ctx.p_scheduler->is_canceled(ctx.election_task));
+    EXPECT_TRUE(ctx.schd.is_canceled(ctx.election_task));
     m_p_io->is_stop = true;
 
     details::timeout::election_timeout_task(ctx);
-    EXPECT_TRUE(ctx.p_scheduler->is_canceled(ctx.election_task));
+    EXPECT_TRUE(ctx.schd.is_canceled(ctx.election_task));
 }
 
 TEST_F(raft_timeout_handler, not_quorum)
@@ -226,7 +226,7 @@ TEST_F(raft_timeout_handler, not_quorum)
 TEST_F(raft_timeout_handler, election_start)
 {
     details::context& ctx = init(3);
-    ctx.p_scheduler->stop();
+    ctx.schd.stop();
     details::role::become_follower(ctx);
     details::role::become_candidate(ctx);
     EXPECT_TRUE(ctx.role.is_candidate());

@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-include(build_utils)
+include(utils/target_utils)
 
 ################################################################################
 # Keywords
@@ -140,4 +140,3 @@ and/or BUILD_CMD is required")
                               INCLUDE_DIRECTORIES "${_include_dir}"
     )
 endfunction()
-

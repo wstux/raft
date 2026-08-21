@@ -23,12 +23,6 @@
  */
 
 #include <chrono>
-#include <memory>
-#include <shared_mutex>
-#include <thread>
-
-#include <boost/asio.hpp>
-#include <boost/thread.hpp>
 
 #include "raft_le/details/scheduler.h"
 
@@ -51,9 +45,9 @@ struct scheduler::task final
     /// \brief  Constructor.
     /// \param  h - user handler.
     /// \param  io - asio asynchronous context.
-    task(const scheduler::handler_type& h, boost::asio::io_context& io)
+    task(scheduler::handler_type&& h, boost::asio::io_context& io)
         : is_cancelled(true)
-        , exec(h)
+        , exec(std::move(h))
         , timer(io)
     {}
 
@@ -97,78 +91,11 @@ struct scheduler::task final
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-// class scheduler::context
-
-/**
- *  \brief  Internal scheduler context.
- *
- *  \details    Hides boost.asio implementation details from the header file
- *      (pimpl pattern).
- */
-struct scheduler::context final
-{
-    using work_guiard_t = boost::asio::executor_work_guard<boost::asio::io_context::executor_type>;
-
-    /// \brief  Constructor.
-    /// \param  pool_size - number of worker threads.
-    explicit context(size_t pool_size)
-        : threads_size(pool_size)
-        , io_ctx()
-        , strand(boost::asio::make_strand(io_ctx))
-    {}
-
-    bool is_stopped() const { return (thread_pool.get() == nullptr); }
-
-    /// \brief  Populates the thread_pool with tasks executing io_ctx.run().
-    void start()
-    {
-        if (! is_stopped()) {
-            stop();
-        }
-        if (threads_size == 0) {
-            return;
-        }
-
-        work_guard = std::make_unique<work_guiard_t>(boost::asio::make_work_guard(io_ctx));
-        thread_pool = std::make_unique<boost::asio::thread_pool>(threads_size);
-
-        // Restart io_ctx processing on the new pool threads
-        for (size_t i = 0; i < threads_size; ++i) {
-            boost::asio::post(*thread_pool, [this]() { io_ctx.run(); });
-        }
-    }
-
-    void stop()
-    {
-        if (is_stopped()) {
-            return;
-        }
-        work_guard.reset();
-
-        // Stops the processing of new tasks in the pool immediately.
-        io_ctx.stop();
-
-        // Blocks the calling thread until all worker threads finish execution.
-        thread_pool->stop();
-        thread_pool->join();
-        thread_pool.reset();
-
-        io_ctx.restart();
-    }
-
-    std::atomic_size_t threads_size;
-    boost::asio::io_context io_ctx;
-    boost::asio::strand<boost::asio::io_context::executor_type> strand;
-    std::unique_ptr<work_guiard_t> work_guard; ///< Ensures that io_ctx.run() does not exit the loop when there are no more tasks.
-    std::unique_ptr<boost::asio::thread_pool> thread_pool; ///< Boost.asio execution thread pool.
-    std::shared_mutex pool_mutex; ///< Protects the recreation operations of the thread_pool.
-};
-
-////////////////////////////////////////////////////////////////////////////////
 // class scheduler
 
-scheduler::scheduler(size_t pool_size)
-    : m_p_ctx(std::make_unique<context>(thread_pool_size(pool_size)))
+scheduler::scheduler()
+    : m_io_ctx()
+    , m_strand(boost::asio::make_strand(m_io_ctx))
 {}
 
 scheduler::~scheduler()
@@ -183,20 +110,29 @@ void scheduler::cancel(const task_type& task)
     }
 }
 
-void scheduler::execute_async(const handler_type& handler)
+void scheduler::init(size_t pool_size)
 {
-    if (m_is_stop.load(std::memory_order_acquire)) {
+    if (! m_is_stop.load(std::memory_order_acquire)) {
         return;
     }
-    boost::asio::post(m_p_ctx->io_ctx, handler);
+    pool_size = thread_pool_size(pool_size);
+    init_asio(pool_size);
 }
 
-void scheduler::execute_strand(const handler_type& handler)
+void scheduler::init_asio(size_t pool_size)
 {
-    if (m_is_stop.load(std::memory_order_acquire)) {
+    if (m_thread_pool.get() != nullptr) {
+        stop_asio();
+    }
+
+    // Update size configuration
+    m_threads_size.store(pool_size);
+    if (m_threads_size == 0) {
         return;
     }
-    boost::asio::post(m_p_ctx->strand, handler);
+
+    m_work_guard = std::make_unique<work_guiard_t>(boost::asio::make_work_guard(m_io_ctx));
+    m_thread_pool = std::make_unique<boost::asio::thread_pool>(m_threads_size);
 }
 
 bool scheduler::is_canceled(const task_type& task) const
@@ -204,9 +140,9 @@ bool scheduler::is_canceled(const task_type& task) const
     return task->is_cancelled.load();
 }
 
-scheduler::task_type scheduler::make_task(const handler_type& handler) const
+scheduler::task_type scheduler::make_task(handler_type&& handler)
 {
-    return std::make_shared<task>(handler, m_p_ctx->io_ctx);
+    return std::make_shared<task>(std::move(handler), m_io_ctx);
 }
 
 void scheduler::reconfigure(size_t new_size)
@@ -217,22 +153,18 @@ void scheduler::reconfigure(size_t new_size)
 
     new_size = thread_pool_size(new_size);
 
-    std::unique_lock<std::shared_mutex> lock(m_p_ctx->pool_mutex);
+    std::unique_lock<std::shared_mutex> lock(m_pool_mutex);
 
-    if (m_p_ctx->threads_size == new_size) {
-        return;
-    }
-    if (m_p_ctx->is_stopped()) {
+    if (m_threads_size == new_size) {
         return;
     }
 
     // Pool restart. Stop and destroy the thread_pool. All scheduled tasks remain inside io_ctx.
-    m_p_ctx->stop();
+    stop_asio();
 
-    // Update size configuration
-    m_p_ctx->threads_size.store(new_size);
     // Restart io_ctx processing on the new pool threads
-    m_p_ctx->start();
+    init_asio(new_size);
+    start_asio();
 }
 
 void scheduler::reschedule(const task_type& task, int32_t ms)
@@ -243,11 +175,13 @@ void scheduler::reschedule(const task_type& task, int32_t ms)
 
 void scheduler::schedule(const task_type& task, int32_t ms)
 {
+    using asio_allocator_type = boost::asio::recycling_allocator<void>;
+
     if (m_is_stop.load(std::memory_order_acquire)) {
         return;
     }
 
-    std::shared_lock<std::shared_mutex> lock(m_p_ctx->pool_mutex);
+    //std::shared_lock<std::shared_mutex> lock(m_pool_mutex);
 
     // Prevention of rescheduling an already active task
     if (! task || ! task->is_cancelled) {
@@ -255,9 +189,16 @@ void scheduler::schedule(const task_type& task, int32_t ms)
     }
 
     task->resume();
-
     task->timer.expires_after(std::chrono::milliseconds(ms));
-    task->timer.async_wait(boost::asio::bind_executor(m_p_ctx->strand, std::bind(&task::handler, task, std::placeholders::_1)));
+    task->timer.async_wait(
+        boost::asio::bind_executor(
+            m_strand,
+            boost::asio::bind_allocator(
+                asio_allocator_type(),
+                [task](const boost::system::error_code& ec) { task::handler(std::move(task), ec); }
+            )
+        )
+    );
 }
 
 void scheduler::start()
@@ -267,8 +208,18 @@ void scheduler::start()
         return;
     }
 
-    std::unique_lock<std::shared_mutex> lock(m_p_ctx->pool_mutex);
-    m_p_ctx->start();
+    std::unique_lock<std::shared_mutex> lock(m_pool_mutex);
+    start_asio();
+}
+
+void scheduler::start_asio()
+{
+    using asio_allocator_type = boost::asio::recycling_allocator<void>;
+
+    // Restart io_ctx processing on the new pool threads
+    for (size_t i = 0; i < m_threads_size; ++i) {
+        boost::asio::post(*m_thread_pool, boost::asio::bind_allocator(asio_allocator_type(), [this]() { m_io_ctx.run(); }));
+    }
 }
 
 void scheduler::stop()
@@ -278,8 +229,41 @@ void scheduler::stop()
         return;
     }
 
-    std::unique_lock<std::shared_mutex> lock(m_p_ctx->pool_mutex);
-    m_p_ctx->stop();
+    std::unique_lock<std::shared_mutex> lock(m_pool_mutex);
+    stop_asio();
+}
+
+void scheduler::stop_asio()
+{
+    if (m_thread_pool.get() == nullptr) {
+        return;
+    }
+    m_work_guard.reset();
+
+    // Stops the processing of new tasks in the pool immediately.
+    m_io_ctx.stop();
+    /*std::unique_ptr<boost::asio::thread_pool> old_pool;
+    {
+        std::unique_lock<std::shared_mutex> lock(m_pool_mutex);
+        m_work_guard.reset();
+        m_io_ctx.stop();
+
+        if (m_thread_pool) {
+            m_thread_pool->stop();
+            old_pool = std::move(m_thread_pool);
+        }
+    }*/
+
+    // Blocks the calling thread until all worker threads finish execution.
+    m_thread_pool->stop();
+    m_thread_pool->join();
+    m_thread_pool.reset();
+    /*if (old_pool) {
+        old_pool->join();
+        old_pool.reset();
+    }*/
+
+    m_io_ctx.restart();
 }
 
 size_t scheduler::thread_pool_size(size_t pool_size)
@@ -295,7 +279,7 @@ size_t scheduler::thread_pool_size(size_t pool_size)
 
 size_t scheduler::threads_size() const
 {
-    return m_p_ctx->threads_size.load();
+    return m_threads_size.load();
 }
 
 } // namespace details

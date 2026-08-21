@@ -66,7 +66,8 @@ log_info("CMAKE_BINARY_DIR: '${CMAKE_BINARY_DIR}'")
 
 include(CMakeDependentOption)
 
-include(build_flags)
+include(build_flag)
+include(sanitizers)
 
 set(PROJECT_BUILD_TYPE "${CMAKE_BUILD_TYPE}")
 set(_build_type "${PROJECT_BUILD_TYPE}")

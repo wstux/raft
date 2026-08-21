@@ -127,7 +127,7 @@ bool init(context& ctx)
 
     ctx.role.voted_for = gk_invalid_id;
 
-    ctx.p_scheduler = std::make_shared<scheduler>(cfg.scheduler_threads_count);
+    ctx.schd.init(cfg.scheduler_threads_count);
 
     ctx.election_distribution = std::uniform_int_distribution<size_t>(cfg.vote_timeout_min_ms, cfg.vote_timeout_max_ms);
     ctx.heartbeat_interval_ms = cfg.heartbeat_interval_ms;

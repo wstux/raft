@@ -28,6 +28,10 @@
 #include <atomic>
 #include <functional>
 #include <memory>
+#include <shared_mutex>
+
+#include <boost/asio.hpp>
+#include <boost/thread.hpp>
 
 namespace wstux {
 namespace raft {
@@ -46,15 +50,12 @@ private:
     struct task;
 
 public:
-    using ptr = std::shared_ptr<scheduler>;     ///< Pointer to the scheduler instance.
     using handler_type = std::function<void()>; ///< Type of the user handler.
     using task_type = std::shared_ptr<task>;    ///< Task structure.
 
 public:
     /// \brief  Constructor.
-    /// \param  pool_size - number of asio worker threads. If 0 is passed, the
-    ///     size is calculated automatically based on the hardware configuration.
-    scheduler(size_t pool_size = 4);
+    scheduler();
 
     /// \brief  Destructor. Automatically calls the stop() method to terminate threads.
     ~scheduler();
@@ -65,18 +66,43 @@ public:
 
     /// \brief  Creates and schedules the immediate asynchronous execution of a new handler.
     /// \param  handler - the handler function to execute.
-    void execute_async(const handler_type& handler);
+    template<typename TFn>
+    void execute_async(TFn&& handler)
+    {
+        using asio_allocator_type = boost::asio::recycling_allocator<void>;
+
+        if (m_is_stop.load(std::memory_order_acquire)) {
+            return;
+        }
+        boost::asio::post(m_io_ctx, boost::asio::bind_allocator(asio_allocator_type(), std::move(handler)));
+    }
 
     /// \brief  Executes the handler strictly sequentially within the strand.
     /// \param  handler - the handler function to execute.
-    void execute_strand(const handler_type& handler);
+    template<typename TFn>
+    void execute_strand(TFn&& handler)
+    {
+        using asio_allocator_type = boost::asio::recycling_allocator<void>;
+
+        if (m_is_stop.load(std::memory_order_acquire)) {
+            return;
+        }
+        boost::asio::post(m_strand, boost::asio::bind_allocator(asio_allocator_type(), std::move(handler)));
+    }
+
+    /// \brief  Scheduler initialization
+    /// \param  pool_size - number of asio worker threads. If 0 is passed, the
+    ///     size is calculated automatically based on the hardware configuration.
+    void init(size_t pool_size);
 
     bool is_canceled(const task_type& task) const;
+
+    bool is_stop() const { return m_is_stop.load(std::memory_order_acquire); }
 
     /// \brief  Factory method to create a task object without starting it.
     /// \param  handler - the handler function to bind to the task.
     /// \return The created task.
-    task_type make_task(const handler_type& handler) const;
+    task_type make_task(handler_type&& handler);
 
     /// \brief  Dynamically changes the size of the worker thread pool.
     /// \param  new_size - the new size of the thread pool.
@@ -104,17 +130,31 @@ public:
     size_t threads_size() const;
 
 private:
+    void init_asio(size_t pool_size);
+
+    void start_asio();
+
+    void stop_asio();
+
     /// \brief  Helper method to determine the actual thread pool size.
     /// \param  pool_size - requested pool size.
     /// \return The actual number of threads (at least 1).
     static size_t thread_pool_size(size_t pool_size);
 
 private:
-    struct context;
+    using work_guiard_t = boost::asio::executor_work_guard<boost::asio::io_context::executor_type>;
 
 private:
     std::atomic_bool m_is_stop{true};
-    std::unique_ptr<context> m_p_ctx; ///< Pointer to the execution context.
+
+    std::atomic_size_t m_threads_size{0};
+
+    boost::asio::io_context m_io_ctx;
+    boost::asio::strand<boost::asio::io_context::executor_type> m_strand;
+
+    std::unique_ptr<work_guiard_t> m_work_guard; ///< Ensures that io_ctx.run() does not exit the loop when there are no more tasks.
+    std::unique_ptr<boost::asio::thread_pool> m_thread_pool; ///< Boost.asio execution thread pool.
+    std::shared_mutex m_pool_mutex; ///< Protects the recreation operations of the thread_pool.
 };
 
 } // namespace details

@@ -94,8 +94,8 @@ bool server::init()
         RAFT_LOG_ERROR((*m_p_ctx), "Filed to init raft server.");
         return false;
     }
-    m_p_ctx->election_task = m_p_ctx->p_scheduler->make_task(std::bind(&details::timeout::election_timeout_task, std::ref(*m_p_ctx)));
-    m_p_ctx->heartbeat_task = m_p_ctx->p_scheduler->make_task(std::bind(&details::timeout::heartbeat_timeout_task, std::ref(*m_p_ctx)));
+    m_p_ctx->election_task = m_p_ctx->schd.make_task([this]() { details::timeout::election_timeout_task(*m_p_ctx); });
+    m_p_ctx->heartbeat_task = m_p_ctx->schd.make_task([this]() { details::timeout::heartbeat_timeout_task(*m_p_ctx); });
 
     return true;
 }
@@ -119,10 +119,7 @@ void server::handle_message(const buffer_type& msg_buf)
     details::message msg;
     details::deserialize(msg_buf, msg);
 
-    const details::scheduler::handler_type handler = [p_ctx = m_p_ctx.get(), msg = std::move(msg)]() -> void {
-        le::handle_message(*p_ctx, msg);
-    };
-    m_p_ctx->p_scheduler->execute_strand(handler);
+    m_p_ctx->schd.execute_strand([p_ctx = m_p_ctx.get(), msg = std::move(msg)]() { le::handle_message(*p_ctx, msg); });
 }
 
 bool server::load(details::context& ctx)
@@ -156,13 +153,13 @@ bool server::reconfigure()
         return false;
     }
 
-    m_p_ctx->p_scheduler->reconfigure(cfg.scheduler_threads_count);
+    m_p_ctx->schd.reconfigure(cfg.scheduler_threads_count);
 
-    const details::scheduler::handler_type handler =
+    details::scheduler::handler_type handler =
         [p_ctx = m_p_ctx.get(), cfg = std::move(cfg), cluster_cfg = std::move(cluster_cfg)]() -> void {
             details::utils::reconfigure(*p_ctx, cfg, cluster_cfg);
         };
-    m_p_ctx->p_scheduler->execute_strand(handler);
+    m_p_ctx->schd.execute_strand(std::move(handler));
     return true;
 }
 
@@ -184,16 +181,16 @@ bool server::start()
     }
 
     RAFT_LOG_INFO((*m_p_ctx), "Starting raft server %llu.", m_p_ctx->id);
-    m_p_ctx->p_scheduler->start();
+    m_p_ctx->schd.start();
 
-    const details::scheduler::handler_type handler = [p_ctx = m_p_ctx.get()]() -> void {
+    details::scheduler::handler_type handler = [p_ctx = m_p_ctx.get()]() -> void {
         details::timeout::heartbeat_restart_task(*p_ctx);
         if (p_ctx->role.is_voter) {
             details::timeout::election_restart_task(*p_ctx);
         }
         details::role::initiate_election(*p_ctx);
     };
-    m_p_ctx->p_scheduler->execute_strand(handler);
+    m_p_ctx->schd.execute_strand(std::move(handler));
     return true;
 }
 
@@ -205,7 +202,7 @@ void server::stop()
     }
     RAFT_LOG_INFO((*m_p_ctx), "Stopping raft server %llu.", m_p_ctx->id);
 
-    m_p_ctx->p_scheduler->stop();
+    m_p_ctx->schd.stop();
     details::timeout::election_cancel_task(*m_p_ctx);
     details::timeout::heartbeat_cancel_task(*m_p_ctx);
 }

@@ -48,12 +48,12 @@ size_t election_timeout_ms(context& ctx)
 void election_cancel_task(context& ctx)
 {
     RAFT_TO_LOG_DEBUG(ctx, "Election task cancel. %llu(%s), current term %u", ctx.id, ctx.role.str(), ctx.term);
-    ctx.p_scheduler->cancel(ctx.election_task);
+    ctx.schd.cancel(ctx.election_task);
 }
 
 void election_restart_task(context& ctx)
 {
-    ctx.p_scheduler->reschedule(ctx.election_task, election_timeout_ms(ctx));
+    ctx.schd.reschedule(ctx.election_task, election_timeout_ms(ctx));
 }
 
 void election_timeout_task(context& ctx)
@@ -93,12 +93,12 @@ void election_timeout_task(context& ctx)
 void heartbeat_cancel_task(context& ctx)
 {
     RAFT_TO_LOG_DEBUG(ctx, "Heartbeat task cancel. %llu(%s), current term %u", ctx.id, ctx.role.str(), ctx.term);
-    ctx.p_scheduler->cancel(ctx.heartbeat_task);
+    ctx.schd.cancel(ctx.heartbeat_task);
 }
 
 void heartbeat_restart_task(context& ctx)
 {
-    ctx.p_scheduler->reschedule(ctx.heartbeat_task, ctx.heartbeat_interval_ms);
+    ctx.schd.reschedule(ctx.heartbeat_task, ctx.heartbeat_interval_ms);
 }
 
 void heartbeat_timeout_task(context& ctx)

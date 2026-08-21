@@ -81,4 +81,3 @@ if (COVERAGE_BUILD)
         COMMENT "Processing code coverage counters and generating report."
     )
 endif()
-

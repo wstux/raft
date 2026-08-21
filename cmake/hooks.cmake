@@ -35,4 +35,3 @@ function(InstallHook HOOK_NAME)
         endif()
     endif()
 endfunction()
-
