@@ -22,11 +22,8 @@ $(eval $(call check_sanitizer,--sanitizer_leak,USE_LEAK_SANITIZER))
 $(eval $(call check_sanitizer,--sanitizer_ub,USE_BEHAVIOR_SANITIZER))
 $(eval $(call check_sanitizer,--sanitizer_thread,USE_THREAD_SANITIZER))
 
-# Common rule declaration
-define common_rule
-
-build_$(1)/Makefile: check_gitignore
-	@mkdir -p $$(@D) && cd $$(@D) && cmake -DCMAKE_BUILD_TYPE="$(1)" $$(SANITIZER_FLAGS) ../
+# Base rule declaration
+define base_rule
 
 .PHONY: $(1)/configure
 $(1)/configure: build_$(1)/Makefile
@@ -36,7 +33,6 @@ $(1)/%: $(1)/configure
 
 .PHONY: $(1)
 $(1): $(1)/all
-#	@make -j $(NJOB) --output-sync=target --no-print-directory -C build_$(1) $$*
 
 .PHONY: $(1)/clean
 $(1)/clean: check_gitignore
@@ -67,44 +63,23 @@ $(if $(wildcard build_$(1)/Makefile),
 
 endef
 
+# Common rule declaration
+define common_rule
+
+build_$(1)/Makefile: check_gitignore
+	@mkdir -p $$(@D) && cd $$(@D) && cmake -DCMAKE_BUILD_TYPE="$(1)" $$(SANITIZER_FLAGS) ../
+
+$$(eval $$(call base_rule,$(1)))
+
+endef
+
 # Coverage rule declaration
 define coverage_rule
 
 build_$(1)/Makefile: check_gitignore
-	@mkdir -p $$(@D) && cd $$(@D) && cmake -DCMAKE_BUILD_TYPE="debug" -DCOVERAGE_BUILD=ON -DBUILD_TESTS=ON ../
+	@mkdir -p $$(@D) && cd $$(@D) && cmake -DCMAKE_BUILD_TYPE="debug" -DCOVERAGE_BUILD=ON -DBUILD_TESTS=ON $$(SANITIZER_FLAGS) ../
 
-.PHONY: $(1)/configure
-$(1)/configure: build_$(1)/Makefile
-
-$(1)/%: $(1)/configure
-	@make -j $(NJOB) --output-sync=target --no-print-directory -C build_$(1) $$*
-
-.PHONY: $(1)/clean
-$(1)/clean: check_gitignore
-	@rm -rf build_$(1)
-
-.PHONY: $(1)/rebuild
-$(1)/rebuild: $(1)/clean $(1)/all
-
-.PHONY: $(1)/help
-$(1)/help: $(1)/configure
-	@echo "--- List of all cmake targets ---"
-	@make --no-print-directory -C build_$(1) help
-
-.PHONY: $(1)/test
-$(1)/test: $(1)/all
-	@make -j $(NJOB) -C build_$(1) test
-
-# Dynamic import of cmake targets for auto completion.
-$(if $(wildcard build_$(1)/Makefile),
-    $(eval _RAW_TARGETS := $(shell $(MAKE) --no-print-directory -C build_$(1) help 2>/dev/null | awk '/^\.\.\./ {print $$2}'))
-    $(foreach t,$(_RAW_TARGETS),
-        $(if $(filter-out configure clean rebuild help test,$(t)),
-            $(eval .PHONY: $(1)/$(t))
-            $(eval $(1)/$(t): build_$(1)/Makefile ; @\$$(MAKE) -j \$$(NJOB) --output-sync=target --no-print-directory -C build_$(1) $(t))
-        )
-    )
-)
+$$(eval $$(call base_rule,$(1)))
 
 endef
 
@@ -154,4 +129,3 @@ check_gitignore:
 
 .PHONY: test
 test: release/test
-
