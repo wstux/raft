@@ -60,4 +60,3 @@ if (Doxygen_FOUND)
     #    DESTINATION ${DOC_INSTALL_DIR}
     #    COMPONENT doc)
 endif()
-

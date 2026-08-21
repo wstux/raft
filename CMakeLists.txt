@@ -39,8 +39,6 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/${COMMON_CMAKE_DIR} ${CMAKE_MODULE_PAT
 
 include(${COMMON_MAIN_CMAKE} PUBLIC)
 
-EnableSanitizers(${USE_ADDR_SANITIZER} ${USE_LEAK_SANITIZER} ${USE_BEHAVIOR_SANITIZER} ${USE_THREAD_SANITIZER})
-
 ################################################################################
 # Include source code
 ################################################################################

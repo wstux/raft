@@ -95,4 +95,3 @@ endfunction()
 function(log_trace MSG)
     _log(${LOG_LEVEL_TRACE}   "${MSG}")
 endfunction()
-

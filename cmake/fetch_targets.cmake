@@ -22,8 +22,8 @@
 
 include(FetchContent)
 
-include(build_utils)
-include(utils)
+include(utils/target_utils)
+include(utils/common_utils)
 
 ################################################################################
 # Setting of cmake policies
@@ -104,7 +104,7 @@ function(FetchTarget EXT_TARGET_NAME)
 
     foreach (_opt IN LISTS ${EXT_TARGET_NAME}_CMAKE_VARIABLES)
         _get_key_value("${_opt}" _var_name _var_value)
-        set(${_var_name} ${_var_value})
+        set(${_var_name} ${_var_value} CACHE INTERNAL "Forced external variable" FORCE)
     endforeach()
 
     ############################################################################
@@ -133,6 +133,8 @@ function(FetchTarget EXT_TARGET_NAME)
             BINARY_DIR      "${_bin_dir}"
             SUBBUILD_DIR    "${_subbuild_dir}"
             UPDATE_DISCONNECTED ON
+            #UPDATE_COMMAND  ""
+            #PATCH_COMMAND   ""
             OVERRIDE_FIND_PACKAGE
             EXCLUDE_FROM_ALL
         )
@@ -144,6 +146,8 @@ function(FetchTarget EXT_TARGET_NAME)
             BINARY_DIR      "${_bin_dir}"
             SUBBUILD_DIR    "${_subbuild_dir}"
             #UPDATE_DISCONNECTED ON
+            #UPDATE_COMMAND  ""
+            #PATCH_COMMAND   ""
             OVERRIDE_FIND_PACKAGE
             EXCLUDE_FROM_ALL
         )
@@ -163,4 +167,3 @@ function(FetchTarget EXT_TARGET_NAME)
         LIBRARIES       "${_libraries}"
     )
 endfunction()
-

@@ -20,37 +20,42 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-function(EnableSanitizers ADDRESS LEAK UNDEFINED_BEHAVIOR THREAD)
-    set(_sanitizers "")
+include(utils/flag_utils)
 
-    if (ADDRESS)
-        message(INFO "Building project with address sanitizer")
-        list(APPEND _sanitizers "address")
+################################################################################
+# Utilities
+################################################################################
+
+macro(_enable_sanitizer OPT SANITIZER)
+    if(${${OPT}})
+        log_info("Building project with ${SANITIZER} sanitizer")
+        set_flag("-fsanitize=${SANITIZER}")
+        set_linker_flag("-fsanitize=${SANITIZER}")
     endif()
+endmacro()
 
-    if (LEAK)
-    message(INFO "Building project with leak sanitizer")
-        list(APPEND _sanitizers "leak")
+################################################################################
+# Setting sanitizer flags
+################################################################################
+
+_enable_sanitizer(USE_ADDR_SANITIZER "address")
+_enable_sanitizer(USE_LEAK_SANITIZER "leak")
+_enable_sanitizer(USE_BEHAVIOR_SANITIZER "undefined")
+
+if (USE_THREAD_SANITIZER)
+    if (USE_ADDR_SANITIZER OR USE_LEAK_SANITIZER)
+        log_fatal("Thread sanitizer does not work with address and leak sanitizers")
     endif()
+    _enable_sanitizer(USE_THREAD_SANITIZER "thread")
+endif()
 
-    if (UNDEFINED_BEHAVIOR)
-        message(INFO "Building project with behavior sanitizer")
-        list(APPEND _sanitizers "undefined")
-    endif()
+if (USE_BEHAVIOR_SANITIZER)
+    # Force the program to crash on the first UB error. By default, UBSan simply
+    # writes to the console and continues running. The flag below will turn
+    # warnings into critical runtime errors.
+    #set_flag("-fno-sanitize-recover=undefined")
+endif()
 
-    if (THREAD)
-        if (ADDRESS OR LEAK)
-            message(WARNING "Thread sanitizer does not work with address and leak sanitizer")
-        else()
-            message(INFO "Building project with thread sanitizer")
-            list(APPEND _sanitizers "thread")
-        endif()
-    endif()
-
-    list(JOIN _sanitizers "," _sanitizers)
-    if (_sanitizers)
-        add_compile_options(-fsanitize=${_sanitizers})
-        add_link_options(-fsanitize=${_sanitizers})
-    endif()
-endfunction()
-
+if (USE_ADDR_SANITIZER OR USE_LEAK_SANITIZER OR USE_BEHAVIOR_SANITIZER OR USE_THREAD_SANITIZER)
+    set_flag("-fno-omit-frame-pointer -g")
+endif()

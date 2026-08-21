@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-include(build_utils)
+include(utils/target_utils)
 
 ################################################################################
 # Keywords
@@ -202,4 +202,3 @@ function(DriverTarget TARGET_NAME)
         message(FATAL_ERROR " Unsupported platform")
     endif()
 endfunction()
-

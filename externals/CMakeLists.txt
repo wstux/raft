@@ -1,5 +1,5 @@
 add_subdirectory(boost)
-#add_subdirectory(grpc)
+add_subdirectory(grpc)
 
 WrapperTarget(ext1
     BUILDSYS    cmake

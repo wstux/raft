@@ -36,4 +36,3 @@ PREPARE: $(SOURCES)
 	mkdir -p "$(BUILD_DIR)"
 	@MODULE_MAKE_SUB_DIRS@
 	touch $(BUILD_DIR)/Makefile
-

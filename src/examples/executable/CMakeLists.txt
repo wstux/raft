@@ -19,4 +19,3 @@ ExecTarget(executable
         ext2
         testing
 )
-
