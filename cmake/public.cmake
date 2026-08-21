@@ -20,6 +20,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+include(utils/flag_utils)
+
 function(AddPlatform PLATFORM_NAME)
     get_property(_supported_platform_list GLOBAL PROPERTY supported_platform_list)
 
@@ -27,35 +29,42 @@ function(AddPlatform PLATFORM_NAME)
     set_property(GLOBAL PROPERTY supported_platform_list "${_supported_platform_list}")
 endfunction()
 
-function(_is_supported_platform PLATFORM_NAME RESULT_VAL)
-    set(${RESULT_VAL} 0 PARENT_SCOPE)
-    get_property(_supported_platform_list GLOBAL PROPERTY supported_platform_list)
-
-    if (NOT DEFINED _supported_platform_list)
-        return()
-    endif()
-
-    list(FIND _supported_platform_list "${PLATFORM_NAME}" IS_FIND)
-    if (NOT IS_FIND EQUAL -1)
-        set(${RESULT_VAL} 1 PARENT_SCOPE)
-    endif()
-endfunction()
-
 ################################################################################
-# Adding value at the end of list.
-# LIST_OF_VALUES - list of values ​​where a new value should be added.
-# VALUE          - a new value to add to the end of the list.
-#
-# Example:
-#   foreach (_val IN LISTS values)
-#       _append_to_list(_new_list "${_val}")
-#   endforeach()
+# Public functions for setting global compilation options
 ################################################################################
-function(_append_to_list LIST_OF_VALUES VALUE)
-    if (${LIST_OF_VALUES})
-        set(${LIST_OF_VALUES} "${${LIST_OF_VALUES}}" "${VALUE}" PARENT_SCOPE)
-    else()
-        set(${LIST_OF_VALUES} "${VALUE}" PARENT_SCOPE)
-    endif()
-endfunction()
 
+macro(SetCxxStandard STANDARD)
+    set(_std_version "${STANDARD}")
+
+    string(TOLOWER ${STANDARD} STANDARD)
+    if ("${STANDARD}" STREQUAL "default")
+        set(_std_version "${CMAKE_CXX_STANDARD_COMPUTED_DEFAULT}")
+    endif()
+
+    set(_cxx_std "-std=gnu++${_std_version}")
+    #set(_cxx_std "-std=c++${_std_version}")
+    try_set_cxx_flag(CXX_STD "${_cxx_std}")
+    if (FLAG_CXX_STD)
+        log_info("Using C++${_std_version} standard")
+    else ()
+        log_fatal("Failed to set C++${_std_version} standard")
+    endif()
+endmacro()
+
+macro(SetCStandard STANDARD)
+    set(_std_version "${STANDARD}")
+
+    string(TOLOWER ${STANDARD} STANDARD)
+    if ("${STANDARD}" STREQUAL "default")
+        set(_std_version "${CMAKE_C_STANDARD_COMPUTED_DEFAULT}")
+    endif()
+
+    set(_c_std "-std=gnu${_std_version}")
+    #set(_cxx_std "-std=c${_std_version}")
+    try_set_c_flag(C_STD "${_c_std}")
+    if (FLAG_C_STD)
+        log_info("Using C${_std_version} standard")
+    else ()
+        log_fatal("Failed to set C${_std_version} standard")
+    endif()
+endmacro()

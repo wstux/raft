@@ -22,8 +22,8 @@
 
 include(FetchContent)
 
-include(build_utils)
-include(utils)
+include(utils/target_utils)
+include(utils/common_utils)
 
 ################################################################################
 # Setting of cmake policies
@@ -167,4 +167,3 @@ function(FetchTarget EXT_TARGET_NAME)
         LIBRARIES       "${_libraries}"
     )
 endfunction()
-
