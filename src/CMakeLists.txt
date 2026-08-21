@@ -12,5 +12,6 @@ add_subdirectory(libs/version)
 
 add_subdirectory(executable)
 add_subdirectory(executable_boost)
+add_subdirectory(sanitizers)
 
 add_subdirectory(tests)

@@ -4,11 +4,29 @@ export NJOB  ?= $(shell expr '(' $(NPROC) + 1 ')')
 .PHONY: default
 default: release/all
 
+SANITIZER_FLAGS :=
+# Sanitizer processing template
+# $(1) — command line argument; $(2) — cmake option name
+define check_sanitizer
+ifeq ($$(filter $(1),$$(MAKECMDGOALS)),$(1))
+    SANITIZER_FLAGS += -D$(2)=ON
+    # Hide flag for make
+    $$(eval $(1):;@:)
+else
+    SANITIZER_FLAGS += -D$(2)=OFF
+endif
+endef
+
+$(eval $(call check_sanitizer,--sanitizer_addr,USE_ADDR_SANITIZER))
+$(eval $(call check_sanitizer,--sanitizer_leak,USE_LEAK_SANITIZER))
+$(eval $(call check_sanitizer,--sanitizer_ub,USE_BEHAVIOR_SANITIZER))
+$(eval $(call check_sanitizer,--sanitizer_thread,USE_THREAD_SANITIZER))
+
 # Common rule declaration
 define common_rule
 
 build_$(1)/Makefile: check_gitignore
-	@mkdir -p $$(@D) && cd $$(@D) && cmake -DCMAKE_BUILD_TYPE="$(1)" ../
+	@mkdir -p $$(@D) && cd $$(@D) && cmake -DCMAKE_BUILD_TYPE="$(1)" $$(SANITIZER_FLAGS) ../
 
 .PHONY: $(1)/configure
 $(1)/configure: build_$(1)/Makefile
