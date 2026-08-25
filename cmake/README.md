@@ -54,6 +54,42 @@ The build looks like this:
 user -> make -> cmake -> make
 ```
 
+Initializing a new project based on the this template:
+1. Initial repository setup
+    1. Initialize a local git repository for the new project
+    ```
+    $ git init
+    ```
+    2. Add a remote reference to the main repository of your new project (origin)
+    ```
+    $ git remote add origin git@github.com:org/new_project.git
+    ```
+    3. Add a remote reference to the parent template repository (template)
+    ```
+    $ git remote add template git@github.com:org/cmake_cpp_project_template.git
+    ```
+    4. Fetch the latest state of the template repository
+    ```
+    $ git checkout -b master template/master
+    ```
+    5. Create a local master branch based on the stable template branch
+    ```
+    $ git checkout -b master template/master
+    ```
+2. Updating the template in a child project
+    1. Fetch the latest changes from the template repository
+    ```
+    $ git fetch template
+    ```
+    2. Merge changes from the template branch into current working branch
+    ```
+    $ git merge template/master --allow-unrelated-histories
+    ```
+    **Note**: The `--allow-unrelated-histories` flag is only required during the
+    very first merge to link the commit histories. For subsequent updates, a
+    standard git merge template/master is sufficient. If conflicts occur in
+    configuration files (such as the root CMakeLists.txt), resolve them manually.
+
 ### Options
 
 Allowed extra command line sanitizers options:

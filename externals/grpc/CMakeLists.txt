@@ -13,7 +13,7 @@ if (BUILD_EXAMPLES)
 
     FetchTarget(grpc
         GIT_REPOSITORY  https://github.com/grpc/grpc.git
-        GIT_TAG         f5ffb68d8a2fd603dff16287e90a4ac571e1fec6
+        GIT_TAG         f5ffb68d8a2fd603dff16287e90a4ac571e1fec6 #v1.76.0
         CMAKE_OPTIONS
             CMAKE_WARN_DEPRECATED=OFF
             # grps flags
