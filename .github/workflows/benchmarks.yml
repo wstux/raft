@@ -34,7 +34,12 @@ jobs:
         ./build_release/test/perf_raft_peers --benchmark_format=json > perf_peers.json
         ./build_release/test/perf_raft_serialization --benchmark_format=json > perf_srl.json
         # Merge "benchmarks" into one commot json
-        jq -s '.[0] * {benchmarks: ([.[].benchmarks] | flatten)}' perf_le.json perf_peers.json perf_srl.json > perf_raft_common.json
+        jq -s '[.[].benchmarks] | flatten' perf_le.json perf_peers.json perf_srl.json > perf_raft_merged.json
+        # Duplicate every benchmark entry into two entity with "custom-smaller-is-better" format
+        jq '[ .[] |
+          ( {name: "\(.name) (Real Time)", value: .real_time, unit: "\(.time_unit)"} ),
+          ( {name: "\(.name) (CPU Time)",  value: .cpu_time,  unit: "\(.time_unit)"} )
+        ]' perf_raft_merged.json > perf_raft_common.json
 
     - name: Disable commit-msg hooks for bot
       run: rm -rf .git/hooks
@@ -42,7 +47,7 @@ jobs:
     - name: Store and plot results
       uses: benchmark-action/github-action-benchmark@v1
       with:
-        tool: 'googlecpp'
+        tool: 'customSmallerIsBetter'
         output-file-path: perf_raft_common.json
         github-token: ${{ secrets.GITHUB_TOKEN }}
         auto-push: ${{ github.event_name == 'push' }} # Update history charts only on push to master
