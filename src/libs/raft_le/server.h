@@ -40,10 +40,12 @@ namespace details { struct context; }
 class server final
 {
 public:
+    using allocator_type = std::allocator<server>;
     using ptr = std::shared_ptr<server>;
 
 public:
-    server(const server_id_t id, const io::ptr& p_io, logging_handler::ptr p_handler, const is_stop_fn_t& is_stop_fn);
+    server(const server_id_t id, const io::ptr& p_io, logging_handler::ptr p_handler,
+           const is_stop_fn_t& is_stop_fn, const allocator_type& alloc = allocator_type());
 
     ~server();
 
@@ -68,13 +70,15 @@ public:
     void stop();
 
 private:
-    using context_ptr = std::unique_ptr<details::context>;
+    using context_ptr = std::shared_ptr<details::context>;
 
 private:
     static bool load(details::context& ctx);
 
 private:
     const server_id_t m_id;
+    allocator_type m_alloc;
+
     is_stop_fn_t m_is_stop_fn;
     std::atomic_bool m_is_stop;
 
