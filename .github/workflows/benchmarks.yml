@@ -1,0 +1,50 @@
+name: Performance benchmarks
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+permissions:
+  contents: write
+  deployments: write
+  pull-requests: write
+
+jobs:
+  benchmark:
+    name: Performance
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install build tools
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential cmake
+
+    - name: Build project
+      run: make
+
+    - name: Run google benchmarks
+      run: |
+        ./build_release/test/perf_raft_leader_election --benchmark_format=json > perf_le.json
+        ./build_release/test/perf_raft_peers --benchmark_format=json > perf_peers.json
+        ./build_release/test/perf_raft_serialization --benchmark_format=json > perf_srl.json
+        # Merge "benchmarks" into one commot json
+        jq -s '.[0] * {benchmarks: ([.[].benchmarks] | flatten)}' perf_le.json perf_peers.json perf_srl.json > perf_raft_common.json
+
+    - name: Disable commit-msg hooks for bot
+      run: rm -rf .git/hooks
+
+    - name: Store and plot results
+      uses: benchmark-action/github-action-benchmark@v1
+      with:
+        tool: 'googlecpp'
+        output-file-path: perf_raft_common.json
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        auto-push: ${{ github.event_name == 'push' }} # Update history charts only on push to master
+        comment-on-alert: true                        # Post a performance change report in the PR comments
+        fail-on-alert: false                          # Do not fail verification if performance drops
