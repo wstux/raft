@@ -50,12 +50,13 @@ private:
     struct task;
 
 public:
+    using allocator_type = std::allocator<std::byte>;
     using handler_type = std::function<void()>; ///< Type of the user handler.
     using task_type = std::shared_ptr<task>;    ///< Task structure.
 
 public:
     /// \brief  Constructor.
-    scheduler();
+    explicit scheduler(const allocator_type& alloc = allocator_type());
 
     /// \brief  Destructor. Automatically calls the stop() method to terminate threads.
     ~scheduler();
@@ -146,6 +147,7 @@ private:
 
 private:
     std::atomic_bool m_is_stop{true};
+    allocator_type m_alloc;
 
     std::atomic_size_t m_threads_size{0};
 

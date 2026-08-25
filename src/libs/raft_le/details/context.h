@@ -45,14 +45,16 @@ namespace raft {
 namespace le {
 namespace details {
 
-struct context final : public std::enable_shared_from_this<context>
+struct context final
 {
-    using ptr = std::unique_ptr<context>;
+    using ptr = std::shared_ptr<context>;
 
-    context(server_id_t id, const io::ptr p_io, logging_handler::ptr p_handler, const is_stop_fn_t& is_stop);
+    context(server_id_t id, const io::ptr p_io, logging_handler::ptr p_handler,
+            const is_stop_fn_t& is_stop, const allocator_type& alloc = allocator_type());
 
     const server_id_t id;
     const is_stop_fn_t is_stop_fn;
+    allocator_type alloc;
 
     bool is_async_io;
 

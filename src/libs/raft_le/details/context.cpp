@@ -36,13 +36,15 @@ namespace details {
 ////////////////////////////////////////////////////////////////////////////////
 // class context
 
-context::context(server_id_t id, const io::ptr p_io, logging_handler::ptr p_handler, const is_stop_fn_t& is_stop)
+context::context(server_id_t id, const io::ptr p_io, logging_handler::ptr p_handler, const is_stop_fn_t& is_stop, const allocator_type& alloc)
     : id(id)
     , is_stop_fn(is_stop)
+    , alloc(alloc)
     , is_async_io(false)
     , config(gk_invalid_id, false)
     , p_io(p_io)
     , term(0)
+    , schd(alloc)
     , heartbeat_interval_ms(100)
     , rand_engine(std::chrono::system_clock::now().time_since_epoch().count() * id)
     , election_distribution(250, 500)
@@ -90,7 +92,7 @@ size_t quorum_for_election(context& ctx)
 void update(context& ctx, const cluster_config& cluster_cfg)
 {
     ctx.peers.clear();
-    assert(ctx.peers.capacity() > 31);
+    ctx.peers.reserve(std::max(ctx.peers.capacity(), cluster_cfg.servers.size()));
 
     for (const server_config& cfg : cluster_cfg.servers) {
         if (ctx.id != cfg.id) {
@@ -158,8 +160,6 @@ bool is_valid_cluster(const server_id_t id, const cluster_config& cluster_cfg)
 
 bool load(context& ctx)
 {
-    assert(ctx.peers.capacity() > 31);
-
     if (! ctx.peers.empty()) {
         return false;
     }

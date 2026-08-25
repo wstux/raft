@@ -40,6 +40,8 @@ namespace wstux {
 namespace raft {
 namespace le {
 
+using allocator_type = std::allocator<std::byte>;
+
 using is_stop_fn_t = std::function<bool(void)>;
 
 using server_id_t = uint64_t;
