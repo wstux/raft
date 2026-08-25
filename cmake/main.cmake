@@ -27,8 +27,9 @@ cmake_minimum_required (VERSION 3.10)
 ################################################################################
 
 include(logging)
-include(common)
+include(public)
 include(version)
+include(utils/common_utils)
 
 if (NOT COMMON_CMAKE_DIR)
     log_fatal("COMMON_CMAKE_DIR variable is not setted")
@@ -122,9 +123,19 @@ InstallHook(commit-msg)
 # Include targets functions
 ################################################################################
 
+enable_testing()
+
 include(build_targets)
 include(custom_targets)
 include(driver_targets)
 include(external_targets)
 include(fetch_targets)
 include(wrapper_targets)
+
+################################################################################
+# Include custom targets
+################################################################################
+
+include(coverage)
+include(docs)
+include(static_analysis)
