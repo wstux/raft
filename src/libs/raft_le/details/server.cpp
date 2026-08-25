@@ -73,7 +73,7 @@ server::server(const server_id_t id, const io::ptr& p_io, logging_handler::ptr p
     , m_alloc(alloc)
     , m_is_stop_fn(is_stop_fn)
     , m_is_stop(true)
-    , m_p_ctx(std::allocate_shared<details::context>(m_alloc, id, p_io, std::move(p_handler), is_stop_fn, m_alloc))
+    , m_p_ctx(std::allocate_shared<details::context>(m_alloc, id, p_io, std::move(p_handler), [this]() -> bool { return is_stop(); }, m_alloc))
 {
     static_assert(std::is_same<context_ptr, details::context::ptr>::value, "Invalid context pointer type");
 
