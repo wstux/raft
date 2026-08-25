@@ -92,7 +92,7 @@ size_t quorum_for_election(context& ctx)
 void update(context& ctx, const cluster_config& cluster_cfg)
 {
     ctx.peers.clear();
-    assert(ctx.peers.capacity() > 31);
+    ctx.peers.reserve(std::max(ctx.peers.capacity(), cluster_cfg.servers.size()));
 
     for (const server_config& cfg : cluster_cfg.servers) {
         if (ctx.id != cfg.id) {
@@ -160,8 +160,6 @@ bool is_valid_cluster(const server_id_t id, const cluster_config& cluster_cfg)
 
 bool load(context& ctx)
 {
-    assert(ctx.peers.capacity() > 31);
-
     if (! ctx.peers.empty()) {
         return false;
     }
