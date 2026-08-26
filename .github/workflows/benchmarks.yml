@@ -34,27 +34,23 @@ jobs:
         ./build_release/test/perf_raft_peers --benchmark_format=json > perf_peers.json
         ./build_release/test/perf_raft_serialization --benchmark_format=json > perf_srl.json
 
-        # Склеиваем сырой вывод в один массив
         jq -s '[.[].benchmarks] | flatten' perf_le.json perf_peers.json perf_srl.json > perf_raft_merged.json
 
-        # Подготавливаем плоский список с указанием suite для экшена
         jq '[ .[] |
-          if .name | startswith("leader_election<") and endswith(" (Real Time)") then
-            { suite: "Leader Election (Real Time)", name: (.name | capture("<(?<v>\\d+)>") | .v + " nodes"), value: .value, unit: .unit }
-          elif .name | startswith("leader_election<") and endswith(" (CPU Time)") then
-            { suite: "Leader Election (CPU Time)", name: (.name | capture("<(?<v>\\d+)>") | .v + " nodes"), value: .value, unit: .unit }
-          elif .name | startswith("leader_election_default<") and endswith(" (Real Time)") then
-            { suite: "Leader Election Default (Real Time)", name: (.name | capture("<(?<v>\\d+)>") | .v + " nodes"), value: .value, unit: .unit }
-          elif .name | startswith("leader_election_default<") and endswith(" (CPU Time)") then
-            { suite: "Leader Election Default (CPU Time)", name: (.name | capture("<(?<v>\\d+)>") | .v + " nodes"), value: .value, unit: .unit }
-          elif .name | startswith("check_contact_quorum/threads:") and endswith(" (Real Time)") then
-            { suite: "Check Contact Quorum (Real Time)", name: (.name | capture("threads:(?<t>\\d+)") | .t + " threads"), value: .value, unit: .unit }
-          elif .name | startswith("request_to_list/threads:") and endswith(" (Real Time)") then
-            { suite: "Request to List (Real Time)", name: (.name | capture("threads:(?<t>\\d+)") | .t + " threads"), value: .value, unit: .unit }
-          elif .name | startswith("request_lock_list/threads:") and endswith(" (Real Time)") then
-            { suite: "Request Lock List (Real Time)", name: (.name | capture("threads:(?<t>\\d+)") | .t + " threads"), value: .value, unit: .unit }
-          elif .name == "serialize_message (Real Time)" then
-            { suite: "Serialize Message (Real Time)", name: "Base", value: .value, unit: .unit }
+          if .name | startswith("leader_election<") then
+            { name: ("Leader Election (Real Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .real_time, unit: .time_unit },
+            { name: ("Leader Election (CPU Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .cpu_time, unit: .time_unit }
+          elif .name | startswith("leader_election_default<") then
+            { name: ("Leader Election Default (Real Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .real_time, unit: .time_unit },
+            { name: ("Leader Election Default (CPU Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .cpu_time, unit: .time_unit }
+          elif .name | startswith("check_contact_quorum/threads:") then
+            { name: ("Check Contact Quorum (Real Time)::" + (.name | capture("threads:(?<t>\\d+)") | .t + " threads")), value: .real_time, unit: .time_unit }
+          elif .name | startswith("request_to_list/threads:") then
+            { name: ("Request to List (Real Time)::" + (.name | capture("threads:(?<t>\\d+)") | .t + " threads")), value: .real_time, unit: .time_unit }
+          elif .name | startswith("request_lock_list/threads:") then
+            { name: ("Request Lock List (Real Time)::" + (.name | capture("threads:(?<t>\\d+)") | .t + " threads")), value: .real_time, unit: .time_unit }
+          elif .name == "serialize_message" then
+            { name: "Serialize Message (Real Time)::Base", value: .real_time, unit: .time_unit }
           else
             empty
           end
@@ -67,7 +63,7 @@ jobs:
       uses: benchmark-action/github-action-benchmark@v1
       with:
         tool: 'customSmallerIsBetter'
-        external-data-json-path: perf_raft_common.json
+        output-file-path: perf_raft_common.json
         github-token: ${{ secrets.GITHUB_TOKEN }}
         auto-push: ${{ github.event_name == 'push' }} # Update history charts only on push to master
         comment-on-alert: true                        # Post a performance change report in the PR comments
