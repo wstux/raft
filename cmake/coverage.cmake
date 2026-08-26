@@ -22,6 +22,22 @@
 
 include(custom_targets)
 
+function(_get_lcov_version LCOV_EXE MAJOR_RESULT MINOR_RESULT)
+    set(${MAJOR_RESULT} 1 PARENT_SCOPE)
+    set(${MINOR_RESULT} 0 PARENT_SCOPE)
+
+    execute_process(
+        COMMAND ${LCOV_EXE} --version
+        OUTPUT_VARIABLE _lcov_version_output
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+
+    if(_lcov_version_output MATCHES "version ([0-9]+)\\.([0-9]+)")
+        set(${MAJOR_RESULT} ${CMAKE_MATCH_1} PARENT_SCOPE)
+        set(${MINOR_RESULT} ${CMAKE_MATCH_2} PARENT_SCOPE)
+    endif()
+endfunction()
+
 if (COVERAGE_BUILD)
     if(NOT CMAKE_BUILD_TYPE STREQUAL "debug")
         message(FATAL_ERROR "Code coverage supports only debug build")
@@ -43,6 +59,8 @@ if (COVERAGE_BUILD)
         return()
     endif()
 
+    _get_lcov_version(${LCOV_EXECUTABLE} _lcov_version_major _lcov_version_minor)
+
     set(_coverage_dir   "${CMAKE_BINARY_DIR}/__coverage")
     set(_lcov_out       "${_coverage_dir}/lcov_base.info")
     set(_lcov_final_out "${_coverage_dir}/lcov_final.info")
@@ -54,7 +72,10 @@ if (COVERAGE_BUILD)
 
     file(MAKE_DIRECTORY "${_coverage_dir}")
 
-    set(_lcov_ignore_errors "deprecated,inconsistent,mismatch,negative")
+    set(_lcov_ignore_errors "source")
+    if(_lcov_version_major GREATER_EQUAL 2)
+        set(_lcov_ignore_errors "deprecated,inconsistent,mismatch,negative")
+    endif()
     set(_lcov_args      --follow --ignore-errors ${_lcov_ignore_errors} --rc lcov_branch_coverage=1)
     CustomTarget(coverage
         # Cleanup lcov
