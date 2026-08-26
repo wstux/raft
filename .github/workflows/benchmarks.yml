@@ -64,6 +64,7 @@ jobs:
       with:
         tool: 'customSmallerIsBetter'
         output-file-path: perf_raft_common.json
+        external-data-json-path: perf_raft_common.json
         github-token: ${{ secrets.GITHUB_TOKEN }}
         auto-push: ${{ github.event_name == 'push' }} # Update history charts only on push to master
         comment-on-alert: true                        # Post a performance change report in the PR comments
