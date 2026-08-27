@@ -130,6 +130,7 @@ include(custom_targets)
 include(driver_targets)
 include(external_targets)
 include(fetch_targets)
+include(test_targets)
 include(wrapper_targets)
 
 ################################################################################

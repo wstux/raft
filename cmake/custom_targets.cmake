@@ -55,58 +55,6 @@ macro(ConfigureFile TARGET_NAME CONF_FILE)
     )
 endmacro()
 
-macro(CustomTestTarget TARGET_NAME)
-    if (NOT BUILD_TESTS)
-        return()
-    endif()
-
-    set(_flags_kw   DISABLE)
-    set(_values_kw  INTERPRETER SOURCE)
-    set(_lists_kw   ARGUMENTS DEPENDS)
-    _parse_target_args(${TARGET_NAME}
-        _flags_kw _values_kw _lists_kw ${ARGN}
-    )
-
-    set(_target_dir "${CMAKE_BINARY_DIR}/test")
-    set(_enable_autorun true)
-    if (${TARGET_NAME}_DISABLE)
-        set(_enable_autorun false)
-    endif()
-
-    get_filename_component(_src_filename ${${TARGET_NAME}_SOURCE} NAME_WE)
-    set(_target_sh "${_target_dir}/${_src_filename}.sh")
-    set(_src_interpreter "${${TARGET_NAME}_INTERPRETER}")
-    set(_src_file "${CMAKE_CURRENT_SOURCE_DIR}/${${TARGET_NAME}_SOURCE}")
-    set(_src_args "")
-    foreach (_arg IN LISTS ${TARGET_NAME}_ARGUMENTS)
-        set(_src_args "${_src_args} ${_arg}")
-    endforeach()
-    file(GENERATE OUTPUT ${_target_sh}
-         CONTENT    "${_src_interpreter} ${_src_file} ${_src_args}\n"
-         FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
-    )
-
-    CustomTarget(${TARGET_NAME}
-        COMMAND ${_target_sh}
-    )
-    foreach (_dep IN LISTS ${TARGET_NAME}_DEPENDS)
-        add_dependencies(${TARGET_NAME} ${_dep})
-    endforeach()
-
-    if (${_enable_autorun})
-        add_test(
-            NAME ${TARGET_NAME}
-            COMMAND sh ${_target_sh}
-        )
-    endif()
-
-    CustomTarget(${TARGET_NAME}_run
-        COMMAND sh "${_target_dir}/${TARGET_NAME}"
-        DEPENDS ${TARGET_NAME}
-        VERBATIM
-    )
-endmacro()
-
 macro(ExampleTarget TARGET_NAME)
     if (NOT BUILD_EXAMPLES)
         return()
