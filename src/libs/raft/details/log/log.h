@@ -22,72 +22,58 @@
  * THE SOFTWARE.
  */
 
-#ifndef _LIBS_RAFT_CONNECTION_MESSAGES_H_
-#define _LIBS_RAFT_CONNECTION_MESSAGES_H_
+#ifndef _LIBS_RAFT_LOG_LOG_H_
+#define _LIBS_RAFT_LOG_LOG_H_
 
-#include <type_traits>
+#include <map>
 
 #include "raft/io.h"
 
 namespace wstux {
 namespace raft {
 namespace details {
+namespace log {
 
-enum message_version : uint32_t
+struct store final
 {
-    v_1 = 20260827
+    using entry_map = std::map<index_t, entry::ptr>;
+
+    entry::list acquire(index_t begin_idx) const;
+
+    void append(entry::ptr p_entry);
+
+    void append_change(term_t term, const cluster_config& cfg);
+
+    void append_command(term_t term, buffer_type buf);
+
+    entry::ptr get_entry(index_t idx) const;
+
+    index_t last_index() const;
+
+    term_t last_term() const;
+
+    void load(index_t snapshot_index, term_t snapshot_term, index_t start_index);
+
+    void restore(index_t last_idx, term_t last_term);
+
+    void take_snapshot(index_t new_last_index);
+
+    term_t term(index_t idx) const;
+
+    void truncate(index_t begin_idx);
+
+    entry_map entries;
+    index_t offset;
+    struct
+    {
+        index_t last_index;
+        term_t last_term;
+    } snapshot;
 };
 
-enum message_type : int32_t
-{
-    heartbeat_request  = 0,
-    heartbeat_response = 1,
-    vote_request       = 2,
-    vote_response      = 3,
-    invalid
-};
-
-struct heartbeat_message final
-{};
-
-struct heartbeat_response_message final
-{
-    bool accept;
-};
-
-struct vote_message final
-{
-    bool is_prevote;
-};
-
-struct vote_response_message final
-{
-    bool is_prevote;
-    bool accept;
-};
-
-struct message final
-{
-    static constexpr uint32_t version = message_version::v_1;
-
-    message_type type;
-
-    server_id_t src_id;
-    server_id_t dst_id;
-    term_t term;
-
-    union {
-        heartbeat_message          heartbeat_req;
-        heartbeat_response_message heartbeat_resp;
-        vote_message               vote_req;
-        vote_response_message      vote_resp;
-    };
-};
-
-static_assert(std::is_trivially_copyable<message>::value, "Message struct must be trivially copyable");
-
+} // namespace log
 } // namespace details
 } // namespace raft
 } // namespace wstux
 
-#endif /* _LIBS_RAFT_CONNECTION_MESSAGES_H_ */
+#endif /* _LIBS_RAFT_LOG_LOG_H_ */

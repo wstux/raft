@@ -103,9 +103,7 @@ TEST_F(raft_server, handle_invalid_message)
     EXPECT_TRUE(m_p_srv->init());
     EXPECT_TRUE(m_p_srv->start());
 
-    char buff[raft::details::message::size];
-    std::fill(buff, buff + raft::details::message::size, 0);
-    raft::buffer_type buffer(buff, raft::details::message::size);
+    raft::buffer_type buffer;
     EXPECT_NO_THROW(m_p_srv->handle_message(buffer));
 }
 

@@ -6,6 +6,7 @@ LibTarget(raft STATIC
         details/handlers/heartbeat_handler.cpp
         details/handlers/timeout_handler.cpp
         details/handlers/vote_handler.cpp
+        details/log/log.cpp
         details/role/convert.cpp
         details/role/election.cpp
     INCLUDE_DIR

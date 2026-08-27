@@ -60,7 +60,7 @@ public:
 
     bool is_stop() const { return m_is_stop || m_is_stop_fn(); }
 
-    void handle_message(const buffer_type& msg_buf);
+    void handle_message(const inbuffer_type& msg_buf);
 
     bool reconfigure();
 

@@ -43,13 +43,11 @@ public:
     using ptr = std::shared_ptr<empty_client>;
 
 public:
-    empty_client() : buffer(buf.begin(), buf.end()) { std::fill(buf.begin(), buf.end(), 0); }
-    void send(const buffer_type& b) { std::copy(b.begin(), b.end(), buf.begin()); }
+    void send(const buffer_type& b) { buffer = b; }
 
     static empty_client::ptr make() { return std::make_shared<empty_client>(); }
 
 public:
-    details::buffer_data_type buf;
     buffer_type buffer;
 };
 
