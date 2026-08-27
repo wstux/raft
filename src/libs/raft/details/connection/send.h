@@ -43,14 +43,14 @@ namespace utils {
 
 template<message_type TMsgType> struct message_filler;
 
-template<> struct message_filler<message_type::heartbeat_request>
+template<> struct message_filler<message_type::append_entries_request>
 {
     static void fill(message& /*msg*/) {}
 };
 
-template<> struct message_filler<message_type::heartbeat_response>
+template<> struct message_filler<message_type::append_entries_response>
 {
-    static void fill(message& msg, bool accept) { msg.heartbeat_resp.accept = accept; }
+    static void fill(message& msg, bool accept) { msg.append_entries_resp.accept = accept; }
 };
 
 template<> struct message_filler<message_type::vote_request>
@@ -70,9 +70,8 @@ template<> struct message_filler<message_type::vote_response>
 template<message_type TMsgType, typename... TArgs>
 void send(io::ptr p_io, server_id_t dst_id, term_t term, server_id_t src_id, TArgs&&... args)
 {
-    message msg;
+    message msg(TMsgType);
 
-    msg.type = TMsgType;
     msg.src_id = src_id;
     msg.dst_id = dst_id;
     msg.term = term;

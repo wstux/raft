@@ -64,6 +64,11 @@ struct config final
 
 struct server_config final
 {
+    server_config()
+        : id(gk_invalid_id)
+        , is_voter(false)
+    {}
+
     server_config(const server_id_t id, bool is_voter)
         : id(id)
         , is_voter(is_voter)

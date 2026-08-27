@@ -38,8 +38,16 @@ bool operator==(const ::wstux::raft::details::message& lhs, const ::wstux::raft:
     is_eq = is_eq && (lhs.dst_id == rhs.dst_id);
     is_eq = is_eq && (lhs.term == rhs.term);
 
-    if (is_eq && lhs.type == raft::message_type::heartbeat_response) {
-        is_eq = is_eq && (lhs.heartbeat_resp.accept == rhs.heartbeat_resp.accept);
+    if (is_eq && lhs.type == raft::message_type::append_entries_request) {
+        is_eq = is_eq &&
+            lhs.append_entries_req.leader_commit == rhs.append_entries_req.leader_commit &&
+            lhs.append_entries_req.prev_log_index == rhs.append_entries_req.prev_log_index &&
+            lhs.append_entries_req.prev_log_term == rhs.append_entries_req.prev_log_term &&
+            lhs.append_entries_req.entries == rhs.append_entries_req.entries;
+    } else if (is_eq && lhs.type == raft::message_type::append_entries_response) {
+        is_eq = is_eq &&
+            lhs.append_entries_resp.accept == rhs.append_entries_resp.accept &&
+            lhs.append_entries_resp.last_log_index == rhs.append_entries_resp.last_log_index;
     } else if (is_eq && lhs.type == raft::message_type::vote_request) {
         is_eq = is_eq && (lhs.vote_req.is_prevote == rhs.vote_req.is_prevote);
     } else if (is_eq && lhs.type == raft::message_type::vote_response) {
@@ -51,31 +59,33 @@ bool operator==(const ::wstux::raft::details::message& lhs, const ::wstux::raft:
 
 } // <anonymous> namespace
 
-TEST(raft_serialization, heartbeat_request)
+TEST(raft_serialization, append_entries_request)
 {
     namespace raft = ::wstux::raft;
 
-    raft::details::message msg;
-    msg.type = raft::details::message_type::heartbeat_request;
+    raft::details::message msg(raft::details::message_type::append_entries_request);
     msg.src_id = 1;
     msg.dst_id = 2;
     msg.term = 1;
+    msg.append_entries_req.leader_commit = 13;
+    msg.append_entries_req.prev_log_index = 13;
+    msg.append_entries_req.prev_log_term = 13;
 
     raft::buffer_type buffer = raft::details::serialize(msg);
     raft::details::message dsr_msg = raft::details::deserialize<raft::details::message>(buffer);
     EXPECT_TRUE(msg == dsr_msg);
 }
 
-TEST(raft_serialization, heartbeat_response)
+TEST(raft_serialization, append_entries_response)
 {
     namespace raft = ::wstux::raft;
 
-    raft::details::message msg;
-    msg.type = raft::details::message_type::heartbeat_response;
+    raft::details::message msg(raft::details::message_type::append_entries_response);
     msg.src_id = 1;
     msg.dst_id = 2;
     msg.term = 1;
-    msg.heartbeat_resp.accept = true;
+    msg.append_entries_resp.accept = false;
+    msg.append_entries_resp.last_log_index = 13;
 
     raft::buffer_type buffer = raft::details::serialize(msg);
     raft::details::message dsr_msg = raft::details::deserialize<raft::details::message>(buffer);

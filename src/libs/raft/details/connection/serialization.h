@@ -52,12 +52,27 @@ void serialize(TArch& ar, ::wstux::raft::details::message& msg, const unsigned i
     ar & msg.dst_id;
     ar & msg.term;
 
-    if (msg.type == ::wstux::raft::details::message_type::heartbeat_request) {
-        // pass
-    } else if (msg.type == ::wstux::raft::details::message_type::heartbeat_response) {
-        ar & msg.heartbeat_resp.accept;
+    if (TArch::is_loading::value) {
+        msg.init();
+    }
+    if (msg.type == ::wstux::raft::details::message_type::append_entries_request) {
+        ar & msg.append_entries_req.prev_log_index;
+        ar & msg.append_entries_req.prev_log_term;
+        ar & msg.append_entries_req.leader_commit;
+        ar & msg.append_entries_req.entries;
+    } else if (msg.type == ::wstux::raft::details::message_type::append_entries_response) {
+        ar & msg.append_entries_resp.accept;
+        ar & msg.append_entries_resp.last_log_index;
+    } else if (msg.type == ::wstux::raft::details::message_type::snapshot_request) {
+        ar & msg.snapshot_req.last_index;
+        ar & msg.snapshot_req.last_term;
+        ar & msg.snapshot_req.conf;
+        ar & msg.snapshot_req.conf_index;
+        ar & msg.snapshot_req.buffer;
     } else if (msg.type == ::wstux::raft::details::message_type::vote_request) {
         ar & msg.vote_req.is_prevote;
+        ar & msg.vote_req.last_log_index;
+        ar & msg.vote_req.last_log_term;
     } else if (msg.type == ::wstux::raft::details::message_type::vote_response) {
         ar & msg.vote_resp.is_prevote;
         ar & msg.vote_resp.accept;

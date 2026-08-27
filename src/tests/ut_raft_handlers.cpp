@@ -87,7 +87,7 @@ TEST_F(raft_heartbeat_handler, handle_request_invalid_src_id)
     ASSERT_TRUE(m_p_io->clients.size() == 1) << m_p_io->clients.size();
 
     tests::empty_client::ptr p_client = m_p_io->clients.at(2);
-    details::heartbeat::handle_request(ctx, 1, 10, details::heartbeat_message());
+    details::heartbeat::handle_request(ctx, 1, 10, details::append_entries_message());
     std::this_thread::sleep_for(5ms);
     //details::message msg = details::deserialize<raft::details::message>(p_client->buffer);
     //EXPECT_TRUE(msg.type == details::message_type::invalid);
@@ -103,11 +103,11 @@ TEST_F(raft_heartbeat_handler, handle_request_invalid_term)
     ASSERT_TRUE(m_p_io->clients.size() == 1) << m_p_io->clients.size();
 
     tests::empty_client::ptr p_client = m_p_io->clients.at(2);
-    details::heartbeat::handle_request(ctx, 1, 2, details::heartbeat_message());
+    details::heartbeat::handle_request(ctx, 1, 2, details::append_entries_message());
     std::this_thread::sleep_for(5ms);
     details::message msg = details::deserialize<raft::details::message>(p_client->buffer);
-    EXPECT_TRUE(msg.type == details::message_type::heartbeat_response);
-    EXPECT_FALSE(msg.heartbeat_resp.accept);
+    EXPECT_TRUE(msg.type == details::message_type::append_entries_response);
+    EXPECT_FALSE(msg.append_entries_resp.accept);
 }
 
 TEST_F(raft_heartbeat_handler, handle_request_downgrade_role)
@@ -120,7 +120,7 @@ TEST_F(raft_heartbeat_handler, handle_request_downgrade_role)
     details::role::become_candidate(ctx);
     EXPECT_TRUE(ctx.role.is_candidate());
 
-    details::heartbeat::handle_request(ctx, 1, 2, details::heartbeat_message());
+    details::heartbeat::handle_request(ctx, 1, 2, details::append_entries_message());
     EXPECT_TRUE(ctx.role.is_follower());
 }
 
@@ -137,7 +137,7 @@ TEST_F(raft_heartbeat_handler, handle_response_not_leader)
     details::role::become_follower(ctx);
     EXPECT_TRUE(ctx.role.is_follower());
 
-    details::heartbeat::handle_response(ctx, 1, 2, details::heartbeat_response_message());
+    details::heartbeat::handle_response(ctx, 1, 2, details::append_entries_response_message());
     EXPECT_FALSE(p_peer->recent_recv);
 }
 
@@ -156,7 +156,7 @@ TEST_F(raft_heartbeat_handler, handle_response_local_higher_term)
     details::role::become_leader(ctx);
     EXPECT_TRUE(ctx.role.is_leader());
 
-    details::heartbeat::handle_response(ctx, 1, 2, details::heartbeat_response_message());
+    details::heartbeat::handle_response(ctx, 1, 2, details::append_entries_response_message());
     EXPECT_FALSE(p_peer->recent_recv);
 }
 
@@ -175,7 +175,7 @@ TEST_F(raft_heartbeat_handler, handle_response_src_higher_term)
     details::role::become_leader(ctx);
     EXPECT_TRUE(ctx.role.is_leader());
 
-    details::heartbeat::handle_response(ctx, 5, 2, details::heartbeat_response_message());
+    details::heartbeat::handle_response(ctx, 5, 2, details::append_entries_response_message());
     EXPECT_FALSE(p_peer->recent_recv);
     EXPECT_TRUE(ctx.role.is_follower()) << ctx;
     EXPECT_TRUE(ctx.term == 5) << ctx.term;
@@ -196,7 +196,7 @@ TEST_F(raft_heartbeat_handler, handle_response_invalid_peer)
     details::role::become_leader(ctx);
     EXPECT_TRUE(ctx.role.is_leader());
 
-    details::heartbeat::handle_response(ctx, 1, 5, details::heartbeat_response_message());
+    details::heartbeat::handle_response(ctx, 1, 5, details::append_entries_response_message());
     EXPECT_FALSE(p_peer->recent_recv);
 }
 

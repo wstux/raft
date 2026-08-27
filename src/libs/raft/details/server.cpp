@@ -43,11 +43,11 @@ namespace {
 void handle_message(details::context& ctx, const details::message& msg)
 {
     switch(msg.type) {
-    case details::message_type::heartbeat_request:
-        details::heartbeat::handle_request(ctx, msg.term, msg.src_id, msg.heartbeat_req);
+    case details::message_type::append_entries_request:
+        details::heartbeat::handle_request(ctx, msg.term, msg.src_id, msg.append_entries_req);
         break;
-    case details::message_type::heartbeat_response:
-        details::heartbeat::handle_response(ctx, msg.term, msg.src_id, msg.heartbeat_resp);
+    case details::message_type::append_entries_response:
+        details::heartbeat::handle_response(ctx, msg.term, msg.src_id, msg.append_entries_resp);
         break;
     case details::message_type::vote_request:
         details::vote::handle_request(ctx, msg.term, msg.src_id, msg.vote_req);
