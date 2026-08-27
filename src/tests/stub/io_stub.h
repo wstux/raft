@@ -99,9 +99,6 @@ public:
 
     struct queue_data
     {
-        queue_data() : msg(buf.begin(), buf.end()) {}
-
-        details::buffer_data_type buf;
         buffer_type msg;
     };
 
@@ -138,7 +135,7 @@ public:
     virtual void send(const buffer_type& msg) override
     {
         queue_data* d = new queue_data();
-        std::copy(msg.begin(), msg.end(), d->buf.begin());
+        d->msg = msg;
 
         while (! m_queue.push(d)) {}
     }

@@ -28,125 +28,121 @@
 #include <array>
 #include <utility>
 
-#include <boost/endian/conversion.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/iostreams/stream.hpp>
+#include <boost/iostreams/device/back_inserter.hpp>
+#include <boost/serialization/access.hpp>
+#include <boost/serialization/nvp.hpp>
+#include <boost/serialization/shared_ptr.hpp>
+#include <boost/serialization/vector.hpp>
 
 #include "raft/details/connection/messages.h"
+
+namespace boost {
+namespace serialization {
+namespace version_1 {
+
+template<typename TArch>
+void serialize(TArch& ar, ::wstux::raft::details::message& msg, const unsigned int /*version*/)
+{
+    ar & msg.type;
+
+    ar & msg.src_id;
+    ar & msg.dst_id;
+    ar & msg.term;
+
+    if (msg.type == ::wstux::raft::details::message_type::heartbeat_request) {
+        // pass
+    } else if (msg.type == ::wstux::raft::details::message_type::heartbeat_response) {
+        ar & msg.heartbeat_resp.accept;
+    } else if (msg.type == ::wstux::raft::details::message_type::vote_request) {
+        ar & msg.vote_req.is_prevote;
+    } else if (msg.type == ::wstux::raft::details::message_type::vote_response) {
+        ar & msg.vote_resp.is_prevote;
+        ar & msg.vote_resp.accept;
+    }
+}
+
+} // namespace ver_1
+
+template<typename TArch>
+void serialize(TArch& ar, ::wstux::raft::cluster_config& cfg, const unsigned int /*version*/)
+{
+    ar & cfg.servers;
+}
+
+template<typename TArch>
+void serialize(TArch& ar, ::wstux::raft::server_config& cfg, const unsigned int /*version*/)
+{
+    ar & cfg.id;
+    ar & cfg.is_voter;
+}
+
+template<typename TArch>
+void serialize(TArch& ar, ::wstux::raft::details::message& msg, const unsigned int version)
+{
+    size_t msg_version = ::wstux::raft::details::message::version;
+    ar & msg_version;
+
+    if (msg_version == ::wstux::raft::details::message_version::v_1) {
+        version_1::serialize<TArch>(ar, msg, version);
+    }
+}
+
+} // namespace serialization
+} // namespace boost
 
 namespace wstux {
 namespace raft {
 namespace details {
-namespace v1 {
 
-template<typename TDest, typename TSrc>
-void read(TSrc& src, const char*& p_buffer)
+template<typename T>
+void deserialize(const buffer_type& buffer, T& data)
 {
-    TDest value;
-    std::memcpy(&value, p_buffer, sizeof(TDest));
-    p_buffer += sizeof(TDest);
-    src = static_cast<TSrc>(boost::endian::big_to_native(value));
+    using iostream_type = boost::iostreams::stream<boost::iostreams::array_source>;
+
+    // Create an input stream from the vector's data and size using an array_source device
+    iostream_type sin(buffer.data(), buffer.size());
+
+    // Create a binary input archive and deserialize the data
+    boost::archive::binary_iarchive arch(sin);
+    arch >> data;
 }
 
-template<>
-inline void read<uint8_t, bool>(bool& src, const char*& p_buffer)
+template<typename T>
+T deserialize(const buffer_type& buffer)
 {
-    uint8_t value;
-    std::memcpy(&value, p_buffer, 1);
-    p_buffer += 1;
-    src = (value != 0);
+    T data;
+
+    deserialize(buffer, data);
+    return data;
 }
 
-template<typename TDest, typename TSrc>
-void write(const TSrc& src, char*& p_buffer)
+template<typename T>
+void serialize(const T& data, buffer_type& buffer)
 {
-    const TDest value = boost::endian::native_to_big(static_cast<TDest>(src));
-    std::memcpy(p_buffer, &value, sizeof(TDest));
-    p_buffer += sizeof(TDest);
+    using inserter_type = boost::iostreams::back_insert_device<buffer_type>;
+    using iostream_type = boost::iostreams::stream<inserter_type>;
+
+    iostream_type sout{inserter_type(buffer)};
+
+    // Create a binary output archive and serialize the data
+    boost::archive::binary_oarchive arch(sout);
+
+    arch << data;
+
+    // Flush the stream to ensure all data is written to the vector
+    sout.flush();
 }
 
-template<>
-inline void write<uint8_t, bool>(const bool& src, char*& p_buffer)
+template<typename T>
+buffer_type serialize(const T& data)
 {
-    uint8_t value = src ? 1 : 0;
-    std::memcpy(p_buffer, &value, 1);
-    p_buffer += 1;
-}
+    buffer_type buffer;
 
-inline void deserialize(const char* p_buffer, message& msg)
-{
-    read<int32_t>(msg.type, p_buffer);
-    read<uint64_t>(msg.src_id, p_buffer);
-    read<uint64_t>(msg.dst_id, p_buffer);
-    read<uint32_t>(msg.term, p_buffer);
-
-    if (msg.type == message_type::heartbeat_response) {
-        read<uint8_t>(msg.heartbeat_resp.accept, p_buffer);
-    } else if (msg.type == message_type::vote_request) {
-        read<uint8_t>(msg.vote_req.is_prevote, p_buffer);
-    } else if (msg.type == message_type::vote_response) {
-        read<uint8_t>(msg.vote_resp.is_prevote, p_buffer);
-        read<uint8_t>(msg.vote_resp.accept, p_buffer);
-    }
-}
-
-inline void serialize(const message& msg, char* p_buffer)
-{
-    static_assert(sizeof(int32_t) == sizeof(message_type));
-    static_assert(std::is_same<uint64_t, server_id_t>::value);
-    static_assert(std::is_same<uint32_t, term_t>::value);
-
-    write<int32_t>(msg.type, p_buffer);
-    write<uint64_t>(msg.src_id, p_buffer);
-    write<uint64_t>(msg.dst_id, p_buffer);
-    write<uint32_t>(msg.term, p_buffer);
-
-    if (msg.type == message_type::heartbeat_response) {
-        write<uint8_t>(msg.heartbeat_resp.accept, p_buffer);
-    } else if (msg.type == message_type::vote_request) {
-        write<uint8_t>(msg.vote_req.is_prevote, p_buffer);
-    } else if (msg.type == message_type::vote_response) {
-        write<uint8_t>(msg.vote_resp.is_prevote, p_buffer);
-        write<uint8_t>(msg.vote_resp.accept, p_buffer);
-    }
-}
-
-} // namespace v1
-
-inline void deserialize(const buffer_type& buffer, message& msg)
-{
-    msg.type = message_type::invalid;
-
-    const char* p_buffer = buffer.data();
-
-    uint32_t version = 0;
-    v1::read<uint32_t>(version, p_buffer);
-    if (version == message_version::v_1) {
-        v1::deserialize(p_buffer, msg);
-    }
-}
-
-using buffer_data_type = std::array<char, message::size>;
-
-inline message deserialize(const buffer_type& buffer)
-{
-    message msg;
-
-    deserialize(buffer, msg);
-    return msg;
-}
-
-inline buffer_type serialize(const message& msg, buffer_data_type& buffer)
-{
-    constexpr size_t message_size = sizeof(uint32_t) + sizeof(int32_t) + sizeof(uint64_t) +
-        sizeof(uint64_t) + sizeof(uint32_t) + sizeof(uint8_t) + sizeof(uint8_t);
-    static_assert(message_size <= message::size,  "Invalid message size");
-    static_assert(std::tuple_size<buffer_data_type>::value == message::size);
-
-    if (message::version == message_version::v_1) {
-        char* p_buffer = buffer.data();
-        v1::write<uint32_t>(message::version, p_buffer);
-        v1::serialize(msg, p_buffer);
-    }
-    return buffer_type(buffer.begin(), buffer.end());
+    serialize<T>(data, buffer);
+    return buffer;
 }
 
 } // namespace details

@@ -7,7 +7,7 @@ if (BUILD_BOOST)
         CONFIGURE_COMMAND
             ./bootstrap.sh --prefix=${EXTERNALS_PREFIX}/boost/install
                            --with-toolset=gcc
-                           --with-libraries=date_time,thread
+                           --with-libraries=date_time,serialization,thread
         BUILD_COMMAND
             CXXFLAGS='${CMAKE_CXX_FLAGS};-Wno-uninitialized'
             ./b2 linkflags=\"${CMAKE_EXE_LINKER_FLAGS}\"
@@ -28,6 +28,7 @@ if (BUILD_BOOST)
         LIBRARIES
             libboost_atomic-mt-s-x64.a
             libboost_date_time-mt-s-x64.a
+            libboost_serialization-mt-s-x64.a
             libboost_thread-mt-s-x64.a
     )
 endif()

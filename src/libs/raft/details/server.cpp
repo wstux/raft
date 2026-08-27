@@ -117,6 +117,10 @@ void server::handle_message(const buffer_type& msg_buf)
         return;
     }
 
+    if (msg_buf.empty()) {
+        return;
+    }
+
     details::message msg;
     details::deserialize(msg_buf, msg);
 

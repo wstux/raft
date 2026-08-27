@@ -89,8 +89,9 @@ TEST_F(raft_heartbeat_handler, handle_request_invalid_src_id)
     tests::empty_client::ptr p_client = m_p_io->clients.at(2);
     details::heartbeat::handle_request(ctx, 1, 10, details::heartbeat_message());
     std::this_thread::sleep_for(5ms);
-    details::message msg = details::deserialize(p_client->buffer);
-    EXPECT_TRUE(msg.type == details::message_type::invalid);
+    //details::message msg = details::deserialize<raft::details::message>(p_client->buffer);
+    //EXPECT_TRUE(msg.type == details::message_type::invalid);
+    EXPECT_TRUE(p_client->buffer.empty());
 }
 
 TEST_F(raft_heartbeat_handler, handle_request_invalid_term)
@@ -104,7 +105,7 @@ TEST_F(raft_heartbeat_handler, handle_request_invalid_term)
     tests::empty_client::ptr p_client = m_p_io->clients.at(2);
     details::heartbeat::handle_request(ctx, 1, 2, details::heartbeat_message());
     std::this_thread::sleep_for(5ms);
-    details::message msg = details::deserialize(p_client->buffer);
+    details::message msg = details::deserialize<raft::details::message>(p_client->buffer);
     EXPECT_TRUE(msg.type == details::message_type::heartbeat_response);
     EXPECT_FALSE(msg.heartbeat_resp.accept);
 }
@@ -249,8 +250,9 @@ TEST_F(raft_vote_handler, handle_request_invalid_src_id)
     tests::empty_client::ptr p_client = m_p_io->clients.at(2);
     details::vote::handle_request(ctx, 1, 10, details::vote_message());
     std::this_thread::sleep_for(5ms);
-    details::message msg = details::deserialize(p_client->buffer);
-    EXPECT_TRUE(msg.type == details::message_type::invalid);
+    //details::message msg = details::deserialize<raft::details::message>(p_client->buffer);
+    //EXPECT_TRUE(msg.type == details::message_type::invalid);
+    EXPECT_TRUE(p_client->buffer.empty());
 }
 
 TEST_F(raft_vote_handler, handle_request_invalid_term)
@@ -264,7 +266,7 @@ TEST_F(raft_vote_handler, handle_request_invalid_term)
     tests::empty_client::ptr p_client = m_p_io->clients.at(2);
     details::vote::handle_request(ctx, 1, 2, details::vote_message());
     std::this_thread::sleep_for(5ms);
-    details::message msg = details::deserialize(p_client->buffer);
+    details::message msg = details::deserialize<raft::details::message>(p_client->buffer);
     EXPECT_TRUE(msg.type == details::message_type::vote_response);
     EXPECT_FALSE(msg.vote_resp.accept);
 }
@@ -281,7 +283,7 @@ TEST_F(raft_vote_handler, handle_request_not_voter)
     tests::empty_client::ptr p_client = m_p_io->clients.at(2);
     details::vote::handle_request(ctx, 1, 2, details::vote_message());
     std::this_thread::sleep_for(5ms);
-    details::message msg = details::deserialize(p_client->buffer);
+    details::message msg = details::deserialize<raft::details::message>(p_client->buffer);
     EXPECT_TRUE(msg.type == details::message_type::vote_response);
     EXPECT_FALSE(msg.vote_resp.accept);
 }
@@ -300,7 +302,7 @@ TEST_F(raft_vote_handler, handle_request_occupied_vote)
     ctx.role.voted_for = 7;
     details::vote::handle_request(ctx, 1, 2, msg);
     std::this_thread::sleep_for(5ms);
-    details::message dst_msg = details::deserialize(p_client->buffer);
+    details::message dst_msg = details::deserialize<raft::details::message>(p_client->buffer);
     EXPECT_TRUE(dst_msg.type == details::message_type::vote_response);
     EXPECT_FALSE(dst_msg.vote_resp.accept);
 }

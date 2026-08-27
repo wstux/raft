@@ -35,7 +35,7 @@ namespace details {
 
 enum message_version : uint32_t
 {
-    v_1 = 20260727
+    v_1 = 20260827
 };
 
 enum message_type : int32_t
@@ -68,7 +68,6 @@ struct vote_response_message final
 
 struct message final
 {
-    static constexpr size_t size = 32;
     static constexpr uint32_t version = message_version::v_1;
 
     message_type type;
@@ -85,11 +84,7 @@ struct message final
     };
 };
 
-static_assert(std::is_pod<message>::value, "Message struct must be pod");
 static_assert(std::is_trivially_copyable<message>::value, "Message struct must be trivially copyable");
-static_assert(sizeof(message) == message::size, "Invalid message size");
-static_assert(sizeof(uint32_t)+sizeof(message_type)+2*sizeof(server_id_t)+sizeof(term_t)+2*sizeof(uint8_t) <= message::size, "Invalid message size");
-static_assert(buffer_type::extent == message::size, "Invalid buffer size");
 
 } // namespace details
 } // namespace raft
