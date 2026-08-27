@@ -44,6 +44,25 @@
 namespace wstux {
 namespace raft {
 namespace details {
+namespace process {
+
+struct state final
+{
+    index_t commit_index;
+    index_t last_applied;
+    index_t last_stored;
+
+    index_t configuration_committed_index;
+    index_t configuration_uncommitted_index;
+
+    struct {
+        bool is_in_process = false;
+    } snapshot;
+
+    size_t tasks_in_process;
+};
+
+} // namespace process
 
 struct context final
 {
@@ -63,6 +82,7 @@ struct context final
     io::ptr p_io;
 
     role::state role;
+    process::state state;
     log::store log;
 
     term_t term;
@@ -70,6 +90,8 @@ struct context final
     peer::list peers;
 
     scheduler schd;
+
+    size_t snapshot_threshold;
 
     size_t heartbeat_interval_ms;
     scheduler::task_type heartbeat_task;
