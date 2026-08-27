@@ -43,7 +43,29 @@ $(1)/rebuild: $(1)/clean $(1)/all
 
 .PHONY: $(1)/help
 $(1)/help: $(1)/configure
-	@echo "--- List of all cmake targets ---"
+	@echo "Usage: make <command> [profile/<target>] [-- <options>]"
+	@echo ""
+	@echo "Available profiles:"
+	@echo "  release           Build with optimizations (Default)"
+	@echo "  debug             Build with debug symbols"
+	@echo "  coverage          Build with code coverage analysis"
+	@echo ""
+	@echo "Commands:"
+	@echo "  all               Build all targets for profile (the default if no target is provided)"
+	@echo "  configure         Generate cmake files for profile"
+	@echo "  clean             Remove build directory for profile"
+	@echo "  rebuild           Clean and rebuild everything for profile"
+	@echo "  test              Build and run tests for profile"
+	@echo "  coverage          Build and run coverage analysis and generate report"
+	@echo "  help              Display this help message"
+	@echo ""
+	@echo "Options (passed after '--'):"
+	@echo "  --sanitizer_addr    Enable AddressSanitizer (ASan) for memory errors"
+	@echo "  --sanitizer_leak    Enable LeakSanitizer (LSan) for memory leaks"
+	@echo "  --sanitizer_ub      Enable UndefinedBehaviorSanitizer (UBSan)"
+	@echo "  --sanitizer_thread  Enable ThreadSanitizer (TSan) for data races"
+	@echo ""
+	@echo "List of all cmake targets:"
 	@make --no-print-directory -C build_$(1) help
 
 .PHONY: $(1)/test
