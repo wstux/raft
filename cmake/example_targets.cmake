@@ -26,31 +26,18 @@ include(utils/target_utils)
 # Targets
 ################################################################################
 
-macro(CustomCommand)
-    add_custom_command(${ARGN})
-endmacro()
+function(ExampleLibTarget TARGET_NAME)
+    if (NOT BUILD_EXAMPLES)
+        return()
+    endif()
 
-macro(CustomTarget TARGET_NAME)
-    add_custom_target(${TARGET_NAME} ${ARGN})
-endmacro()
+    LibTarget(${TARGET_NAME} ${ARGN})
+endfunction()
 
-macro(ConfigureFile TARGET_NAME CONF_FILE)
-    set(_configure_variables)
-    foreach(_conf_var IN ITEMS ${ARGN})
-        list(APPEND _configure_variables -D${_conf_var})
-    endforeach()
+function(ExampleTarget TARGET_NAME)
+    if (NOT BUILD_EXAMPLES)
+        return()
+    endif()
 
-    set(_file "${CONF_FILE}")
-    CustomCommand(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${_file}
-        COMMAND ${CMAKE_COMMAND}
-                -DINFILE=${CMAKE_CURRENT_SOURCE_DIR}/${_file}.in
-                -DOUTFILE=${CMAKE_CURRENT_BINARY_DIR}/${_file}
-                ${_configure_variables}
-                -P ${CMAKE_SOURCE_DIR}/cmake/configure_file.cmake
-        VERBATIM
-    )
-
-    CustomTarget(${TARGET_NAME}
-        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${_file}
-    )
-endmacro()
+    ExecTarget(${TARGET_NAME} ${ARGN})
+endfunction()
