@@ -30,11 +30,11 @@
 
 #include <gtest/gtest.h>
 
-#include "raft_le/details/scheduler.h"
+#include "raft/details/scheduler.h"
 
 namespace {
 
-namespace raft = wstux::raft::le::details;
+namespace raft = wstux::raft::details;
 
 void timer_handler(std::atomic_size_t& counter)
 {

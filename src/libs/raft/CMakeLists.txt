@@ -1,4 +1,4 @@
-LibTarget(raft_le STATIC
+LibTarget(raft STATIC
     SOURCES
         details/context.cpp
         details/scheduler.cpp

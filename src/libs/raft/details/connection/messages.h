@@ -22,16 +22,15 @@
  * THE SOFTWARE.
  */
 
-#ifndef _LIBS_RAFT_LEADER_ELECTION_CONNECTION_MESSAGES_H_
-#define _LIBS_RAFT_LEADER_ELECTION_CONNECTION_MESSAGES_H_
+#ifndef _LIBS_RAFT_CONNECTION_MESSAGES_H_
+#define _LIBS_RAFT_CONNECTION_MESSAGES_H_
 
 #include <type_traits>
 
-#include "raft_le/io.h"
+#include "raft/io.h"
 
 namespace wstux {
 namespace raft {
-namespace le {
 namespace details {
 
 enum message_version : uint32_t
@@ -93,8 +92,7 @@ static_assert(sizeof(uint32_t)+sizeof(message_type)+2*sizeof(server_id_t)+sizeof
 static_assert(buffer_type::extent == message::size, "Invalid buffer size");
 
 } // namespace details
-} // namespace le
 } // namespace raft
 } // namespace wstux
 
-#endif /* _LIBS_RAFT_LEADER_ELECTION_CONNECTION_MESSAGES_H_ */
+#endif /* _LIBS_RAFT_CONNECTION_MESSAGES_H_ */

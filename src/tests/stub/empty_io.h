@@ -22,20 +22,19 @@
  * THE SOFTWARE.
  */
 
-#ifndef _TESTS_RAFT_LEADER_ELECTION_EMPTY_IO_H_
-#define _TESTS_RAFT_LEADER_ELECTION_EMPTY_IO_H_
+#ifndef _TESTS_RAFT_EMPTY_IO_H_
+#define _TESTS_RAFT_EMPTY_IO_H_
 
 #include <algorithm>
 #include <atomic>
 #include <unordered_map>
 
-#include "raft_le/io.h"
-#include "raft_le/details/connection/messages.h"
-#include "raft_le/details/connection/serialization.h"
+#include "raft/io.h"
+#include "raft/details/connection/messages.h"
+#include "raft/details/connection/serialization.h"
 
 namespace wstux {
 namespace raft {
-namespace le {
 namespace tests {
 
 class empty_client final
@@ -98,8 +97,7 @@ public:
 };
 
 } // namespace tests
-} // namespace le
 } // namespace raft
 } // namespace wstux
 
-#endif /* _TESTS_RAFT_LEADER_ELECTION_EMPTY_IO_H_ */
+#endif /* _TESTS_RAFT_EMPTY_IO_H_ */

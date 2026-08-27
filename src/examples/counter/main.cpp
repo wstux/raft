@@ -27,7 +27,7 @@
 #include <string>
 #include <string_view>
 
-#include "raft_le/io.h"
+#include "raft/io.h"
 
 #include "counter/config.h"
 #include "counter/counter.h"
@@ -39,7 +39,7 @@ void print_usage()
 
 int main(int argc, char** argv)
 {
-    namespace raft = ::wstux::raft::le;
+    namespace raft = ::wstux::raft;
 
     ::wstux::examples::counter::config::ptr p_config = std::make_shared<::wstux::examples::counter::config>();
 

@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef _LIBS_RAFT_LEADER_ELECTION_SCHEDULER_H_
-#define _LIBS_RAFT_LEADER_ELECTION_SCHEDULER_H_
+#ifndef _LIBS_RAFT_SCHEDULER_H_
+#define _LIBS_RAFT_SCHEDULER_H_
 
 #include <atomic>
 #include <functional>
@@ -35,7 +35,6 @@
 
 namespace wstux {
 namespace raft {
-namespace le {
 namespace details {
 
 /**
@@ -160,8 +159,7 @@ private:
 };
 
 } // namespace details
-} // namespace le
 } // namespace raft
 } // namespace wstux
 
-#endif /* _LIBS_RAFT_LEADER_ELECTION_SCHEDULER_H_ */
+#endif /* _LIBS_RAFT_SCHEDULER_H_ */

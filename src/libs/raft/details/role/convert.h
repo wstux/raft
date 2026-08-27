@@ -22,61 +22,29 @@
  * THE SOFTWARE.
  */
 
-#include <cassert>
+#ifndef _LIBS_RAFT_ROLE_CONVERT_H_
+#define _LIBS_RAFT_ROLE_CONVERT_H_
 
-#include "raft_le/details/logger.h"
-#include "raft_le/details/handlers/timeout_handler.h"
-#include "raft_le/details/handlers/vote_handler.h"
-#include "raft_le/details/role/convert.h"
-#include "raft_le/details/role/election.h"
+#include "raft/details/context.h"
 
 namespace wstux {
 namespace raft {
-namespace le {
 namespace details {
 namespace role {
 
-bool election_results(context& ctx)
-{
-    assert(ctx.role.is_candidate());
+void become_follower(context& ctx);
 
-    const size_t quorum_size = peers::quorum_for_election(ctx) + 1;
-    const size_t votes = ctx.role.candidate_state.votes_granted;
+void become_candidate(context& ctx);
 
-    return ctx.role.is_candidate() && (votes >= quorum_size);
-}
+void become_leader(context& ctx);
 
-void election_start(context& ctx)
-{
-    assert(ctx.role.is_candidate());
+void update_leader(context& ctx, server_id_t leader_id);
 
-    if (! ctx.role.candidate_state.is_prevote) {
-        term_t term = ++ctx.term;
-        RAFT_LOG_INFO(ctx, "Server %llu(%s) started election with local increased term %u", ctx.id, ctx.role.str(), ctx.term);
-        ctx.p_io->set_term(term);
-        ctx.p_io->set_voted_for(ctx.id);
-        ctx.role.voted_for = ctx.id;
-    }
-
-    timeout::election_restart_task(ctx);
-    vote::request(ctx);
-}
-
-void initiate_election(context& ctx)
-{
-    assert(ctx.role.is_follower());
-
-    if (! ctx.role.is_voter) {
-        return;
-    }
-
-    if (peers::quorum_for_election(ctx) == 0) {
-        role::become_candidate(ctx);
-    }
-}
+void update_term(context& ctx, term_t term);
 
 } // namespace role
 } // namespace details
-} // namespace le
 } // namespace raft
 } // namespace wstux
+
+#endif /* _LIBS_RAFT_ROLE_CONVERT_H_ */

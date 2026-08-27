@@ -11,7 +11,7 @@ ExampleTarget(counter_cluster
         src/examples
     LIBRARIES
         counter_schema
-        raft_le
+        raft
     DEPENDS
         grpc
 )

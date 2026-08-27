@@ -63,21 +63,21 @@ bool config::parse_args(int argc, char** argv)
             m_cfg_file = argv[++i];
         } else if (arg == "-i" || arg == "--id") {
             if (i + 1 < argc) {
-                m_server_id = static_cast<raft::le::server_id_t>(std::atol(argv[++i]));
+                m_server_id = static_cast<raft::server_id_t>(std::atol(argv[++i]));
             }
         } else if (arg == "-l" || arg == "--level") {
             if (i + 1 < argc) {
                 std::string lvl = argv[++i];
                 if (lvl == "trace") {
-                    m_level = raft::le::logging_handler::severity_level::trace;
+                    m_level = raft::logging_handler::severity_level::trace;
                 } else if (lvl == "debug") {
-                    m_level = raft::le::logging_handler::severity_level::debug;
+                    m_level = raft::logging_handler::severity_level::debug;
                 } else if (lvl == "info") {
-                    m_level = raft::le::logging_handler::severity_level::info;
+                    m_level = raft::logging_handler::severity_level::info;
                 } else if (lvl == "warning") {
-                    m_level = raft::le::logging_handler::severity_level::warning;
+                    m_level = raft::logging_handler::severity_level::warning;
                 } else if (lvl == "error") {
-                    m_level = raft::le::logging_handler::severity_level::error;
+                    m_level = raft::logging_handler::severity_level::error;
                 }
             }
         }
@@ -85,7 +85,7 @@ bool config::parse_args(int argc, char** argv)
     if (m_cfg_file.empty()) {
         return false;
     }
-    if (m_server_id == raft::le::gk_invalid_id) {
+    if (m_server_id == raft::gk_invalid_id) {
         return false;
     }
     return true;
@@ -94,7 +94,7 @@ bool config::parse_args(int argc, char** argv)
 bool config::parse_config_file()
 {
     const std::function<bool(const server_config&)> is_valid_fn =
-        [](const server_config& cfg) -> bool { return cfg.id != raft::le::gk_invalid_id; };
+        [](const server_config& cfg) -> bool { return cfg.id != raft::gk_invalid_id; };
 
     const std::function<std::string(const std::string&)> trim_fn =
         [](const std::string& str) -> std::string {
@@ -136,7 +136,7 @@ bool config::parse_config_file()
                 if (key == "endpoint") {
                     m_servers.back().endpoint = value;
                 } else if (key == "id") {
-                    m_servers.back().id = static_cast<raft::le::server_id_t>(std::stoi(value));
+                    m_servers.back().id = static_cast<raft::server_id_t>(std::stoi(value));
                 } else if (key == "is_voter") {
                     m_servers.back().is_voter = (value == "true");
                 }

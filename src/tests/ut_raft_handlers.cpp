@@ -27,17 +27,17 @@
 
 #include <gtest/gtest.h>
 
-#include "raft_le/details/connection/serialization.h"
-#include "raft_le/details/handlers/heartbeat_handler.h"
-#include "raft_le/details/handlers/timeout_handler.h"
-#include "raft_le/details/handlers/vote_handler.h"
-#include "raft_le/details/role/convert.h"
+#include "raft/details/connection/serialization.h"
+#include "raft/details/handlers/heartbeat_handler.h"
+#include "raft/details/handlers/timeout_handler.h"
+#include "raft/details/handlers/vote_handler.h"
+#include "raft/details/role/convert.h"
 
 #include "stub/empty_io.h"
 
 namespace {
 
-namespace raft = ::wstux::raft::le;
+namespace raft = ::wstux::raft;
 namespace details = raft::details;
 namespace tests = raft::tests;
 

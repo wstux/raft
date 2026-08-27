@@ -26,10 +26,10 @@
 
 #include <benchmark/benchmark.h>
 
-#include "raft_le/server.h"
-#include "raft_le/details/handlers/heartbeat_handler.h"
-#include "raft_le/details/handlers/timeout_handler.h"
-#include "raft_le/details/role/convert.h"
+#include "raft/server.h"
+#include "raft/details/handlers/heartbeat_handler.h"
+#include "raft/details/handlers/timeout_handler.h"
+#include "raft/details/role/convert.h"
 
 #include "stub/empty_io.h"
 
@@ -37,9 +37,9 @@ namespace {
 
 constexpr size_t gk_cluster_size = 7;
 
-::wstux::raft::le::details::context::ptr make_ctx(size_t servs_count)
+::wstux::raft::details::context::ptr make_ctx(size_t servs_count)
 {
-    namespace raft = ::wstux::raft::le;
+    namespace raft = ::wstux::raft;
     namespace details = raft::details;
     namespace tests = raft::tests;
 
@@ -72,11 +72,11 @@ constexpr size_t gk_cluster_size = 7;
     return p_ctx;
 }
 
-::wstux::raft::le::details::context::ptr g_p_ctx = make_ctx(gk_cluster_size);
+::wstux::raft::details::context::ptr g_p_ctx = make_ctx(gk_cluster_size);
 
-::wstux::raft::le::details::peer::list to_list(::wstux::raft::le::details::context& ctx)
+::wstux::raft::details::peer::list to_list(::wstux::raft::details::context& ctx)
 {
-    namespace raft = ::wstux::raft::le;
+    namespace raft = ::wstux::raft;
 
     raft::details::peer::list peers;
     {
@@ -91,7 +91,7 @@ constexpr size_t gk_cluster_size = 7;
 
 static void check_contact_quorum(benchmark::State& state)
 {
-    namespace raft = ::wstux::raft::le;
+    namespace raft = ::wstux::raft;
 
     for (auto _ : state) {
         bool is_check = raft::details::peers::check_contact_quorum(*g_p_ctx);
@@ -101,7 +101,7 @@ static void check_contact_quorum(benchmark::State& state)
 
 static void request_to_list(benchmark::State& state)
 {
-    namespace raft = ::wstux::raft::le;
+    namespace raft = ::wstux::raft;
 
     for (auto _ : state) {
         raft::details::peer::list peers = to_list(*g_p_ctx);
@@ -114,7 +114,7 @@ static void request_to_list(benchmark::State& state)
 
 static void request_lock_list(benchmark::State& state)
 {
-    namespace raft = ::wstux::raft::le;
+    namespace raft = ::wstux::raft;
 
     for (auto _ : state) {
         for (const raft::details::peer& p : g_p_ctx->peers) {

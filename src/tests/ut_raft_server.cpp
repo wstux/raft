@@ -24,13 +24,13 @@
 
 #include <gtest/gtest.h>
 
-#include "raft_le/server.h"
+#include "raft/server.h"
 
 #include "stub/empty_io.h"
 
 namespace {
 
-namespace raft = ::wstux::raft::le;
+namespace raft = ::wstux::raft;
 namespace details = raft::details;
 namespace tests = raft::tests;
 

@@ -22,19 +22,18 @@
  * THE SOFTWARE.
  */
 
-#ifndef _LIBS_RAFT_LEADER_ELECTION_SERIALIZATION_H_
-#define _LIBS_RAFT_LEADER_ELECTION_SERIALIZATION_H_
+#ifndef _LIBS_RAFT_SERIALIZATION_H_
+#define _LIBS_RAFT_SERIALIZATION_H_
 
 #include <array>
 #include <utility>
 
 #include <boost/endian/conversion.hpp>
 
-#include "raft_le/details/connection/messages.h"
+#include "raft/details/connection/messages.h"
 
 namespace wstux {
 namespace raft {
-namespace le {
 namespace details {
 namespace v1 {
 
@@ -151,8 +150,7 @@ inline buffer_type serialize(const message& msg, buffer_data_type& buffer)
 }
 
 } // namespace details
-} // namespace le
 } // namespace raft
 } // namespace wstux
 
-#endif /* _LIBS_RAFT_LEADER_ELECTION_SERIALIZATION_H_ */
+#endif /* _LIBS_RAFT_SERIALIZATION_H_ */

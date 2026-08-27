@@ -28,13 +28,13 @@
 
 #include <gtest/gtest.h>
 
-#include "raft_le/server.h"
+#include "raft/server.h"
 
 #include "stub/network_stub.h"
 
 namespace {
 
-namespace raft = wstux::raft::le;
+namespace raft = wstux::raft;
 namespace tests = raft::tests;
 
 template <typename T>

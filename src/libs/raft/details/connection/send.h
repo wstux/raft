@@ -22,23 +22,22 @@
  * THE SOFTWARE.
  */
 
-#ifndef _LIBS_RAFT_LEADER_ELECTION_CONNECTION_SEND_H_
-#define _LIBS_RAFT_LEADER_ELECTION_CONNECTION_SEND_H_
+#ifndef _LIBS_RAFT_CONNECTION_SEND_H_
+#define _LIBS_RAFT_CONNECTION_SEND_H_
 
 #include <cstdint>
 #include <memory>
 #include <shared_mutex>
 #include <vector>
 
-#include "raft_le/io.h"
-#include "raft_le/details/context.h"
-#include "raft_le/details/connection/messages.h"
-#include "raft_le/details/connection/peer.h"
-#include "raft_le/details/connection/serialization.h"
+#include "raft/io.h"
+#include "raft/details/context.h"
+#include "raft/details/connection/messages.h"
+#include "raft/details/connection/peer.h"
+#include "raft/details/connection/serialization.h"
 
 namespace wstux {
 namespace raft {
-namespace le {
 namespace details {
 namespace utils {
 
@@ -95,8 +94,7 @@ inline void send(context& ctx, server_id_t dst_id, TArgs&&... args)
 
 } // namespace utils
 } // namespace details
-} // namespace le
 } // namespace raft
 } // namespace wstux
 
-#endif /* _LIBS_RAFT_LEADER_ELECTION_CONNECTION_SEND_H_ */
+#endif /* _LIBS_RAFT_CONNECTION_SEND_H_ */

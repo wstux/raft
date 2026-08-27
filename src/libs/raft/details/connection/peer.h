@@ -22,31 +22,48 @@
  * THE SOFTWARE.
  */
 
-#ifndef _LIBS_RAFT_LEADER_ELECTION_ROLE_CONVERT_H_
-#define _LIBS_RAFT_LEADER_ELECTION_ROLE_CONVERT_H_
+#ifndef _LIBS_RAFT_CONNECTION_PEER_H_
+#define _LIBS_RAFT_CONNECTION_PEER_H_
 
-#include "raft_le/details/context.h"
+#include <cstdint>
+#include <memory>
+#include <shared_mutex>
+#include <vector>
+
+#include "raft/io.h"
 
 namespace wstux {
 namespace raft {
-namespace le {
 namespace details {
-namespace role {
 
-void become_follower(context& ctx);
+struct peer final
+{
+    using ptr = peer*;
+    using list = std::vector<peer>;
 
-void become_candidate(context& ctx);
+    explicit peer(const server_config& cfg)
+        : id(cfg.id)
+        , is_voter(cfg.is_voter)
+        , recent_recv(false)
+    {}
 
-void become_leader(context& ctx);
+    void mark_recent_recv() { recent_recv = true; }
 
-void update_leader(context& ctx, server_id_t leader_id);
+    bool reset_recent_recv()
+    {
+        const bool old_recent_recv = recent_recv;
+        recent_recv = false;
+        return old_recent_recv;
+    }
 
-void update_term(context& ctx, term_t term);
+    const server_id_t id;
+    bool is_voter;
 
-} // namespace role
+    bool recent_recv;
+};
+
 } // namespace details
-} // namespace le
 } // namespace raft
 } // namespace wstux
 
-#endif /* _LIBS_RAFT_LEADER_ELECTION_ROLE_CONVERT_H_ */
+#endif /* _LIBS_RAFT_CONNECTION_PEER_H_ */

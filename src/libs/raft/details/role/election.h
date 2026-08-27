@@ -22,50 +22,25 @@
  * THE SOFTWARE.
  */
 
-#ifndef _LIBS_RAFT_LEADER_ELECTION_CONNECTION_PEER_H_
-#define _LIBS_RAFT_LEADER_ELECTION_CONNECTION_PEER_H_
+#ifndef _LIBS_RAFT_ROLE_ELECTION_H_
+#define _LIBS_RAFT_ROLE_ELECTION_H_
 
-#include <cstdint>
-#include <memory>
-#include <shared_mutex>
-#include <vector>
-
-#include "raft_le/io.h"
+#include "raft/details/context.h"
 
 namespace wstux {
 namespace raft {
-namespace le {
 namespace details {
+namespace role {
 
-struct peer final
-{
-    using ptr = peer*;
-    using list = std::vector<peer>;
+bool election_results(context& ctx);
 
-    explicit peer(const server_config& cfg)
-        : id(cfg.id)
-        , is_voter(cfg.is_voter)
-        , recent_recv(false)
-    {}
+void election_start(context& ctx);
 
-    void mark_recent_recv() { recent_recv = true; }
+void initiate_election(context& ctx);
 
-    bool reset_recent_recv()
-    {
-        const bool old_recent_recv = recent_recv;
-        recent_recv = false;
-        return old_recent_recv;
-    }
-
-    const server_id_t id;
-    bool is_voter;
-
-    bool recent_recv;
-};
-
+} // namespace role
 } // namespace details
-} // namespace le
 } // namespace raft
 } // namespace wstux
 
-#endif /* _LIBS_RAFT_LEADER_ELECTION_CONNECTION_PEER_H_ */
+#endif /* _LIBS_RAFT_ROLE_ELECTION_H_ */

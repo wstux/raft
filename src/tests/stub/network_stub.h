@@ -22,17 +22,17 @@
  * THE SOFTWARE.
  */
 
-#ifndef _TESTS_RAFT_LEADER_ELECTION_NETWORK_STUB_H_
-#define _TESTS_RAFT_LEADER_ELECTION_NETWORK_STUB_H_
+#ifndef _TESTS_RAFT_NETWORK_STUB_H_
+#define _TESTS_RAFT_NETWORK_STUB_H_
 
 #include <algorithm>
 #include <filesystem>
 #include <map>
 #include <vector>
 
-#include "raft_le/io.h"
-#include "raft_le/server.h"
-#include "raft_le/details/context.h"
+#include "raft/io.h"
+#include "raft/server.h"
+#include "raft/details/context.h"
 
 #include "stub/io_stub.h"
 #include "stub/logging_handler_stub.h"
@@ -43,7 +43,6 @@
 
 namespace wstux {
 namespace raft {
-namespace le {
 namespace tests {
 
 class network_stub final : public io_stub::iclient_factory, public std::enable_shared_from_this<network_stub>
@@ -224,8 +223,7 @@ std::string network_stub::m_test_fixture = "";
 std::string network_stub::m_test_name = "";
 
 } // namespace tests
-} // namespace le
 } // namespace raft
 } // namespace wstux
 
-#endif /* _TESTS_RAFT_LEADER_ELECTION_NETWORK_STUB_H_ */
+#endif /* _TESTS_RAFT_NETWORK_STUB_H_ */
