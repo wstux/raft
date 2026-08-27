@@ -38,6 +38,7 @@
 #include "raft/details/logger.h"
 #include "raft/details/scheduler.h"
 #include "raft/details/connection/peer.h"
+#include "raft/details/log/log.h"
 #include "raft/details/role/role.h"
 
 namespace wstux {
@@ -62,6 +63,7 @@ struct context final
     io::ptr p_io;
 
     role::state role;
+    log::store log;
 
     term_t term;
 

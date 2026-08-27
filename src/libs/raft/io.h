@@ -44,6 +44,7 @@ using allocator_type = std::allocator<std::byte>;
 using is_stop_fn_t = std::function<bool(void)>;
 
 using server_id_t = uint64_t;
+using index_t = uint32_t;
 using term_t = uint32_t;
 
 using inbuffer_type = details::span<const char>;
@@ -75,6 +76,22 @@ struct server_config final
 struct cluster_config final
 {
     std::vector<server_config> servers;
+};
+
+enum entry_type : int32_t
+{
+    change = 0,
+    command = 1
+};
+
+struct entry final
+{
+    using ptr = std::shared_ptr<entry>;
+    using list = std::vector<ptr>;
+
+    term_t term;
+    entry_type type;
+    buffer_type buffer;
 };
 
 class io

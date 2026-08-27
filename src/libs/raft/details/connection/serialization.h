@@ -73,6 +73,14 @@ void serialize(TArch& ar, ::wstux::raft::cluster_config& cfg, const unsigned int
 }
 
 template<typename TArch>
+void serialize(TArch& ar, ::wstux::raft::entry& entry, const unsigned int /*version*/)
+{
+    ar & entry.term;
+    ar & entry.type;
+    ar & entry.buffer;
+}
+
+template<typename TArch>
 void serialize(TArch& ar, ::wstux::raft::server_config& cfg, const unsigned int /*version*/)
 {
     ar & cfg.id;
