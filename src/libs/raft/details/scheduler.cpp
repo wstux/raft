@@ -24,11 +24,10 @@
 
 #include <chrono>
 
-#include "raft_le/details/scheduler.h"
+#include "raft/details/scheduler.h"
 
 namespace wstux {
 namespace raft {
-namespace le {
 namespace details {
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -286,6 +285,5 @@ size_t scheduler::threads_size() const
 }
 
 } // namespace details
-} // namespace le
 } // namespace raft
 } // namespace wstux

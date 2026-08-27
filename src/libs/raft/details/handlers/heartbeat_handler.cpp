@@ -25,15 +25,14 @@
 #include <cassert>
 #include <algorithm>
 
-#include "raft_le/details/logger.h"
-#include "raft_le/details/connection/send.h"
-#include "raft_le/details/handlers/heartbeat_handler.h"
-#include "raft_le/details/handlers/timeout_handler.h"
-#include "raft_le/details/role/convert.h"
+#include "raft/details/logger.h"
+#include "raft/details/connection/send.h"
+#include "raft/details/handlers/heartbeat_handler.h"
+#include "raft/details/handlers/timeout_handler.h"
+#include "raft/details/role/convert.h"
 
 namespace wstux {
 namespace raft {
-namespace le {
 namespace details {
 namespace heartbeat {
 
@@ -131,6 +130,5 @@ void request(context& ctx)
 
 } // namespace heartbeat
 } // namespace details
-} // namespace le
 } // namespace raft
 } // namespace wstux

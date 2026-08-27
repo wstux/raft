@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef _EXAMPLES_RAFT_LEADER_ELECTION_COUNTER_COUNTER_H_
-#define _EXAMPLES_RAFT_LEADER_ELECTION_COUNTER_COUNTER_H_
+#ifndef _EXAMPLES_RAFT_COUNTER_COUNTER_H_
+#define _EXAMPLES_RAFT_COUNTER_COUNTER_H_
 
 #include <atomic>
 #include <memory>
@@ -45,8 +45,8 @@
     #include <node.grpc.pb.h>
 #pragma GCC diagnostic pop
 
-#include "raft_le/io.h"
-#include "raft_le/server.h"
+#include "raft/io.h"
+#include "raft/server.h"
 
 #include "counter/config.h"
 #include "counter/details/client.h"
@@ -111,7 +111,7 @@ private:
     std::unique_ptr<std::thread> m_thread;
 
     details::io::ptr m_p_io;
-    raft::le::server::ptr m_p_server;
+    raft::server::ptr m_p_server;
 
     std::atomic_uint64_t m_counter;
 
@@ -122,4 +122,4 @@ private:
 } // namespace examples
 } // namespace wstux
 
-#endif /* _EXAMPLES_RAFT_LEADER_ELECTION_COUNTER_COUNTER_H_ */
+#endif /* _EXAMPLES_RAFT_COUNTER_COUNTER_H_ */

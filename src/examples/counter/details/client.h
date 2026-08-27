@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef _EXAMPLES_RAFT_LEADER_ELECTION_COUNTER_CLIENT_H_
-#define _EXAMPLES_RAFT_LEADER_ELECTION_COUNTER_CLIENT_H_
+#ifndef _EXAMPLES_RAFT_COUNTER_CLIENT_H_
+#define _EXAMPLES_RAFT_COUNTER_CLIENT_H_
 
 #include <memory>
 
@@ -41,7 +41,7 @@
     #include <node.grpc.pb.h>
 #pragma GCC diagnostic pop
 
-#include "raft_le/io.h"
+#include "raft/io.h"
 
 #include "counter/details/logging.h"
 
@@ -61,7 +61,7 @@ public:
     using ptr = std::shared_ptr<client>;
 
 public:
-    client(const std::string &endpoint, raft::le::logging_handler::severity_level lvl)
+    client(const std::string &endpoint, raft::logging_handler::severity_level lvl)
         : m_address(endpoint)
         , m_p_stub(service_type::NewStub(make_channel(m_address)))
         , m_logger(lvl)
@@ -69,7 +69,7 @@ public:
 
     ~client() {}
 
-    void send(const raft::le::buffer_type& buf)
+    void send(const raft::buffer_type& buf)
     {
         context_type ctx;
 
@@ -115,5 +115,5 @@ private:
 } // namespace examples
 } // namespace wstux
 
-#endif /* _EXAMPLES_RAFT_LEADER_ELECTION_COUNTER_CLIENT_H_ */
+#endif /* _EXAMPLES_RAFT_COUNTER_CLIENT_H_ */
 

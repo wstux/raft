@@ -22,14 +22,14 @@
  * THE SOFTWARE.
  */
 
-#ifndef _EXAMPLES_RAFT_LEADER_ELECTION_COUNTER_CONFIG_H_
-#define _EXAMPLES_RAFT_LEADER_ELECTION_COUNTER_CONFIG_H_
+#ifndef _EXAMPLES_RAFT_COUNTER_CONFIG_H_
+#define _EXAMPLES_RAFT_COUNTER_CONFIG_H_
 
 #include <memory>
 #include <string>
 #include <vector>
 
-#include "raft_le/io.h"
+#include "raft/io.h"
 
 namespace wstux {
 namespace examples {
@@ -44,7 +44,7 @@ public:
     {
         using list = std::vector<server_config>;
 
-        raft::le::server_id_t id = raft::le::gk_invalid_id;
+        raft::server_id_t id = raft::gk_invalid_id;
         bool is_voter = false;
         std::string endpoint;
     };
@@ -54,9 +54,9 @@ public:
 
     const std::string& endpoint() const { return m_endpoint; }
 
-    raft::le::server_id_t server_id() const { return m_server_id; }
+    raft::server_id_t server_id() const { return m_server_id; }
 
-    raft::le::logging_handler::severity_level level() const { return m_level; }
+    raft::logging_handler::severity_level level() const { return m_level; }
 
     bool load(int argc, char** argv);
 
@@ -68,8 +68,8 @@ private:
 private:
     std::string m_endpoint;
 
-    raft::le::server_id_t m_server_id = raft::le::gk_invalid_id;
-    raft::le::logging_handler::severity_level m_level = raft::le::logging_handler::severity_level::info;
+    raft::server_id_t m_server_id = raft::gk_invalid_id;
+    raft::logging_handler::severity_level m_level = raft::logging_handler::severity_level::info;
 
     server_config::list m_servers;
     std::string m_cfg_file;
@@ -79,4 +79,4 @@ private:
 } // namespace examples
 } // namespace wstux
 
-#endif /* _EXAMPLES_RAFT_LEADER_ELECTION_COUNTER_CONFIG_H_ */
+#endif /* _EXAMPLES_RAFT_COUNTER_CONFIG_H_ */

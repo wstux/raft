@@ -22,16 +22,15 @@
  * THE SOFTWARE.
  */
 
-#ifndef _LIBS_RAFT_LEADER_ELECTION_ROLE_ROLE_H_
-#define _LIBS_RAFT_LEADER_ELECTION_ROLE_ROLE_H_
+#ifndef _LIBS_RAFT_ROLE_ROLE_H_
+#define _LIBS_RAFT_ROLE_ROLE_H_
 
 #include <cstdint>
 
-#include "raft_le/io.h"
+#include "raft/io.h"
 
 namespace wstux {
 namespace raft {
-namespace le {
 namespace details {
 namespace role {
 
@@ -97,8 +96,7 @@ struct state final
 
 } // namespace role
 } // namespace details
-} // namespace le
 } // namespace raft
 } // namespace wstux
 
-#endif /* _LIBS_RAFT_LEADER_ELECTION_ROLE_ROLE_H_ */
+#endif /* _LIBS_RAFT_ROLE_ROLE_H_ */

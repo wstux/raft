@@ -24,16 +24,15 @@
 
 #include <cassert>
 
-#include "raft_le/details/logger.h"
-#include "raft_le/details/handlers/heartbeat_handler.h"
-#include "raft_le/details/handlers/timeout_handler.h"
-#include "raft_le/details/handlers/vote_handler.h"
-#include "raft_le/details/role/convert.h"
-#include "raft_le/details/role/election.h"
+#include "raft/details/logger.h"
+#include "raft/details/handlers/heartbeat_handler.h"
+#include "raft/details/handlers/timeout_handler.h"
+#include "raft/details/handlers/vote_handler.h"
+#include "raft/details/role/convert.h"
+#include "raft/details/role/election.h"
 
 namespace wstux {
 namespace raft {
-namespace le {
 namespace details {
 namespace timeout {
 namespace {
@@ -113,6 +112,5 @@ void heartbeat_timeout_task(context& ctx)
 
 } // namespace timeout
 } // namespace details
-} // namespace le
 } // namespace raft
 } // namespace wstux

@@ -24,12 +24,12 @@
 
 #include <benchmark/benchmark.h>
 
-#include "raft_le/details/connection/messages.h"
-#include "raft_le/details/connection/serialization.h"
+#include "raft/details/connection/messages.h"
+#include "raft/details/connection/serialization.h"
 
 static void serialize_message(benchmark::State& state)
 {
-    namespace raft = ::wstux::raft::le;
+    namespace raft = ::wstux::raft;
 
     raft::details::message msg;
     msg.type = raft::details::message_type::vote_response;

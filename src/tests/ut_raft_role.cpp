@@ -24,7 +24,7 @@
 
 #include <gtest/gtest.h>
 
-#include "raft_le/details/role/role.h"
+#include "raft/details/role/role.h"
 
 namespace {
 
@@ -35,7 +35,7 @@ public:
     virtual void TearDown() override {}
 };
 
-std::string to_string(const ::wstux::raft::le::details::role::state& role)
+std::string to_string(const ::wstux::raft::details::role::state& role)
 {
     return std::string(role.str());
 }
@@ -47,7 +47,7 @@ std::string to_string(const ::wstux::raft::le::details::role::state& role)
  */
 TEST_F(raft_role, follower)
 {
-    namespace raft = ::wstux::raft::le;
+    namespace raft = ::wstux::raft;
     using raft_role = raft::details::role::state;
 
     raft_role role;
@@ -64,7 +64,7 @@ TEST_F(raft_role, follower)
  */
 TEST_F(raft_role, candidate)
 {
-    namespace raft = ::wstux::raft::le;
+    namespace raft = ::wstux::raft;
     using raft_role = raft::details::role::state;
 
     raft_role role;
@@ -81,7 +81,7 @@ TEST_F(raft_role, candidate)
  */
 TEST_F(raft_role, leader)
 {
-    namespace raft = ::wstux::raft::le;
+    namespace raft = ::wstux::raft;
     using raft_role = raft::details::role::state;
 
     raft_role role;
@@ -98,7 +98,7 @@ TEST_F(raft_role, leader)
  */
 TEST_F(raft_role, undefined)
 {
-    namespace raft = ::wstux::raft::le;
+    namespace raft = ::wstux::raft;
     using raft_role = raft::details::role::state;
 
     raft_role role;
@@ -112,7 +112,7 @@ TEST_F(raft_role, undefined)
 
 TEST_F(raft_role, has_leader)
 {
-    namespace raft = ::wstux::raft::le;
+    namespace raft = ::wstux::raft;
     using raft_role = raft::details::role::state;
 
     raft_role role;

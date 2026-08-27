@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef _LIBS_RAFT_LEADER_ELECTION_CONTEXT_H_
-#define _LIBS_RAFT_LEADER_ELECTION_CONTEXT_H_
+#ifndef _LIBS_RAFT_CONTEXT_H_
+#define _LIBS_RAFT_CONTEXT_H_
 
 #include <functional>
 #include <iostream>
@@ -34,15 +34,14 @@
 #include <string>
 #include <type_traits>
 
-#include "raft_le/io.h"
-#include "raft_le/details/logger.h"
-#include "raft_le/details/scheduler.h"
-#include "raft_le/details/connection/peer.h"
-#include "raft_le/details/role/role.h"
+#include "raft/io.h"
+#include "raft/details/logger.h"
+#include "raft/details/scheduler.h"
+#include "raft/details/connection/peer.h"
+#include "raft/details/role/role.h"
 
 namespace wstux {
 namespace raft {
-namespace le {
 namespace details {
 
 struct context final
@@ -125,8 +124,7 @@ void reconfigure(context& ctx, const config& cfg, const cluster_config& cluster_
 } // namespace utils
 
 } // namespace details
-} // namespace le
 } // namespace raft
 } // namespace wstux
 
-#endif /* _LIBS_RAFT_LEADER_ELECTION_CONTEXT_H_ */
+#endif /* _LIBS_RAFT_CONTEXT_H_ */

@@ -22,27 +22,69 @@
  * THE SOFTWARE.
  */
 
-#ifndef _LIBS_RAFT_LEADER_ELECTION_ROLE_ELECTION_H_
-#define _LIBS_RAFT_LEADER_ELECTION_ROLE_ELECTION_H_
+#ifndef _LIBS_RAFT_SERVER_H_
+#define _LIBS_RAFT_SERVER_H_
 
-#include "raft_le/details/context.h"
+#include <atomic>
+#include <memory>
+#include <string>
+#include <vector>
+
+#include "raft/io.h"
 
 namespace wstux {
 namespace raft {
-namespace le {
-namespace details {
-namespace role {
+namespace details { struct context; }
 
-bool election_results(context& ctx);
+class server final
+{
+public:
+    using allocator_type = std::allocator<server>;
+    using ptr = std::shared_ptr<server>;
 
-void election_start(context& ctx);
+public:
+    server(const server_id_t id, const io::ptr& p_io, logging_handler::ptr p_handler,
+           const is_stop_fn_t& is_stop_fn, const allocator_type& alloc = allocator_type());
 
-void initiate_election(context& ctx);
+    ~server();
 
-} // namespace role
-} // namespace details
-} // namespace le
+    void deinit();
+
+    server_id_t id() const { return m_id; }
+
+    bool init();
+
+    bool is_inited() const;
+
+    bool is_leader() const;
+
+    bool is_stop() const { return m_is_stop || m_is_stop_fn(); }
+
+    void handle_message(const buffer_type& msg_buf);
+
+    bool reconfigure();
+
+    bool start();
+
+    void stop();
+
+private:
+    using context_ptr = std::shared_ptr<details::context>;
+
+private:
+    static bool load(details::context& ctx);
+
+private:
+    const server_id_t m_id;
+    allocator_type m_alloc;
+
+    is_stop_fn_t m_is_stop_fn;
+    std::atomic_bool m_is_stop;
+
+    context_ptr m_p_ctx;
+};
+
 } // namespace raft
 } // namespace wstux
 
-#endif /* _LIBS_RAFT_LEADER_ELECTION_ROLE_ELECTION_H_ */
+#endif /* _LIBS_RAFT_SERVER_H_ */

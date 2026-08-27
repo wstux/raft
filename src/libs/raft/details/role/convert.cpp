@@ -24,14 +24,13 @@
 
 #include <cassert>
 
-#include "raft_le/details/logger.h"
-#include "raft_le/details/handlers/timeout_handler.h"
-#include "raft_le/details/role/convert.h"
-#include "raft_le/details/role/election.h"
+#include "raft/details/logger.h"
+#include "raft/details/handlers/timeout_handler.h"
+#include "raft/details/role/convert.h"
+#include "raft/details/role/election.h"
 
 namespace wstux {
 namespace raft {
-namespace le {
 namespace details {
 namespace role {
 
@@ -102,6 +101,5 @@ void update_term(context& ctx, term_t term)
 
 } // namespace role
 } // namespace details
-} // namespace le
 } // namespace raft
 } // namespace wstux

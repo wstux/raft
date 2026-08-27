@@ -24,13 +24,13 @@
 
 #include <gtest/gtest.h>
 
-#include "raft_le/details/connection/serialization.h"
+#include "raft/details/connection/serialization.h"
 
 namespace {
 
-bool operator==(const ::wstux::raft::le::details::message& lhs, const ::wstux::raft::le::details::message& rhs)
+bool operator==(const ::wstux::raft::details::message& lhs, const ::wstux::raft::details::message& rhs)
 {
-    namespace raft = ::wstux::raft::le::details;
+    namespace raft = ::wstux::raft::details;
 
     bool is_eq = true;
     is_eq = is_eq && (lhs.type == rhs.type);
@@ -53,7 +53,7 @@ bool operator==(const ::wstux::raft::le::details::message& lhs, const ::wstux::r
 
 TEST(raft_serialization, heartbeat_request)
 {
-    namespace raft = ::wstux::raft::le;
+    namespace raft = ::wstux::raft;
 
     raft::details::message msg;
     msg.type = raft::details::message_type::heartbeat_request;
@@ -71,7 +71,7 @@ TEST(raft_serialization, heartbeat_request)
 
 TEST(raft_serialization, heartbeat_response)
 {
-    namespace raft = ::wstux::raft::le;
+    namespace raft = ::wstux::raft;
 
     raft::details::message msg;
     msg.type = raft::details::message_type::heartbeat_response;
@@ -90,7 +90,7 @@ TEST(raft_serialization, heartbeat_response)
 
 TEST(raft_serialization, vote_request)
 {
-    namespace raft = ::wstux::raft::le;
+    namespace raft = ::wstux::raft;
 
     raft::details::message msg;
     msg.type = raft::details::message_type::vote_request;
@@ -109,7 +109,7 @@ TEST(raft_serialization, vote_request)
 
 TEST(raft_serialization, vote_response)
 {
-    namespace raft = ::wstux::raft::le;
+    namespace raft = ::wstux::raft;
 
     raft::details::message msg;
     msg.type = raft::details::message_type::vote_response;
@@ -129,7 +129,7 @@ TEST(raft_serialization, vote_response)
 
 /*TEST(raft_serialization, invalid_buffer)
 {
-    namespace raft = ::wstux::raft::le;
+    namespace raft = ::wstux::raft;
 
     raft::buffer_type buffer(raft::details::message::size / 2, 1);
     EXPECT_TRUE(buffer.size() != raft::details::message::size) << buffer.size();

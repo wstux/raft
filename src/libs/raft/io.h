@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef _LIBS_RAFT_LEADER_ELECTION_IO_H_
-#define _LIBS_RAFT_LEADER_ELECTION_IO_H_
+#ifndef _LIBS_RAFT_IO_H_
+#define _LIBS_RAFT_IO_H_
 
 #include <cassert>
 #include <cstdint>
@@ -34,11 +34,10 @@
 #include <type_traits>
 #include <vector>
 
-#include "details/span.h"
+#include "raft/details/span.h"
 
 namespace wstux {
 namespace raft {
-namespace le {
 
 using allocator_type = std::allocator<std::byte>;
 
@@ -133,8 +132,7 @@ struct logging_handler
     log_fn_t log_fn = nullptr;
 };
 
-} // namespace le
 } // namespace raft
 } // namespace wstux
 
-#endif /* _LIBS_RAFT_LEADER_ELECTION_IO_H_ */
+#endif /* _LIBS_RAFT_IO_H_ */

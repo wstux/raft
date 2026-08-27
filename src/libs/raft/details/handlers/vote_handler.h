@@ -22,15 +22,14 @@
  * THE SOFTWARE.
  */
 
-#ifndef _LIBS_RAFT_LEADER_ELECTION_HANDLERS_VOTE_HANDLER_H_
-#define _LIBS_RAFT_LEADER_ELECTION_HANDLERS_VOTE_HANDLER_H_
+#ifndef _LIBS_RAFT_HANDLERS_VOTE_HANDLER_H_
+#define _LIBS_RAFT_HANDLERS_VOTE_HANDLER_H_
 
-#include "raft_le/details/context.h"
-#include "raft_le/details/connection/messages.h"
+#include "raft/details/context.h"
+#include "raft/details/connection/messages.h"
 
 namespace wstux {
 namespace raft {
-namespace le {
 namespace details {
 namespace vote {
 
@@ -88,8 +87,7 @@ void request(context& ctx);
 
 } // namespace vote
 } // namespace details
-} // namespace le
 } // namespace raft
 } // namespace wstux
 
-#endif /* _LIBS_RAFT_LEADER_ELECTION_HANDLERS_VOTE_HANDLER_H_ */
+#endif /* _LIBS_RAFT_HANDLERS_VOTE_HANDLER_H_ */

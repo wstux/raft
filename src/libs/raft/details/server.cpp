@@ -25,20 +25,19 @@
 #include <cassert>
 #include <algorithm>
 
-#include "raft_le/server.h"
-#include "raft_le/details/context.h"
-#include "raft_le/details/logger.h"
-#include "raft_le/details/connection/messages.h"
-#include "raft_le/details/connection/serialization.h"
-#include "raft_le/details/handlers/heartbeat_handler.h"
-#include "raft_le/details/handlers/timeout_handler.h"
-#include "raft_le/details/handlers/vote_handler.h"
-#include "raft_le/details/role/convert.h"
-#include "raft_le/details/role/election.h"
+#include "raft/server.h"
+#include "raft/details/context.h"
+#include "raft/details/logger.h"
+#include "raft/details/connection/messages.h"
+#include "raft/details/connection/serialization.h"
+#include "raft/details/handlers/heartbeat_handler.h"
+#include "raft/details/handlers/timeout_handler.h"
+#include "raft/details/handlers/vote_handler.h"
+#include "raft/details/role/convert.h"
+#include "raft/details/role/election.h"
 
 namespace wstux {
 namespace raft {
-namespace le {
 namespace {
 
 void handle_message(details::context& ctx, const details::message& msg)
@@ -121,7 +120,7 @@ void server::handle_message(const buffer_type& msg_buf)
     details::message msg;
     details::deserialize(msg_buf, msg);
 
-    m_p_ctx->schd.execute_strand([p_ctx = m_p_ctx.get(), msg = std::move(msg)]() { le::handle_message(*p_ctx, msg); });
+    m_p_ctx->schd.execute_strand([p_ctx = m_p_ctx.get(), msg = std::move(msg)]() { raft::handle_message(*p_ctx, msg); });
 }
 
 bool server::load(details::context& ctx)
@@ -209,6 +208,5 @@ void server::stop()
     details::timeout::heartbeat_cancel_task(*m_p_ctx);
 }
 
-} // namespace le
 } // namespace raft
 } // namespace wstux

@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef _EXAMPLES_RAFT_LEADER_ELECTION_COUNTER_LOGGING_H_
-#define _EXAMPLES_RAFT_LEADER_ELECTION_COUNTER_LOGGING_H_
+#ifndef _EXAMPLES_RAFT_COUNTER_LOGGING_H_
+#define _EXAMPLES_RAFT_COUNTER_LOGGING_H_
 
 #include <sys/time.h>
 
@@ -32,18 +32,18 @@
 #include <sstream>
 #include <thread>
 
-#include "raft_le/io.h"
+#include "raft/io.h"
 
 namespace wstux {
 namespace examples {
 namespace counter {
 namespace details {
 
-class logging_handler final : public raft::le::logging_handler
+class logging_handler final : public raft::logging_handler
 {
 public:
     explicit logging_handler(severity_level lvl)
-        : raft::le::logging_handler()
+        : raft::logging_handler()
         , m_severity_level(lvl)
     {
         p_this = &m_severity_level;
@@ -91,7 +91,7 @@ private:
     }
 
 private:
-    raft::le::logging_handler::severity_level m_severity_level;
+    raft::logging_handler::severity_level m_severity_level;
 };
 
 } // namespace details
@@ -108,10 +108,10 @@ private:
         }                                                                   \
     } while(0)
 
-#define LOG_ERROR(logger, VARS)    _COUNTER_LOG(logger, ::wstux::raft::le::logging_handler::severity_level::error,   VARS)
-#define LOG_WARN(logger,  VARS)    _COUNTER_LOG(logger, ::wstux::raft::le::logging_handler::severity_level::warning, VARS)
-#define LOG_INFO(logger,  VARS)    _COUNTER_LOG(logger, ::wstux::raft::le::logging_handler::severity_level::info,    VARS)
-#define LOG_DEBUG(logger, VARS)    _COUNTER_LOG(logger, ::wstux::raft::le::logging_handler::severity_level::debug,   VARS)
-#define LOG_TRACE(logger, VARS)    _COUNTER_LOG(logger, ::wstux::raft::le::logging_handler::severity_level::trace,   VARS)
+#define LOG_ERROR(logger, VARS)    _COUNTER_LOG(logger, ::wstux::raft::logging_handler::severity_level::error,   VARS)
+#define LOG_WARN(logger,  VARS)    _COUNTER_LOG(logger, ::wstux::raft::logging_handler::severity_level::warning, VARS)
+#define LOG_INFO(logger,  VARS)    _COUNTER_LOG(logger, ::wstux::raft::logging_handler::severity_level::info,    VARS)
+#define LOG_DEBUG(logger, VARS)    _COUNTER_LOG(logger, ::wstux::raft::logging_handler::severity_level::debug,   VARS)
+#define LOG_TRACE(logger, VARS)    _COUNTER_LOG(logger, ::wstux::raft::logging_handler::severity_level::trace,   VARS)
 
 #endif /* _EXAMPLES_RAFT_COUNTER_LOGGING_H_ */

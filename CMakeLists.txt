@@ -4,7 +4,7 @@ cmake_minimum_required (VERSION 3.10)
 # Project definition
 ################################################################################
 
-project(raft_leader_election
+project(raft
         VERSION 0.1.1
         LANGUAGES C CXX)
 

@@ -32,12 +32,12 @@ namespace examples {
 namespace counter {
 namespace {
 
-raft::le::server::ptr make_server(const details::io::ptr& p_io, const config::ptr& p_cfg)
+raft::server::ptr make_server(const details::io::ptr& p_io, const config::ptr& p_cfg)
 {
-    raft::le::server::ptr p_srv;
+    raft::server::ptr p_srv;
     const std::function<bool()> is_stop_fn = []()->bool { return false; };
-    raft::le::logging_handler::ptr p_logger = std::make_unique<details::logging_handler>(p_cfg->level());
-    p_srv = std::make_shared<raft::le::server>(p_cfg->server_id(), p_io, std::move(p_logger), is_stop_fn);
+    raft::logging_handler::ptr p_logger = std::make_unique<details::logging_handler>(p_cfg->level());
+    p_srv = std::make_shared<raft::server>(p_cfg->server_id(), p_io, std::move(p_logger), is_stop_fn);
     return p_srv;
 }
 
@@ -164,7 +164,7 @@ void counter_node::thread_main_rpc(const std::string& address)
 {
     LOG_TRACE(m_logger, "Got raft message.");
 
-    raft::le::buffer_type msg(p_req->buffer().data(), p_req->buffer().size());
+    raft::buffer_type msg(p_req->buffer().data(), p_req->buffer().size());
     m_p_server->handle_message(msg);
     return ::grpc::Status::OK;
 }

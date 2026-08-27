@@ -22,14 +22,13 @@
  * THE SOFTWARE.
  */
 
-#ifndef _LIBS_RAFT_LEADER_ELECTION_HANDLERS_TIMEOUT_HANDLER_H_
-#define _LIBS_RAFT_LEADER_ELECTION_HANDLERS_TIMEOUT_HANDLER_H_
+#ifndef _LIBS_RAFT_HANDLERS_TIMEOUT_HANDLER_H_
+#define _LIBS_RAFT_HANDLERS_TIMEOUT_HANDLER_H_
 
-#include "raft_le/details/context.h"
+#include "raft/details/context.h"
 
 namespace wstux {
 namespace raft {
-namespace le {
 namespace details {
 namespace timeout {
 
@@ -97,8 +96,7 @@ void heartbeat_timeout_task(context& ctx);
 
 } // namespace timeout
 } // namespace details
-} // namespace le
 } // namespace raft
 } // namespace wstux
 
-#endif /* _LIBS_RAFT_LEADER_ELECTION_HANDLERS_TIMEOUT_HANDLER_H_ */
+#endif /* _LIBS_RAFT_HANDLERS_TIMEOUT_HANDLER_H_ */

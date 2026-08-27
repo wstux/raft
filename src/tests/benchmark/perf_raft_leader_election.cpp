@@ -26,15 +26,15 @@
 
 #include <benchmark/benchmark.h>
 
-#include "raft_le/server.h"
+#include "raft/server.h"
 
 #include "stub/network_stub.h"
 
 template<size_t N>
 static void leader_election(benchmark::State& state)
 {
-    namespace raft = ::wstux::raft::le;
-    namespace tests = ::wstux::raft::le::tests;
+    namespace raft = ::wstux::raft;
+    namespace tests = ::wstux::raft::tests;
 
     for (auto _ : state) {
         state.PauseTiming();
@@ -69,8 +69,8 @@ static void leader_election(benchmark::State& state)
 template<size_t N>
 static void leader_election_default(benchmark::State& state)
 {
-    namespace raft = ::wstux::raft::le;
-    namespace tests = ::wstux::raft::le::tests;
+    namespace raft = ::wstux::raft;
+    namespace tests = ::wstux::raft::tests;
 
     for (auto _ : state) {
         state.PauseTiming();

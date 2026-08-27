@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef _TESTS_RAFT_LEADER_ELECTION_IO_STUB_H_
-#define _TESTS_RAFT_LEADER_ELECTION_IO_STUB_H_
+#ifndef _TESTS_RAFT_IO_STUB_H_
+#define _TESTS_RAFT_IO_STUB_H_
 
 #include <sys/time.h>
 
@@ -41,14 +41,13 @@
 
 #include <boost/lockfree/queue.hpp>
 
-#include "raft_le/io.h"
-#include "raft_le/server.h"
-#include "raft_le/details/connection/messages.h"
-#include "raft_le/details/connection/serialization.h"
+#include "raft/io.h"
+#include "raft/server.h"
+#include "raft/details/connection/messages.h"
+#include "raft/details/connection/serialization.h"
 
 namespace wstux {
 namespace raft {
-namespace le {
 namespace tests {
 
 enum client_type
@@ -254,8 +253,7 @@ public:
 };
 
 } // namespace tests
-} // namespace le
 } // namespace raft
 } // namespace wstux
 
-#endif /* _TESTS_RAFT_LEADER_ELECTION_IO_STUB_H_ */
+#endif /* _TESTS_RAFT_IO_STUB_H_ */

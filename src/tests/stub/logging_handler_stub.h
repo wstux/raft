@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef _TESTS_RAFT_LEADER_ELECTION_LOGGING_HANDLER_STUB_H_
-#define _TESTS_RAFT_LEADER_ELECTION_LOGGING_HANDLER_STUB_H_
+#ifndef _TESTS_RAFT_LOGGING_HANDLER_STUB_H_
+#define _TESTS_RAFT_LOGGING_HANDLER_STUB_H_
 
 #include <sys/time.h>
 
@@ -41,14 +41,13 @@
 
 #include <boost/lockfree/queue.hpp>
 
-#include "raft_le/io.h"
+#include "raft/io.h"
 
 namespace wstux {
 namespace raft {
-namespace le {
 namespace tests {
 
-struct logging_handler_file : public ::wstux::raft::le::logging_handler
+struct logging_handler_file : public logging_handler
 {
     static constexpr bool is_enable_logging = false;
 
@@ -69,7 +68,7 @@ struct logging_handler_file : public ::wstux::raft::le::logging_handler
     };
 
     explicit logging_handler_file(const std::string& file_path = std::string())
-        : le::logging_handler()
+        : logging_handler()
         , p_data(std::make_shared<logger_data>(file_path))
     {
         p_this = p_data.get();
@@ -97,7 +96,7 @@ struct logging_handler_file : public ::wstux::raft::le::logging_handler
     }
 
     template<typename TOutStream>
-    static void log_msg(TOutStream& sout, le::logging_handler::severity_level lvl, const char* msg, const size_t* p_line_number = nullptr)
+    static void log_msg(TOutStream& sout, logging_handler::severity_level lvl, const char* msg, const size_t* p_line_number = nullptr)
     {
         if (p_line_number != nullptr) {
             sout << (*p_line_number) << " ";
@@ -152,8 +151,7 @@ struct logging_handler_file : public ::wstux::raft::le::logging_handler
 };
 
 } // namespace tests
-} // namespace le
 } // namespace raft
 } // namespace wstux
 
-#endif /* _TESTS_RAFT_LEADER_ELECTION_LOGGING_HANDLER_STUB_H_ */
+#endif /* _TESTS_RAFT_LOGGING_HANDLER_STUB_H_ */

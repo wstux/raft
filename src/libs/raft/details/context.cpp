@@ -26,11 +26,10 @@
 #include <algorithm>
 #include <mutex>
 
-#include "raft_le/details/context.h"
+#include "raft/details/context.h"
 
 namespace wstux {
 namespace raft {
-namespace le {
 namespace details {
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -200,6 +199,5 @@ void reconfigure(context& ctx, const config& cfg, const cluster_config& cluster_
 } // namespace utils
 
 } // namespace details
-} // namespace le
 } // namespace raft
 } // namespace wstux

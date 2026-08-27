@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef _LIBS_RAFT_LEADER_ELECTION_SPAN_H_
-#define _LIBS_RAFT_LEADER_ELECTION_SPAN_H_
+#ifndef _LIBS_RAFT_SPAN_H_
+#define _LIBS_RAFT_SPAN_H_
 
 #if __cplusplus < 202002L
     #include <cassert>
@@ -35,7 +35,6 @@
 
 namespace wstux {
 namespace raft {
-namespace le {
 namespace details {
 
 #if __cplusplus < 202002L
@@ -92,8 +91,7 @@ using span_type = std::span<T, TExtent>;
 #endif
 
 } // namespace details
-} // namespace le
 } // namespace raft
 } // namespace wstux
 
-#endif /* _LIBS_RAFT_LEADER_ELECTION_SPAN_H_ */
+#endif /* _LIBS_RAFT_SPAN_H_ */

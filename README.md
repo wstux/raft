@@ -1,7 +1,7 @@
-# Raft leader election library
+# Raft library
 
-A C++ library implementing the Leader Election phase of the Raft consensus algorithm.
-The architecture and internal state logic are based on the [Canonical Raft](https://github.com/canonical/raft) repository.
+A C++ library implementing the Raft consensus algorithm. The architecture and
+internal state logic are based on the [Canonical Raft](https://github.com/canonical/raft) repository.
 
 The library is designed as a pure State Machine. It is isolated from specific
 network protocols and storage systems, providing developers with interfaces for

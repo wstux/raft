@@ -22,17 +22,16 @@
  * THE SOFTWARE.
  */
 
-#ifndef _LIBS_RAFT_LEADER_ELECTION_LOGGER_H_
-#define _LIBS_RAFT_LEADER_ELECTION_LOGGER_H_
+#ifndef _LIBS_RAFT_LOGGER_H_
+#define _LIBS_RAFT_LOGGER_H_
 
 #include <cstdarg>
 #include <cstdio>
 
-#include "raft_le/io.h"
+#include "raft/io.h"
 
 namespace wstux {
 namespace raft {
-namespace le {
 namespace details {
 
 struct logger
@@ -67,7 +66,6 @@ struct logger
 };
 
 } // namespace details
-} // namespace le
 } // namespace raft
 } // namespace wstux
 
@@ -85,15 +83,15 @@ struct logger
         }                                                                   \
     } while(0)
 
-#define _RAFT_LOG_EMERG_LVL  ::wstux::raft::le::logging_handler::severity_level::emerg
-#define _RAFT_LOG_FATAL_LVL  ::wstux::raft::le::logging_handler::severity_level::fatal
-#define _RAFT_LOG_CRIT_LVL   ::wstux::raft::le::logging_handler::severity_level::crit
-#define _RAFT_LOG_ERROR_LVL  ::wstux::raft::le::logging_handler::severity_level::error
-#define _RAFT_LOG_WARN_LVL   ::wstux::raft::le::logging_handler::severity_level::warning
-#define _RAFT_LOG_NOTICE_LVL ::wstux::raft::le::logging_handler::severity_level::notice
-#define _RAFT_LOG_INFO_LVL   ::wstux::raft::le::logging_handler::severity_level::info
-#define _RAFT_LOG_DEBUG_LVL  ::wstux::raft::le::logging_handler::severity_level::debug
-#define _RAFT_LOG_TRACE_LVL  ::wstux::raft::le::logging_handler::severity_level::trace
+#define _RAFT_LOG_EMERG_LVL  ::wstux::raft::logging_handler::severity_level::emerg
+#define _RAFT_LOG_FATAL_LVL  ::wstux::raft::logging_handler::severity_level::fatal
+#define _RAFT_LOG_CRIT_LVL   ::wstux::raft::logging_handler::severity_level::crit
+#define _RAFT_LOG_ERROR_LVL  ::wstux::raft::logging_handler::severity_level::error
+#define _RAFT_LOG_WARN_LVL   ::wstux::raft::logging_handler::severity_level::warning
+#define _RAFT_LOG_NOTICE_LVL ::wstux::raft::logging_handler::severity_level::notice
+#define _RAFT_LOG_INFO_LVL   ::wstux::raft::logging_handler::severity_level::info
+#define _RAFT_LOG_DEBUG_LVL  ::wstux::raft::logging_handler::severity_level::debug
+#define _RAFT_LOG_TRACE_LVL  ::wstux::raft::logging_handler::severity_level::trace
 
 #define RAFT_LOG_EMERG(ctx,  fmt, ...)  _RAFT_LOG(ctx.raft_logger, root, _RAFT_LOG_EMERG_LVL,  fmt, ##__VA_ARGS__)
 #define RAFT_LOG_FATAL(ctx,  fmt, ...)  _RAFT_LOG(ctx.raft_logger, root, _RAFT_LOG_FATAL_LVL,  fmt, ##__VA_ARGS__)
@@ -154,4 +152,4 @@ struct logger
 #define RAFT_VOTE_LOG_DEBUG(ctx,  fmt, ...)  RAFT_LOG_CH_DEBUG(ctx,  vote, "Vote", fmt, ##__VA_ARGS__)
 #define RAFT_VOTE_LOG_TRACE(ctx,  fmt, ...)  RAFT_LOG_CH_TRACE(ctx,  vote, "Vote", fmt, ##__VA_ARGS__)
 
-#endif /* _LIBS_RAFT_LEADER_ELECTION_LOGGER_H_ */
+#endif /* _LIBS_RAFT_LOGGER_H_ */
