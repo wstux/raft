@@ -1,6 +1,6 @@
 # Performance tests
 
-TestTarget(perf_raft_leader_election
+PerfTestTarget(perf_raft_leader_election
     SOURCES
         perf_raft_leader_election.cpp
     LIBRARIES
@@ -8,25 +8,22 @@ TestTarget(perf_raft_leader_election
         raft_stub
     DEPENDS
         googlebenchmark
-    DISABLE
 )
 
-TestTarget(perf_raft_peers
+PerfTestTarget(perf_raft_peers
     SOURCES
         perf_raft_peers.cpp
     LIBRARIES
         raft_le
     DEPENDS
         googlebenchmark
-    DISABLE
 )
 
-TestTarget(perf_raft_serialization
+PerfTestTarget(perf_raft_serialization
     SOURCES
         perf_raft_serialization.cpp
     LIBRARIES
         raft_le
     DEPENDS
         googlebenchmark
-    DISABLE
 )

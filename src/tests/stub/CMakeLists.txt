@@ -1,4 +1,4 @@
-LibTarget(raft_stub INTERFACE
+TestLibTarget(raft_stub INTERFACE
     HEADERS
         io_stub.h
         network_stub.h
