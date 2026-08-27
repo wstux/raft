@@ -111,7 +111,7 @@ bool server::is_leader() const
     return m_p_ctx->role.is_leader();
 }
 
-void server::handle_message(const buffer_type& msg_buf)
+void server::handle_message(const inbuffer_type& msg_buf)
 {
     if (is_stop()) {
         return;

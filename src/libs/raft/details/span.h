@@ -52,9 +52,8 @@ namespace details {
  *      the standard implementation is missing.
  *
  *  \tparam T - the type of elements stored in the sequence.
- *  \tparam TExtent - the fixed size of the sequence (number of elements).
  */
-template<typename T, std::size_t TExtent>
+template<typename T>
 class span final
 {
 public:
@@ -65,28 +64,51 @@ public:
     using reference              = T&;
     using iterator               = T*;
 
-    static constexpr size_type extent = TExtent;
+    constexpr span(pointer ptr, size_type count)
+        : m_data(ptr)
+        , m_size(count)
+    {}
 
-    constexpr span(pointer ptr, [[maybe_unused]] size_type count) : m_data(ptr) { assert(count == TExtent); }
-    constexpr span(pointer first, [[maybe_unused]] pointer last) : m_data(first) { assert((last - first) == TExtent); }
+    constexpr span(pointer first, pointer last)
+        : m_data(first)
+        , m_size(last - first)
+    {}
+
+    template<std::size_t N>
+    constexpr span(T (&arr)[N]) noexcept
+        : m_data(arr)
+        , m_size(N)
+    {}
+
+    template<typename TContainer,
+             typename = std::enable_if_t<
+                ! std::is_same_v<std::decay_t<TContainer>, span> &&
+                std::is_convertible_v<decltype(std::declval<TContainer&>().data()), pointer>
+             >>
+    constexpr span(TContainer&& cont)
+        : m_data(cont.data())
+        , m_size(cont.size())
+    {}
 
     constexpr pointer data() const noexcept { return m_data; }
-    constexpr size_type size() const noexcept { return TExtent; }
+    constexpr size_type size() const noexcept { return m_size; }
+    constexpr bool empty() const noexcept { return m_size == 0; }
 
     constexpr iterator begin() const noexcept { return m_data; }
-    constexpr iterator end() const noexcept { return m_data + TExtent; }
+    constexpr iterator end() const noexcept { return m_data + m_size; }
 
 private:
-    pointer m_data;
+    pointer m_data = nullptr;
+    size_type m_size = 0;
 };
 
-template<typename T, std::size_t TExtent>
-using span_type = span<T, TExtent>;
+template<typename T>
+using span_type = span<T>;
 
 #else
 
-template<typename T, std::size_t TExtent>
-using span_type = std::span<T, TExtent>;
+template<typename T>
+using span_type = std::span<T>;
 
 #endif
 

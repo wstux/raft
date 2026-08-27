@@ -46,7 +46,7 @@ using is_stop_fn_t = std::function<bool(void)>;
 using server_id_t = uint64_t;
 using term_t = uint32_t;
 
-using inbuffer_type = details::span<const char, 32>;
+using inbuffer_type = details::span<const char>;
 using buffer_type = std::vector<char>;
 
 constexpr server_id_t gk_invalid_id = 0;

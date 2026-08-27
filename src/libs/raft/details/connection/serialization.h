@@ -97,8 +97,8 @@ namespace wstux {
 namespace raft {
 namespace details {
 
-template<typename T>
-void deserialize(const buffer_type& buffer, T& data)
+template<typename TBuffer, typename T>
+void deserialize(const TBuffer& buffer, T& data)
 {
     using iostream_type = boost::iostreams::stream<boost::iostreams::array_source>;
 
