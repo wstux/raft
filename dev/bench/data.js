@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1788191982556,
+  "lastUpdate": 1788196561206,
   "repoUrl": "https://github.com/wstux/raft",
   "entries": {
     "Benchmark": [
@@ -446,6 +446,155 @@ window.BENCHMARK_DATA = {
           {
             "name": "Serialize Message (Real Time)::Base",
             "value": 519.6654674788139,
+            "unit": "ns"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "wstux1@gmail.com",
+            "name": "wstux",
+            "username": "wstux"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "4c0c53a12ac7469e47d85f9152b98fed692b2506",
+          "message": "* all: #4 Merge remote-tracking branch 'wstux/feature/append_entries';",
+          "timestamp": "2026-08-31T20:12:35+03:00",
+          "tree_id": "1a2982ea407d3140da26ca0b9e8d257a37aa655c",
+          "url": "https://github.com/wstux/raft/commit/4c0c53a12ac7469e47d85f9152b98fed692b2506"
+        },
+        "date": 1788196560679,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Leader Election (Real Time)::3 nodes",
+            "value": 41.42916962000868,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election (CPU Time)::3 nodes",
+            "value": 0.3713816700000011,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election (Real Time)::5 nodes",
+            "value": 42.01528634999648,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election (CPU Time)::5 nodes",
+            "value": 0.8436246400000033,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election (Real Time)::7 nodes",
+            "value": 42.99506212000495,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election (CPU Time)::7 nodes",
+            "value": 1.4933750900000058,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Default (Real Time)::3 nodes",
+            "value": 624.6185939999862,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Default (CPU Time)::3 nodes",
+            "value": 0.9122143999999889,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Default (Real Time)::5 nodes",
+            "value": 611.2584942999831,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Default (CPU Time)::5 nodes",
+            "value": 1.3676428000000018,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Default (Real Time)::7 nodes",
+            "value": 567.7477540999917,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Default (CPU Time)::7 nodes",
+            "value": 1.973271300000046,
+            "unit": "ms"
+          },
+          {
+            "name": "Check Contact Quorum (Real Time)::1 threads",
+            "value": 5.710476953761457,
+            "unit": "ns"
+          },
+          {
+            "name": "Check Contact Quorum (Real Time)::2 threads",
+            "value": 25.150681345135606,
+            "unit": "ns"
+          },
+          {
+            "name": "Check Contact Quorum (Real Time)::4 threads",
+            "value": 114.41935862742855,
+            "unit": "ns"
+          },
+          {
+            "name": "Check Contact Quorum (Real Time)::8 threads",
+            "value": 191.02507446354358,
+            "unit": "ns"
+          },
+          {
+            "name": "Request to List (Real Time)::1 threads",
+            "value": 27.26997724040169,
+            "unit": "ns"
+          },
+          {
+            "name": "Request to List (Real Time)::2 threads",
+            "value": 27.87424378214487,
+            "unit": "ns"
+          },
+          {
+            "name": "Request to List (Real Time)::4 threads",
+            "value": 53.55337931933219,
+            "unit": "ns"
+          },
+          {
+            "name": "Request to List (Real Time)::8 threads",
+            "value": 86.58311754044276,
+            "unit": "ns"
+          },
+          {
+            "name": "Request Lock List (Real Time)::1 threads",
+            "value": 1.7644746455731555,
+            "unit": "ns"
+          },
+          {
+            "name": "Request Lock List (Real Time)::2 threads",
+            "value": 1.7632157906960486,
+            "unit": "ns"
+          },
+          {
+            "name": "Request Lock List (Real Time)::4 threads",
+            "value": 3.512027791023638,
+            "unit": "ns"
+          },
+          {
+            "name": "Request Lock List (Real Time)::8 threads",
+            "value": 5.737772786663765,
+            "unit": "ns"
+          },
+          {
+            "name": "Serialize Message (Real Time)::Base",
+            "value": 780.1272773039944,
             "unit": "ns"
           }
         ]
