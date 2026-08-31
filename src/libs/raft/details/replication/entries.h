@@ -42,6 +42,12 @@ bool append(context& ctx, term_t term, index_t leader_commit, index_t prev_log_i
 
 bool append_callback(context& ctx, bool accept, term_t term, index_t index, index_t leader_commit, const entry::list& entries);
 
+bool apply_command(context& ctx, buffer_type buf, async::apply_context::ptr& p_async_ctx);
+
+bool apply_configuration(context& ctx, cluster_config cluster_cfg, async::apply_context::ptr& p_async_ctx);
+
+bool apply_callback(context& ctx, bool accept, index_t index, const entry::list& entries);
+
 bool commit(context& ctx);
 
 /**

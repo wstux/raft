@@ -118,6 +118,22 @@ size_t resolve_conflicts(context& ctx, index_t prev_log_index, const entry::list
     return entries.size();
 }
 
+bool store_log_to_storage(context& ctx, index_t index, async::apply_context::ptr& p_async_ctx)
+{
+    entry::list entries = ctx.log.acquire(index);
+    assert(entries.size() > 0);
+
+    if (ctx.is_async_io) {
+        p_async_ctx = std::make_shared<async::apply_context>();
+        p_async_ctx->index = index;
+        p_async_ctx->entries.swap(entries);
+        return true;
+    }
+
+    const bool accept = ctx.p_io->append(entries);
+    return apply_callback(ctx, accept, index, entries);
+}
+
 size_t update_last_stored(context& ctx, index_t first_index, const entry::list& entries)
 {
     size_t i = 0;
@@ -252,6 +268,68 @@ bool append_callback(context& ctx, bool accept, term_t term, index_t index, inde
     }
 
     RAFT_LOG_TRACE(ctx, "Server %llu(%s) added %zu entries.", ctx.id, ctx.role.str(), entries.size());
+    return true;
+}
+
+bool apply_command(context& ctx, buffer_type buf, async::apply_context::ptr& p_async_ctx)
+{
+    if (! ctx.role.is_leader()) {
+        return false;
+    }
+
+    if (buf.size() == 0) {
+        return false;
+    }
+
+    RAFT_LOG_TRACE(ctx, "Server %llu(%s) is applying new command.", ctx.id, ctx.role.str());
+
+    /* Index of the first entry being appended. */
+    index_t index = ctx.log.last_index() + 1;
+
+    ctx.log.append_command(ctx.term, std::move(buf));
+    assert(index == ctx.log.last_index());
+    return store_log_to_storage(ctx, index, p_async_ctx);
+}
+
+bool apply_configuration(context& ctx, cluster_config cluster_cfg, async::apply_context::ptr& p_async_ctx)
+{
+    if (! ctx.role.is_leader()) {
+        return false;
+    }
+
+    RAFT_LOG_TRACE(ctx, "Server %llu(%s) is applying new configuration.", ctx.id, ctx.role.str());
+
+    const index_t index = ctx.log.last_index() + 1;
+
+    ctx.log.append_change(ctx.term, cluster_cfg);
+    assert(index == ctx.log.last_index());
+    return store_log_to_storage(ctx, index, p_async_ctx);
+}
+
+bool apply_callback(context& ctx, bool accept, index_t index, const entry::list& entries)
+{
+    //if (ctx.role.is_leader()) {
+    //    return false;
+    //}
+
+    if (! accept) {
+        RAFT_LOG_ERROR(ctx, "Server %llu(%s) failed to add new entries to persistent storage.", ctx.id, ctx.role.str());
+        if (index <= ctx.log.last_index()) {
+            ctx.log.truncate(index);
+        }
+        if (ctx.role.is_leader()) {
+            role::become_follower(ctx);
+        }
+        return false;
+    }
+
+    RAFT_LOG_TRACE(ctx, "Server %llu(%s) stored %zu to persistent storage.", ctx.id, ctx.role.str(), entries.size());
+    update_last_stored(ctx, index, entries);
+    if (! ctx.role.is_leader()) {
+        return false;
+    }
+    update_commit_index(ctx, index);
+    commit(ctx);
     return true;
 }
 
