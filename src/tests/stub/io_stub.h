@@ -33,6 +33,7 @@
 #include <filesystem>
 #include <functional>
 #include <iostream>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <random>
@@ -203,11 +204,26 @@ public:
         , m_p_factory(p_factory)
         , m_term(0)
         , m_voted_for(gk_invalid_id)
+        , m_snapshot_index(0)
+        , m_snapshot_term(0)
+        , m_start_index(1)
     {
         m_cfg.scheduler_threads_count = 2;
     }
 
     virtual ~io_stub() {}
+
+    virtual bool append(const entry::list& entries) override final
+    {
+        if (! m_is_append) {
+            return false;
+        }
+        index_t i = m_start_index + m_entries.size();
+        for (const entry::ptr& e : entries) {
+            m_entries.emplace(i++, e);
+        }
+        return true;
+    }
 
     virtual cluster_config bootstrap() const override final { return *m_p_cluster_cfg; }
 
@@ -227,6 +243,21 @@ public:
         return true;
     }
 
+    virtual entry::list load_entries() override final
+    {
+        entry::list entries;
+        for (const std::map<index_t, entry::ptr>::value_type& e : m_entries) {
+            entries.push_back(e.second);
+        }
+        return entries;
+    }
+
+    virtual index_t load_snapshot_index() override final { return m_snapshot_index; }
+
+    virtual term_t load_snapshot_term() override final { return m_snapshot_term; }
+
+    virtual index_t load_start_index() override final { return m_start_index; }
+
     virtual term_t load_term() override final { return m_term; }
 
     virtual bool reconfigure(server_id_t) override final { return true; }
@@ -236,6 +267,19 @@ public:
     virtual void set_term(term_t term) override final { m_term = term; }
 
     virtual void set_voted_for(server_id_t id) override final { m_voted_for = id; }
+
+    virtual bool truncate(const index_t begin) override final
+    {
+        if (! m_is_truncate) {
+            return false;
+        }
+        std::map<index_t, entry::ptr>::iterator it = m_entries.find(begin);
+        if (it == m_entries.end()) {
+            return true;
+        }
+        m_entries.erase(it, m_entries.end());
+        return true;
+    }
 
     virtual server_id_t voted_for() const override final { return m_voted_for; }
 
@@ -247,6 +291,16 @@ public:
 
     term_t m_term;
     server_id_t m_voted_for;
+
+    std::map<index_t, entry::ptr> m_entries;
+
+    index_t m_snapshot_index;
+    term_t m_snapshot_term;
+
+    index_t m_start_index;
+
+    bool m_is_append = true;
+    bool m_is_truncate = true;
 };
 
 } // namespace tests

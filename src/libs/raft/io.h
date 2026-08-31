@@ -107,6 +107,8 @@ public:
 public:
     virtual ~io() {}
 
+    virtual bool append(const entry::list& entries) = 0;
+
     virtual cluster_config bootstrap() const = 0;
 
     virtual config configuration() const = 0;
@@ -114,6 +116,14 @@ public:
     virtual void deinit() = 0;
 
     virtual bool init(server_id_t id) = 0;
+
+    virtual entry::list load_entries() = 0;
+
+    virtual index_t load_snapshot_index() = 0;
+
+    virtual term_t load_snapshot_term() = 0;
+
+    virtual index_t load_start_index() = 0;
 
     virtual term_t load_term() = 0;
 
@@ -124,6 +134,8 @@ public:
     virtual void set_term(term_t term) = 0;
 
     virtual void set_voted_for(server_id_t id) = 0;
+
+    virtual bool truncate(const index_t begin) = 0;
 
     virtual server_id_t voted_for() const = 0;
 };
