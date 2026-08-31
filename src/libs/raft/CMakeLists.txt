@@ -4,6 +4,7 @@ LibTarget(raft STATIC
         details/scheduler.cpp
         details/server.cpp
         details/handlers/heartbeat_handler.cpp
+        details/handlers/snapshot_handler.cpp
         details/handlers/timeout_handler.cpp
         details/handlers/vote_handler.cpp
         details/log/log.cpp
