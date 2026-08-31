@@ -99,6 +99,21 @@ struct entry final
     buffer_type buffer;
 };
 
+class fsm
+{
+public:
+    using ptr = std::shared_ptr<fsm>;
+
+public:
+    virtual ~fsm() {}
+
+    virtual bool apply(const buffer_type& buf) = 0;
+
+    virtual bool snapshot(buffer_type& buf) = 0;
+
+    virtual bool restore(const buffer_type& buf) = 0;
+};
+
 class io
 {
 public:

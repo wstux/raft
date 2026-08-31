@@ -34,6 +34,7 @@
 #include "raft/server.h"
 #include "raft/details/context.h"
 
+#include "stub/fsm_stub.h"
 #include "stub/io_stub.h"
 #include "stub/logging_handler_stub.h"
 
@@ -188,7 +189,8 @@ private:
     {
         std::function<bool()> is_stop_fn = []()->bool { return false; };
 
-        server_ptr p_srv = std::make_shared<server>(id, p_io, std::make_unique<tests::logging_handler_file>(log_file(id)), is_stop_fn);
+        fsm::ptr p_fsm = std::make_shared<fsm_stub>();
+        server_ptr p_srv = std::make_shared<server>(id, p_io, p_fsm, std::make_unique<tests::logging_handler_file>(log_file(id)), is_stop_fn);
 
         m_io_map.emplace(id, p_io);
         m_servers.emplace(id, p_srv);

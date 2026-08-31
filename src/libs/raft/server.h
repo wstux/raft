@@ -43,7 +43,7 @@ public:
     using ptr = std::shared_ptr<server>;
 
 public:
-    server(const server_id_t id, const io::ptr& p_io, logging_handler::ptr p_handler,
+    server(const server_id_t id, const io::ptr& p_io, const fsm::ptr p_fsm, logging_handler::ptr p_handler,
            const is_stop_fn_t& is_stop_fn, const allocator_type& alloc = allocator_type());
 
     ~server();

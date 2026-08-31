@@ -68,7 +68,7 @@ struct context final
 {
     using ptr = std::shared_ptr<context>;
 
-    context(server_id_t id, const io::ptr p_io, logging_handler::ptr p_handler,
+    context(server_id_t id, const io::ptr p_io, const fsm::ptr p_fsm, logging_handler::ptr p_handler,
             const is_stop_fn_t& is_stop, const allocator_type& alloc = allocator_type());
 
     const server_id_t id;
@@ -80,6 +80,7 @@ struct context final
     server_config config;
 
     io::ptr p_io;
+    fsm::ptr p_fsm;
 
     role::state role;
     process::state state;

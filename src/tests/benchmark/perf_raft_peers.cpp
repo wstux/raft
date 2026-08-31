@@ -32,6 +32,7 @@
 #include "raft/details/role/convert.h"
 
 #include "stub/empty_io.h"
+#include "stub/fsm_stub.h"
 
 namespace {
 
@@ -44,13 +45,14 @@ constexpr size_t gk_cluster_size = 7;
     namespace tests = raft::tests;
 
     tests::empty_io::ptr p_io = std::make_shared<tests::empty_io>();
+    tests::fsm_stub::ptr p_fsm = std::make_shared<tests::fsm_stub>();
     for (size_t i = 0; i < servs_count; ++i) {
         p_io->cluster_cfg.servers.emplace_back(i + 1, true);
     }
 
     tests::empty_io* p_raw_io = p_io.get();
     std::function<bool()> is_stop_fn = [p_raw_io]()->bool { return p_raw_io->is_stop; };
-    details::context::ptr p_ctx = std::make_unique<details::context>(1, p_io, raft::logging_handler::ptr(), is_stop_fn);
+    details::context::ptr p_ctx = std::make_unique<details::context>(1, p_io, p_fsm, raft::logging_handler::ptr(), is_stop_fn);
     if (! raft::details::utils::init(*p_ctx)) {
         return nullptr;
     }
