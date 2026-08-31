@@ -102,6 +102,7 @@ context::context(server_id_t id, const io::ptr p_io, const fsm::ptr p_fsm, loggi
     , p_fsm(p_fsm)
     , term(0)
     , schd(alloc)
+    , snapshot_threshold(1024)
     , heartbeat_interval_ms(100)
     , rand_engine(std::chrono::system_clock::now().time_since_epoch().count() * id)
     , election_distribution(250, 500)
@@ -203,6 +204,8 @@ bool init(context& ctx)
 
     ctx.election_distribution = std::uniform_int_distribution<size_t>(cfg.vote_timeout_min_ms, cfg.vote_timeout_max_ms);
     ctx.heartbeat_interval_ms = cfg.heartbeat_interval_ms;
+
+    ctx.snapshot_threshold = cfg.snapshot_threshold;
 
     // Reserve memory. Statistically, the cluster has less than or equal to 32
     // nodes. Therefore, memory is reserved for 32 nodes. If more is needed,

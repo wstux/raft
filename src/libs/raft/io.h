@@ -61,6 +61,8 @@ struct config final
 
     size_t scheduler_threads_count = 4;
 
+    size_t snapshot_threshold = 1024;
+
     bool is_async_io = false;
 };
 
