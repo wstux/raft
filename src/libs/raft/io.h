@@ -60,6 +60,8 @@ struct config final
     size_t heartbeat_interval_ms = 100;
 
     size_t scheduler_threads_count = 4;
+
+    bool is_async_io = false;
 };
 
 struct server_config final
@@ -99,6 +101,19 @@ struct entry final
     buffer_type buffer;
 };
 
+struct snapshot final
+{
+    using ptr = std::shared_ptr<snapshot>;
+
+    index_t index; //!< Index of last entry included in the snapshot.
+    term_t term;   //!< Term of last entry included in the snapshot.
+
+    cluster_config conf; //!< Last committed configuration included in the snapshot.
+    index_t conf_index;  //!< Index of last committed configuration.
+
+    buffer_type buffer; //!< Content of the snapshot.
+};
+
 class fsm
 {
 public:
@@ -130,6 +145,8 @@ public:
 
     virtual void deinit() = 0;
 
+    virtual snapshot::ptr get_snapshot() const = 0;
+
     virtual bool init(server_id_t id) = 0;
 
     virtual entry::list load_entries() = 0;
@@ -145,6 +162,8 @@ public:
     virtual bool reconfigure(server_id_t id) = 0;
 
     virtual void send(server_id_t id, const buffer_type& msg) = 0;
+
+    virtual bool set_snapshot(snapshot::ptr p_snapshot) = 0;
 
     virtual void set_term(term_t term) = 0;
 

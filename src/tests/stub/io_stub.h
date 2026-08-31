@@ -231,6 +231,8 @@ public:
 
     virtual void deinit() override final {}
 
+    virtual snapshot::ptr get_snapshot() const override final { return m_p_snapshot; }
+
     virtual bool init(server_id_t id) override final
     {
         if (m_clients.empty() && ! m_p_cluster_cfg->servers.empty()) {
@@ -263,6 +265,12 @@ public:
     virtual bool reconfigure(server_id_t) override final { return true; }
 
     virtual void send(server_id_t id, const buffer_type& msg) override final { m_clients.at(id)->send(msg); }
+
+    virtual bool set_snapshot(snapshot::ptr p_sh) override final
+    {
+        m_p_snapshot = p_sh;
+        return true;
+    }
 
     virtual void set_term(term_t term) override final { m_term = term; }
 
@@ -298,6 +306,8 @@ public:
     term_t m_snapshot_term;
 
     index_t m_start_index;
+
+    snapshot::ptr m_p_snapshot = nullptr;
 
     bool m_is_append = true;
     bool m_is_truncate = true;

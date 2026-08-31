@@ -32,7 +32,7 @@ namespace snapshot {
 void handle_request(context& /*ctx*/, term_t /*term*/, server_id_t /*src_id*/, const snapshot_message& /*msg*/)
 {}
 
-void request(context& /*ctx*/, peer::ptr /*p_peer*/)
+void request(context& /*ctx*/, const peer& /*p*/)
 {}
 
 } // namespace snapshot

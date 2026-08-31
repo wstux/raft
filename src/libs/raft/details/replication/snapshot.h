@@ -25,6 +25,7 @@
 #ifndef _LIBS_RAFT_REPLICATION_SNAPSHOT_H_
 #define _LIBS_RAFT_REPLICATION_SNAPSHOT_H_
 
+#include "raft/io.h"
 #include "raft/details/context.h"
 
 namespace wstux {
@@ -32,6 +33,8 @@ namespace raft {
 namespace details {
 namespace replication {
 namespace snapshot {
+
+bool restore(context& ctx, raft::snapshot& snapshot);
 
 bool should_take_snapshot(context& ctx);
 
