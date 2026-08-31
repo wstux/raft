@@ -22,51 +22,45 @@
  * THE SOFTWARE.
  */
 
-#ifndef _LIBS_RAFT_CONNECTION_PEER_H_
-#define _LIBS_RAFT_CONNECTION_PEER_H_
+#ifndef _LIBS_RAFT_REPLICATION_ENTRIES_H_
+#define _LIBS_RAFT_REPLICATION_ENTRIES_H_
 
-#include <cstdint>
 #include <memory>
-#include <shared_mutex>
-#include <vector>
 
 #include "raft/io.h"
+#include "raft/details/context.h"
+#include "raft/details/replication/async.h"
 
 namespace wstux {
 namespace raft {
 namespace details {
+namespace replication {
+namespace entries {
 
-struct peer final
-{
-    using ptr = peer*;
-    using list = std::vector<peer>;
+bool append(context& ctx, term_t term, index_t leader_commit, index_t prev_log_index, term_t prev_log_term,
+            const entry::list& entries, async::append_context::ptr& p_async_ctx);
 
-    explicit peer(const server_config& cfg)
-        : id(cfg.id)
-        , is_voter(cfg.is_voter)
-        , match_index(0)
-        , recent_recv(false)
-    {}
+bool append_callback(context& ctx, bool accept, term_t term, index_t index, index_t leader_commit, const entry::list& entries);
 
-    void mark_recent_recv() { recent_recv = true; }
+bool commit(context& ctx);
 
-    bool reset_recent_recv()
-    {
-        const bool old_recent_recv = recent_recv;
-        recent_recv = false;
-        return old_recent_recv;
-    }
+/**
+ *  \brief  Advances the leader's commitIndex based on the matchIndex of the
+ *      majority of nodes.
+ *  \param  ctx - current server state context.
+ *  \param  index - the index up to which the commit is proposed to be advanced.
+ *
+ *  \details Raft Paper, Section 5.3, 5.4: Implements the leader safety rules
+ *      described in "Rules for Servers - Leaders": "If there exists an N such
+ *      that N > commitIndex, a majority of matchIndex[i] ≥ N, and
+ *      log[N].term == currentTerm: set commitIndex = N (5.3, 5.4)."
+ */
+void update_commit_index(context& ctx, const index_t index);
 
-    const server_id_t id;
-    bool is_voter;
-
-    index_t match_index;
-
-    bool recent_recv;
-};
-
+} // namespace entries
+} // namespace replication
 } // namespace details
 } // namespace raft
 } // namespace wstux
 
-#endif /* _LIBS_RAFT_CONNECTION_PEER_H_ */
+#endif /* _LIBS_RAFT_REPLICATION_ENTRIES_H_ */

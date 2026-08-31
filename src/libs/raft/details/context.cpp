@@ -35,13 +35,15 @@ namespace details {
 ////////////////////////////////////////////////////////////////////////////////
 // class context
 
-context::context(server_id_t id, const io::ptr p_io, logging_handler::ptr p_handler, const is_stop_fn_t& is_stop, const allocator_type& alloc)
+context::context(server_id_t id, const io::ptr p_io, const fsm::ptr p_fsm, logging_handler::ptr p_handler,
+                 const is_stop_fn_t& is_stop, const allocator_type& alloc)
     : id(id)
     , is_stop_fn(is_stop)
     , alloc(alloc)
     , is_async_io(false)
     , config(gk_invalid_id, false)
     , p_io(p_io)
+    , p_fsm(p_fsm)
     , term(0)
     , schd(alloc)
     , heartbeat_interval_ms(100)

@@ -33,9 +33,9 @@ namespace raft {
 namespace details {
 namespace heartbeat {
 
-void handle_request(context& ctx, term_t term, server_id_t src_id, const heartbeat_message& msg);
+void handle_request(context& ctx, term_t term, server_id_t src_id, const append_entries_message& msg);
 
-void handle_response(context& ctx, term_t term, server_id_t src_id, const heartbeat_response_message& msg);
+void handle_response(context& ctx, term_t term, server_id_t src_id, const append_entries_response_message& msg);
 
 /**
  *  \brief  Initiates health checks (heartbeats) to all followers.

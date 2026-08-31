@@ -22,69 +22,34 @@
  * THE SOFTWARE.
  */
 
-#ifndef _LIBS_RAFT_SERVER_H_
-#define _LIBS_RAFT_SERVER_H_
-
-#include <atomic>
-#include <memory>
-#include <string>
-#include <vector>
-
-#include "raft/io.h"
+#include "raft/details/replication/snapshot.h"
 
 namespace wstux {
 namespace raft {
-namespace details { struct context; }
+namespace details {
+namespace replication {
+namespace snapshot {
 
-class server final
+bool should_take_snapshot(context& ctx)
 {
-public:
-    using allocator_type = std::allocator<server>;
-    using ptr = std::shared_ptr<server>;
+    if (ctx.state.snapshot.is_in_process) {
+        return false;
+    };
 
-public:
-    server(const server_id_t id, const io::ptr& p_io, const fsm::ptr p_fsm, logging_handler::ptr p_handler,
-           const is_stop_fn_t& is_stop_fn, const allocator_type& alloc = allocator_type());
+    if ((ctx.state.last_applied - ctx.log.snapshot.last_index) < ctx.snapshot_threshold) {
+        return false;
+    }
 
-    ~server();
+    return true;
+}
 
-    void deinit();
+bool take_snapshot(context& /*ctx*/)
+{
+    return false;
+}
 
-    server_id_t id() const { return m_id; }
-
-    bool init();
-
-    bool is_inited() const;
-
-    bool is_leader() const;
-
-    bool is_stop() const { return m_is_stop || m_is_stop_fn(); }
-
-    void handle_message(const inbuffer_type& msg_buf);
-
-    bool reconfigure();
-
-    bool start();
-
-    void stop();
-
-private:
-    using context_ptr = std::shared_ptr<details::context>;
-
-private:
-    static bool load(details::context& ctx);
-
-private:
-    const server_id_t m_id;
-    allocator_type m_alloc;
-
-    is_stop_fn_t m_is_stop_fn;
-    std::atomic_bool m_is_stop;
-
-    context_ptr m_p_ctx;
-};
-
+} // namespace snapshot
+} // namespace replication
+} // namespace details
 } // namespace raft
 } // namespace wstux
-
-#endif /* _LIBS_RAFT_SERVER_H_ */

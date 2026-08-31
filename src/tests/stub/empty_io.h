@@ -60,6 +60,15 @@ public:
     empty_io() { cfg.scheduler_threads_count = 2; }
     virtual ~empty_io() {}
 
+    virtual bool append(const entry::list& entrs) override final
+    {
+        index_t i = start_index + entries.size();
+        for (const entry::ptr& e : entrs) {
+            entries.emplace(i++, e);
+        }
+        return true;
+    }
+
     virtual cluster_config bootstrap() const override final { return cluster_cfg; }
     virtual config configuration() const override final { return cfg; };
 
@@ -77,11 +86,34 @@ public:
         return is_init;
     }
 
+    virtual entry::list load_entries() override final
+    {
+        entry::list entrs;
+        entrs.reserve(entries.size());
+        for (const std::map<index_t, entry::ptr>::value_type& e : entries) {
+            entrs.push_back(e.second);
+        }
+        return entrs;
+    }
+
+    virtual index_t load_snapshot_index() override final { return snapshot_index; }
+    virtual term_t load_snapshot_term() override final { return snapshot_term; }
+    virtual index_t load_start_index() override final { return start_index; }
     virtual term_t load_term() override final { return 0; }
     virtual bool reconfigure(server_id_t) override final { return true; }
     virtual void send(server_id_t id, const buffer_type& msg) override final { clients.at(id)->send(msg); }
     virtual void set_term(term_t) override final {}
     virtual void set_voted_for(server_id_t) override final {}
+
+    virtual bool truncate(const index_t begin) override final
+    {
+        std::map<index_t, entry::ptr>::iterator it = entries.find(begin);
+        if (it != entries.end()) {
+            entries.erase(it, entries.end());
+        }
+        return true;
+    }
+
     virtual server_id_t voted_for() const override final { return gk_invalid_id; }
 
 public:
@@ -89,6 +121,13 @@ public:
     cluster_config cluster_cfg;
 
     std::unordered_map<server_id_t, empty_client::ptr> clients;
+
+    std::map<index_t, entry::ptr> entries;
+
+    index_t snapshot_index = 0;
+    term_t snapshot_term = 0;
+
+    index_t start_index = 1;
 
     bool is_init = true;
     bool is_stop = false;

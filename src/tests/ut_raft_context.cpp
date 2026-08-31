@@ -29,6 +29,7 @@
 #include "raft/details/context.h"
 
 #include "stub/empty_io.h"
+#include "stub/fsm_stub.h"
 
 namespace {
 
@@ -42,11 +43,12 @@ public:
     virtual void SetUp() override
     {
         m_p_io = std::make_shared<tests::empty_io>();
+        m_p_fsm = std::make_shared<tests::fsm_stub>();
 
         tests::empty_io* p_raw_io = m_p_io.get();
         std::function<bool()> is_stop_fn = [p_raw_io]()->bool { return p_raw_io->is_stop; };
 
-        m_p_ctx = std::make_unique<details::context>(1, m_p_io, raft::logging_handler::ptr(), is_stop_fn);
+        m_p_ctx = std::make_unique<details::context>(1, m_p_io, m_p_fsm, raft::logging_handler::ptr(), is_stop_fn);
     }
 
     virtual void TearDown() override {}
@@ -62,6 +64,7 @@ public:
 
 protected:
     tests::empty_io::ptr m_p_io;
+    tests::fsm_stub::ptr m_p_fsm;
     details::context::ptr m_p_ctx;
 };
 

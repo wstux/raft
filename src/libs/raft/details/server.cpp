@@ -43,11 +43,11 @@ namespace {
 void handle_message(details::context& ctx, const details::message& msg)
 {
     switch(msg.type) {
-    case details::message_type::heartbeat_request:
-        details::heartbeat::handle_request(ctx, msg.term, msg.src_id, msg.heartbeat_req);
+    case details::message_type::append_entries_request:
+        details::heartbeat::handle_request(ctx, msg.term, msg.src_id, msg.append_entries_req);
         break;
-    case details::message_type::heartbeat_response:
-        details::heartbeat::handle_response(ctx, msg.term, msg.src_id, msg.heartbeat_resp);
+    case details::message_type::append_entries_response:
+        details::heartbeat::handle_response(ctx, msg.term, msg.src_id, msg.append_entries_resp);
         break;
     case details::message_type::vote_request:
         details::vote::handle_request(ctx, msg.term, msg.src_id, msg.vote_req);
@@ -66,13 +66,13 @@ void handle_message(details::context& ctx, const details::message& msg)
 ////////////////////////////////////////////////////////////////////////////////
 // class server
 
-server::server(const server_id_t id, const io::ptr& p_io, logging_handler::ptr p_handler,
+server::server(const server_id_t id, const io::ptr& p_io, const fsm::ptr p_fsm, logging_handler::ptr p_handler,
                const is_stop_fn_t& is_stop_fn, const allocator_type& alloc)
     : m_id(id)
     , m_alloc(alloc)
     , m_is_stop_fn(is_stop_fn)
     , m_is_stop(true)
-    , m_p_ctx(std::allocate_shared<details::context>(m_alloc, id, p_io, std::move(p_handler), [this]() -> bool { return is_stop(); }, m_alloc))
+    , m_p_ctx(std::allocate_shared<details::context>(m_alloc, id, p_io, p_fsm, std::move(p_handler), [this]() -> bool { return is_stop(); }, m_alloc))
 {
     static_assert(std::is_same<context_ptr, details::context::ptr>::value, "Invalid context pointer type");
 

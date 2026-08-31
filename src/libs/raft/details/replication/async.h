@@ -22,69 +22,46 @@
  * THE SOFTWARE.
  */
 
-#ifndef _LIBS_RAFT_SERVER_H_
-#define _LIBS_RAFT_SERVER_H_
+#ifndef _LIBS_RAFT_REPLICATION_ASYNC_H_
+#define _LIBS_RAFT_REPLICATION_ASYNC_H_
 
-#include <atomic>
 #include <memory>
-#include <string>
-#include <vector>
 
 #include "raft/io.h"
+#include "raft/details/context.h"
 
 namespace wstux {
 namespace raft {
-namespace details { struct context; }
+namespace details {
+namespace replication {
+namespace entries {
+namespace async {
 
-class server final
+struct append_context final
 {
-public:
-    using allocator_type = std::allocator<server>;
-    using ptr = std::shared_ptr<server>;
+    using ptr = std::shared_ptr<append_context>;
 
-public:
-    server(const server_id_t id, const io::ptr& p_io, const fsm::ptr p_fsm, logging_handler::ptr p_handler,
-           const is_stop_fn_t& is_stop_fn, const allocator_type& alloc = allocator_type());
-
-    ~server();
-
-    void deinit();
-
-    server_id_t id() const { return m_id; }
-
-    bool init();
-
-    bool is_inited() const;
-
-    bool is_leader() const;
-
-    bool is_stop() const { return m_is_stop || m_is_stop_fn(); }
-
-    void handle_message(const inbuffer_type& msg_buf);
-
-    bool reconfigure();
-
-    bool start();
-
-    void stop();
-
-private:
-    using context_ptr = std::shared_ptr<details::context>;
-
-private:
-    static bool load(details::context& ctx);
-
-private:
-    const server_id_t m_id;
-    allocator_type m_alloc;
-
-    is_stop_fn_t m_is_stop_fn;
-    std::atomic_bool m_is_stop;
-
-    context_ptr m_p_ctx;
+    term_t term;
+    index_t index;
+    index_t leader_commit;
+    index_t last_stored;
+    index_t last_index;
+    entry::list entries;
 };
 
+struct apply_context final
+{
+    using ptr = std::shared_ptr<apply_context>;
+
+    index_t index;
+    entry::list entries;
+};
+
+} // namespace async
+} // namespace entries
+} // namespace replication
+} // namespace details
 } // namespace raft
 } // namespace wstux
 
-#endif /* _LIBS_RAFT_SERVER_H_ */
+#endif /* _LIBS_RAFT_REPLICATION_ASYNC_H_ */
