@@ -64,7 +64,7 @@ struct state final
 
 } // namespace process
 
-struct context final
+struct context final: public std::enable_shared_from_this<context>
 {
     using ptr = std::shared_ptr<context>;
 
