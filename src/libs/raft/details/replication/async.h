@@ -22,51 +22,46 @@
  * THE SOFTWARE.
  */
 
-#ifndef _LIBS_RAFT_CONNECTION_PEER_H_
-#define _LIBS_RAFT_CONNECTION_PEER_H_
+#ifndef _LIBS_RAFT_REPLICATION_ASYNC_H_
+#define _LIBS_RAFT_REPLICATION_ASYNC_H_
 
-#include <cstdint>
 #include <memory>
-#include <shared_mutex>
-#include <vector>
 
 #include "raft/io.h"
+#include "raft/details/context.h"
 
 namespace wstux {
 namespace raft {
 namespace details {
+namespace replication {
+namespace entries {
+namespace async {
 
-struct peer final
+struct append_context final
 {
-    using ptr = peer*;
-    using list = std::vector<peer>;
+    using ptr = std::shared_ptr<append_context>;
 
-    explicit peer(const server_config& cfg)
-        : id(cfg.id)
-        , is_voter(cfg.is_voter)
-        , match_index(0)
-        , recent_recv(false)
-    {}
-
-    void mark_recent_recv() { recent_recv = true; }
-
-    bool reset_recent_recv()
-    {
-        const bool old_recent_recv = recent_recv;
-        recent_recv = false;
-        return old_recent_recv;
-    }
-
-    const server_id_t id;
-    bool is_voter;
-
-    index_t match_index;
-
-    bool recent_recv;
+    term_t term;
+    index_t index;
+    index_t leader_commit;
+    index_t last_stored;
+    index_t last_index;
+    entry::list entries;
 };
 
+struct apply_context final
+{
+    using ptr = std::shared_ptr<apply_context>;
+
+    index_t index;
+    entry::list entries;
+};
+
+} // namespace async
+} // namespace entries
+} // namespace replication
 } // namespace details
 } // namespace raft
 } // namespace wstux
 
-#endif /* _LIBS_RAFT_CONNECTION_PEER_H_ */
+#endif /* _LIBS_RAFT_REPLICATION_ASYNC_H_ */

@@ -7,6 +7,7 @@ LibTarget(raft STATIC
         details/handlers/timeout_handler.cpp
         details/handlers/vote_handler.cpp
         details/log/log.cpp
+        details/replication/entries.cpp
         details/replication/membership.cpp
         details/replication/snapshot.cpp
         details/role/convert.cpp
