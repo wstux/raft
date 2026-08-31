@@ -76,11 +76,20 @@ bool update(context& ctx, const entry::ptr& p_entry)
         return false;
     }
 
-    const cluster_config cluster_cfg = deserialize<cluster_config>(p_entry->buffer);
+    cluster_config cluster_cfg = deserialize<cluster_config>(p_entry->buffer);
+    std::sort(cluster_cfg.servers.begin(), cluster_cfg.servers.end(),
+        [](const server_config& l, const server_config& r) -> bool { return l.id < r.id; });
+
+    std::vector<server_config>::const_iterator it =
+        std::adjacent_find(cluster_cfg.servers.cbegin(), cluster_cfg.servers.cend(),
+            [](const server_config& l, const server_config& r) { return l.id == r.id; });
+    if (it != cluster_cfg.servers.cend()) {
+        return false;
+    }
 
     peers::update(ctx, cluster_cfg);
 
-    std::vector<server_config>::const_iterator it = std::find_if(cluster_cfg.servers.cbegin(), cluster_cfg.servers.cend(),
+    it = std::find_if(cluster_cfg.servers.cbegin(), cluster_cfg.servers.cend(),
         [&ctx](const server_config& cfg) -> bool { return cfg.id == ctx.id; });
     if (it == cluster_cfg.servers.cend()) {
         if (! ctx.role.is_follower()) {

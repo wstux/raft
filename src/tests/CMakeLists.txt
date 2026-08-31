@@ -39,6 +39,24 @@ TestTarget(ut_raft_peers
         googletest
 )
 
+TestTarget(ut_raft_replication_entries
+    SOURCES
+        ut_raft_replication_entries.cpp
+    LIBRARIES
+        raft
+    DEPENDS
+        googletest
+)
+
+TestTarget(ut_raft_replication_membership
+    SOURCES
+        ut_raft_replication_membership.cpp
+    LIBRARIES
+        raft
+    DEPENDS
+        googletest
+)
+
 TestTarget(ut_raft_role
     SOURCES
         ut_raft_role.cpp

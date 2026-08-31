@@ -62,11 +62,13 @@ public:
 
     virtual bool append(const entry::list& entrs) override final
     {
-        index_t i = start_index + entries.size();
-        for (const entry::ptr& e : entrs) {
-            entries.emplace(i++, e);
+        if (is_append) {
+            index_t i = start_index + entries.size();
+            for (const entry::ptr& e : entrs) {
+                entries.emplace(i++, e);
+            }
         }
-        return true;
+        return is_append;
     }
 
     virtual cluster_config bootstrap() const override final { return cluster_cfg; }
@@ -116,11 +118,13 @@ public:
 
     virtual bool truncate(const index_t begin) override final
     {
-        std::map<index_t, entry::ptr>::iterator it = entries.find(begin);
-        if (it != entries.end()) {
-            entries.erase(it, entries.end());
+        if (is_truncate) {
+            std::map<index_t, entry::ptr>::iterator it = entries.find(begin);
+            if (it != entries.end()) {
+                entries.erase(it, entries.end());
+            }
         }
-        return true;
+        return is_truncate;
     }
 
     virtual server_id_t voted_for() const override final { return gk_invalid_id; }
@@ -141,6 +145,8 @@ public:
     snapshot::ptr p_snapshot = nullptr;
 
     bool is_init = true;
+    bool is_append = true;
+    bool is_truncate = true;
     bool is_stop = false;
 };
 
