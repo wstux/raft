@@ -27,10 +27,66 @@
 #include <mutex>
 
 #include "raft/details/context.h"
+#include "raft/details/connection/serialization.h"
+#include "raft/details/replication/snapshot.h"
 
 namespace wstux {
 namespace raft {
 namespace details {
+namespace {
+
+bool load_peers(context& ctx, cluster_config& cluster_cfg)
+{
+    std::sort(cluster_cfg.servers.begin(), cluster_cfg.servers.end(),
+        [](const server_config& l, const server_config& r) -> bool { return l.id < r.id; });
+
+    if (! utils::is_valid_cluster(ctx.id, cluster_cfg)) {
+        return false;
+    }
+
+    for (const server_config& cfg : cluster_cfg.servers) {
+        if (ctx.id != cfg.id) {
+            assert(peers::find(ctx, cfg.id) == nullptr);
+            ctx.peers.emplace_back(cfg);
+        } else {
+            ctx.config = cfg;
+            ctx.role.is_voter = cfg.is_voter;
+        }
+    }
+    return true;
+}
+
+bool restore_entries(context& ctx, index_t snapshot_index, term_t snapshot_term, index_t start_index, const entry::list& entries)
+{
+    index_t conf_index = 0;
+    entry::ptr p_conf_entry;
+    ctx.log.load(snapshot_index, snapshot_term, start_index);
+    ctx.state.last_stored = start_index - 1;
+    for (size_t i = 0; i < entries.size(); ++i) {
+        entry::ptr p_entry = entries[i];
+        ctx.log.append(p_entry);
+        ++ctx.state.last_stored;
+
+        // Only take into account configurations that are newer than the configuration restored from the snapshot.
+        if (p_entry->type == entry_type::change && ctx.state.last_stored > ctx.state.configuration_committed_index) {
+            if (conf_index != 0) {
+                ctx.state.configuration_committed_index = conf_index;
+            }
+            p_conf_entry = p_entry;
+            conf_index = ctx.state.last_stored;
+        }
+    }
+
+    if (p_conf_entry) {
+        cluster_config cluster_cfg = deserialize<cluster_config>(p_conf_entry->buffer);
+        if (! load_peers(ctx, cluster_cfg)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+} // <anonymous> namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 // class context
@@ -128,6 +184,8 @@ bool init(context& ctx)
         return false;
     }
 
+    ctx.is_async_io = cfg.is_async_io;
+
     ctx.role.voted_for = gk_invalid_id;
 
     ctx.schd.init(cfg.scheduler_threads_count);
@@ -139,6 +197,11 @@ bool init(context& ctx)
     // nodes. Therefore, memory is reserved for 32 nodes. If more is needed,
     // just reallocation will occur.
     ctx.peers.reserve(32);
+
+    ctx.state.commit_index = 0;
+    ctx.state.last_applied = 0;
+    ctx.state.last_stored = 0;
+    ctx.state.tasks_in_process = 0;
 
     return true;
 }
@@ -169,26 +232,40 @@ bool load(context& ctx)
 
     ctx.term = p_io->load_term();
     ctx.role.voted_for = p_io->voted_for();
-    cluster_config cluster_cfg = p_io->bootstrap();
-    std::sort(cluster_cfg.servers.begin(), cluster_cfg.servers.end(),
-        [](const server_config& l, const server_config& r) -> bool { return l.id < r.id; });
 
-    if (! is_valid_cluster(ctx.id, cluster_cfg)) {
-        return false;
+    index_t snapshot_index = p_io->load_snapshot_index();
+    term_t snapshot_term = p_io->load_snapshot_term();
+    index_t start_index = p_io->load_start_index();
+
+    snapshot::ptr p_snapshot = p_io->get_snapshot();
+    entry::list entries = p_io->load_entries();
+    if (p_snapshot.get() != nullptr) {
+        if (! replication::snapshot::restore(ctx, *p_snapshot)) {
+            return false;
+        }
+        snapshot_index = p_snapshot->index;
+        snapshot_term = p_snapshot->term;
+    } else if (entries.size() > 0) {
+        assert(start_index == 1);
+        assert(entries[0]->type == entry_type::change);
+
+        ctx.state.commit_index = 1;
+        ctx.state.last_applied = 1;
     }
 
-    for (const server_config& cfg : cluster_cfg.servers) {
-        if (ctx.id != cfg.id) {
-            assert(peers::find(ctx, cfg.id) == nullptr);
-            ctx.peers.emplace_back(cfg);
-        } else {
-            ctx.config = cfg;
-            ctx.role.is_voter = cfg.is_voter;
+    if (! restore_entries(ctx, snapshot_index, snapshot_term, start_index, entries)) {
+        return false;
+    }
+    if (ctx.peers.empty()) {
+        cluster_config cluster_cfg = p_io->bootstrap();
+        if (! load_peers(ctx, cluster_cfg)) {
+            return false;
         }
     }
     return true;
 }
 
+/// \todo Fix reconfigure process.
 void reconfigure(context& ctx, const config& cfg, const cluster_config& cluster_cfg)
 {
     ctx.election_distribution = std::uniform_int_distribution<size_t>(cfg.vote_timeout_min_ms, cfg.vote_timeout_max_ms);

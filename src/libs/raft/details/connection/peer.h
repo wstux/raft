@@ -44,6 +44,7 @@ struct peer final
     explicit peer(const server_config& cfg)
         : id(cfg.id)
         , is_voter(cfg.is_voter)
+        , next_index(1)
         , match_index(0)
         , recent_recv(false)
     {}
@@ -57,9 +58,22 @@ struct peer final
         return old_recent_recv;
     }
 
+    bool update_progress(index_t last_index)
+    {
+        if (next_index < last_index + 1) {
+            next_index = last_index + 1;
+        }
+        if (match_index < last_index) {
+            match_index = last_index;
+            return true;
+        }
+        return false;
+    }
+
     const server_id_t id;
     bool is_voter;
 
+    index_t next_index;
     index_t match_index;
 
     bool recent_recv;

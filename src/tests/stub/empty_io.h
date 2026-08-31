@@ -74,6 +74,8 @@ public:
 
     virtual void deinit() override final {}
 
+    virtual snapshot::ptr get_snapshot() const override final { return p_snapshot; }
+
     virtual bool init(server_id_t id) override final
     {
         if (clients.empty() && ! cluster_cfg.servers.empty()) {
@@ -102,6 +104,13 @@ public:
     virtual term_t load_term() override final { return 0; }
     virtual bool reconfigure(server_id_t) override final { return true; }
     virtual void send(server_id_t id, const buffer_type& msg) override final { clients.at(id)->send(msg); }
+
+    virtual bool set_snapshot(snapshot::ptr p_sh) override final
+    {
+        p_snapshot = p_sh;
+        return true;
+    }
+
     virtual void set_term(term_t) override final {}
     virtual void set_voted_for(server_id_t) override final {}
 
@@ -128,6 +137,8 @@ public:
     term_t snapshot_term = 0;
 
     index_t start_index = 1;
+
+    snapshot::ptr p_snapshot = nullptr;
 
     bool is_init = true;
     bool is_stop = false;

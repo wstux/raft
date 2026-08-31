@@ -30,6 +30,11 @@ namespace details {
 namespace replication {
 namespace snapshot {
 
+bool restore(context& /*ctx*/, raft::snapshot& /*snapshot*/)
+{
+    return false;
+}
+
 bool should_take_snapshot(context& ctx)
 {
     if (ctx.state.snapshot.is_in_process) {

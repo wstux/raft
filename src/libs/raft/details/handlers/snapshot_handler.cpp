@@ -22,28 +22,20 @@
  * THE SOFTWARE.
  */
 
-#ifndef _LIBS_RAFT_REPLICATION_SNAPSHOT_H_
-#define _LIBS_RAFT_REPLICATION_SNAPSHOT_H_
-
-#include "raft/io.h"
-#include "raft/details/context.h"
+#include "raft/details/handlers/snapshot_handler.h"
 
 namespace wstux {
 namespace raft {
 namespace details {
-namespace replication {
 namespace snapshot {
 
-bool restore(context& ctx, raft::snapshot& snapshot);
+void handle_request(context& /*ctx*/, term_t /*term*/, server_id_t /*src_id*/, const snapshot_message& /*msg*/)
+{}
 
-bool should_take_snapshot(context& ctx);
-
-bool take_snapshot(context& ctx);
+void request(context& /*ctx*/, const peer& /*p*/)
+{}
 
 } // namespace snapshot
-} // namespace replication
 } // namespace details
 } // namespace raft
 } // namespace wstux
-
-#endif /* _LIBS_RAFT_REPLICATION_SNAPSHOT_H_ */
