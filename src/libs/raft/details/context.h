@@ -126,9 +126,13 @@ namespace peers {
  */
 bool check_contact_quorum(context& ctx);
 
+bool emplace(context& ctx, const server_config& cfg);
+
 peer::ptr find(context& ctx, server_id_t id);
 
 size_t quorum_for_election(context& ctx);
+
+void remove(context& ctx, server_id_t id);
 
 void update(context& ctx, const cluster_config& cluster_cfg);
 

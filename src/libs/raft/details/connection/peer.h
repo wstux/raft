@@ -49,6 +49,18 @@ struct peer final
         , recent_recv(false)
     {}
 
+    peer(const peer&) = default;
+    peer(peer&&) noexcept = default;
+
+    peer& operator=(peer&& other) noexcept
+    {
+        if (this != &other) {
+            this->~peer();
+            ::new (static_cast<void*>(this)) peer(std::move(other));
+        }
+        return *this;
+    }
+
     void mark_recent_recv() { recent_recv = true; }
 
     bool reset_recent_recv()

@@ -131,6 +131,12 @@ bool check_contact_quorum(context& ctx)
     return contacts > quorum_for_election_size;
 }
 
+bool emplace(context& ctx, const server_config& cfg)
+{
+    ctx.peers.emplace_back(cfg);
+    return true;
+}
+
 peer::ptr find(context& ctx, server_id_t id)
 {
     peer::list::iterator it = std::find_if(ctx.peers.begin(), ctx.peers.end(), [id](const peer& p) { return p.id == id; });
@@ -138,6 +144,11 @@ peer::ptr find(context& ctx, server_id_t id)
         return &(*it);
     }
     return peer::ptr();
+}
+
+void remove(context& ctx, server_id_t id)
+{
+    ctx.peers.erase(std::remove_if(ctx.peers.begin(), ctx.peers.end(), [id](const peer& p) { return p.id == id; }), ctx.peers.end());
 }
 
 size_t quorum_for_election(context& ctx)
