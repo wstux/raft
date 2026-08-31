@@ -45,12 +45,22 @@ template<message_type TMsgType> struct message_filler;
 
 template<> struct message_filler<message_type::append_entries_request>
 {
-    static void fill(message& /*msg*/) {}
+    static void fill(message& msg, index_t log_index, term_t log_term, index_t commit, entry::list&& entries)
+    {
+        msg.append_entries_req.prev_log_index = log_index;
+        msg.append_entries_req.prev_log_term = log_term;
+        msg.append_entries_req.leader_commit = commit;
+        msg.append_entries_req.entries.swap(entries);
+    }
 };
 
 template<> struct message_filler<message_type::append_entries_response>
 {
-    static void fill(message& msg, bool accept) { msg.append_entries_resp.accept = accept; }
+    static void fill(message& msg, bool accept, index_t last_log_index)
+    {
+        msg.append_entries_resp.accept = accept;
+        msg.append_entries_resp.last_log_index = last_log_index;
+    }
 };
 
 template<> struct message_filler<message_type::vote_request>
@@ -85,9 +95,14 @@ template<message_type TMsgType, typename... TArgs>
 inline void send(context& ctx, server_id_t dst_id, TArgs&&... args)
 {
     assert(ctx.id != dst_id);
-    ctx.schd.execute_async([p_io = ctx.p_io, dst_id, args...]() -> void {
-        send<TMsgType>(std::move(p_io), dst_id, std::move(args)...);
-    });
+    const peer::ptr p_peer = peers::find(ctx, dst_id);
+    if (p_peer != nullptr) {
+        ctx.schd.execute_async([p_io = ctx.p_io, dst_id, args...]() mutable -> void {
+            send<TMsgType>(std::move(p_io), dst_id, std::move(args)...);
+        });
+    } else {
+        RAFT_LOG_WARN(ctx, "Server %llu does not exists", dst_id);
+    }
 }
 
 } // namespace utils

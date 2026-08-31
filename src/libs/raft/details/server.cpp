@@ -30,6 +30,7 @@
 #include "raft/details/logger.h"
 #include "raft/details/connection/messages.h"
 #include "raft/details/connection/serialization.h"
+#include "raft/details/handlers/append_entries_handler.h"
 #include "raft/details/handlers/heartbeat_handler.h"
 #include "raft/details/handlers/timeout_handler.h"
 #include "raft/details/handlers/vote_handler.h"
@@ -42,12 +43,14 @@ namespace {
 
 void handle_message(details::context& ctx, const details::message& msg)
 {
+    details::heartbeat::handle_request(ctx, msg.src_id);
+
     switch(msg.type) {
     case details::message_type::append_entries_request:
-        details::heartbeat::handle_request(ctx, msg.term, msg.src_id, msg.append_entries_req);
+        details::append_entries::handle_request(ctx, msg.term, msg.src_id, msg.append_entries_req);
         break;
     case details::message_type::append_entries_response:
-        details::heartbeat::handle_response(ctx, msg.term, msg.src_id, msg.append_entries_resp);
+        details::append_entries::handle_response(ctx, msg.term, msg.src_id, msg.append_entries_resp);
         break;
     case details::message_type::vote_request:
         details::vote::handle_request(ctx, msg.term, msg.src_id, msg.vote_req);

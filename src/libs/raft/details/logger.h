@@ -43,6 +43,7 @@ struct logger
     bool cal_log(logging_handler::severity_level lvl) const { return p_hdlr && p_hdlr->can_log_fn(p_hdlr->p_this, lvl); }
 
     bool can_root_log(logging_handler::severity_level lvl) const { return cal_log(lvl); }
+    bool can_append_entries_log(logging_handler::severity_level lvl) const { return is_append_entries_channel_enabled && cal_log(lvl); }
     bool can_heartbeat_log(logging_handler::severity_level lvl) const { return is_heartbeat_channel_enabled && cal_log(lvl); }
     bool can_timeout_log(logging_handler::severity_level lvl) const { return is_timeout_channel_enabled && cal_log(lvl); }
     bool can_vote_log(logging_handler::severity_level lvl) const { return is_vote_channel_enabled && cal_log(lvl); }
@@ -59,6 +60,7 @@ struct logger
         p_hdlr->log_fn(p_hdlr->p_this, lvl, buffer);
     }
 
+    bool is_append_entries_channel_enabled = true;
     bool is_heartbeat_channel_enabled = true;
     bool is_timeout_channel_enabled = true;
     bool is_vote_channel_enabled = true;
@@ -121,6 +123,16 @@ struct logger
     _RAFT_CH_LOG(ctx.raft_logger, channel, channel_name, _RAFT_LOG_DEBUG_LVL,  fmt, ##__VA_ARGS__)
 #define RAFT_LOG_CH_TRACE(ctx,  channel, channel_name, fmt, ...)            \
     _RAFT_CH_LOG(ctx.raft_logger, channel, channel_name, _RAFT_LOG_TRACE_LVL,  fmt, ##__VA_ARGS__)
+
+#define RAFT_AE_LOG_EMERG(ctx,  fmt, ...)  RAFT_LOG_CH_EMERG(ctx,  append_entries, "AppendEntries", fmt, ##__VA_ARGS__)
+#define RAFT_AE_LOG_FATAL(ctx,  fmt, ...)  RAFT_LOG_CH_FATAL(ctx,  append_entries, "AppendEntries", fmt, ##__VA_ARGS__)
+#define RAFT_AE_LOG_CRIT(ctx,   fmt, ...)  RAFT_LOG_CH_CRIT(ctx,   append_entries, "AppendEntries", fmt, ##__VA_ARGS__)
+#define RAFT_AE_LOG_ERROR(ctx,  fmt, ...)  RAFT_LOG_CH_ERROR(ctx,  append_entries, "AppendEntries", fmt, ##__VA_ARGS__)
+#define RAFT_AE_LOG_WARN(ctx,   fmt, ...)  RAFT_LOG_CH_WARN(ctx,   append_entries, "AppendEntries", fmt, ##__VA_ARGS__)
+#define RAFT_AE_LOG_NOTICE(ctx, fmt, ...)  RAFT_LOG_CH_NOTICE(ctx, append_entries, "AppendEntries", fmt, ##__VA_ARGS__)
+#define RAFT_AE_LOG_INFO(ctx,   fmt, ...)  RAFT_LOG_CH_INFO(ctx,   append_entries, "AppendEntries", fmt, ##__VA_ARGS__)
+#define RAFT_AE_LOG_DEBUG(ctx,  fmt, ...)  RAFT_LOG_CH_DEBUG(ctx,  append_entries, "AppendEntries", fmt, ##__VA_ARGS__)
+#define RAFT_AE_LOG_TRACE(ctx,  fmt, ...)  RAFT_LOG_CH_TRACE(ctx,  append_entries, "AppendEntries", fmt, ##__VA_ARGS__)
 
 #define RAFT_HB_LOG_EMERG(ctx,  fmt, ...)  RAFT_LOG_CH_EMERG(ctx,  heartbeat, "Heartbeat", fmt, ##__VA_ARGS__)
 #define RAFT_HB_LOG_FATAL(ctx,  fmt, ...)  RAFT_LOG_CH_FATAL(ctx,  heartbeat, "Heartbeat", fmt, ##__VA_ARGS__)

@@ -33,9 +33,19 @@ namespace raft {
 namespace details {
 namespace heartbeat {
 
-void handle_request(context& ctx, term_t term, server_id_t src_id, const append_entries_message& msg);
-
-void handle_response(context& ctx, term_t term, server_id_t src_id, const append_entries_response_message& msg);
+/**
+ *  \brief  Processes an incoming health check response from a follower.
+ *  \param  ctx - current server state context.
+ *  \param  src_id - id of the node that sent the response.
+ *
+ *  \details    Raft Paper, Section 5.2 "Leader election": "Leaders send periodic
+ *      heartbeats (AppendEntries RPCs that carry no log entries) to all followers
+ *      in order to maintain their authority."
+ *
+ *      This method updates the last activity timestamp for the node, confirming
+ *      that the follower is alive and reachable.
+ */
+void handle_request(context& ctx, server_id_t src_id);
 
 /**
  *  \brief  Initiates health checks (heartbeats) to all followers.
