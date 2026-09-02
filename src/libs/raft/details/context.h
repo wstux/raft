@@ -144,7 +144,7 @@ namespace utils {
 
 bool init(context& ctx);
 
-bool is_valid_cluster(const server_id_t id, const cluster_config& cluster_cfg);
+bool is_valid_cluster(const server_id_t id, const cluster_config& cluster_cfg, bool check_self = true);
 
 bool load(context& ctx);
 

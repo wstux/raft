@@ -59,14 +59,18 @@ public:
 
     virtual void TearDown() override {}
 
-    static raft::entry::list make_entries(raft::term_t eterm, raft::entry_type etype)
+    static raft::entry::list make_entries(raft::term_t eterm, raft::entry_type etype, const size_t cluster_size = 1)
     {
         raft::entry::list entries;
         entries.push_back(std::make_shared<raft::entry>());
         entries.back()->term = eterm;
         entries.back()->type = etype;
         if (etype == raft::entry_type::change) {
-            entries.back()->buffer = details::serialize(raft::cluster_config());
+            raft::cluster_config cfg;
+            for (size_t i = 0; i < cluster_size; ++i) {
+                cfg.servers.emplace_back(i +1, true);
+            }
+            entries.back()->buffer = details::serialize(cfg);
         }
         return entries;
     }
@@ -106,6 +110,17 @@ TEST_F(raft_entries, append)
     ctx.term = 1;
 
     raft::entry::list entries = raft_entries::make_entries(1, raft::entry_type::change);
+    ASSERT_TRUE(entries_append(ctx, 1, 1, 0, 1, entries));
+}
+
+TEST_F(raft_entries, append_invalid_cconfiguration)
+{
+    details::context& ctx = *m_p_ctx;
+    ASSERT_TRUE(ctx.role.is_follower());
+
+    ctx.term = 1;
+
+    raft::entry::list entries = raft_entries::make_entries(1, raft::entry_type::change, 0);
     ASSERT_TRUE(entries_append(ctx, 1, 1, 0, 1, entries));
 }
 

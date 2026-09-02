@@ -220,7 +220,7 @@ bool init(context& ctx)
     return true;
 }
 
-bool is_valid_cluster(const server_id_t id, const cluster_config& cluster_cfg)
+bool is_valid_cluster(const server_id_t id, const cluster_config& cluster_cfg, bool check_self)
 {
     assert(std::is_sorted(cluster_cfg.servers.cbegin(), cluster_cfg.servers.cend(),
         [](const server_config& l, const server_config& r) -> bool { return l.id < r.id; }));
@@ -231,9 +231,12 @@ bool is_valid_cluster(const server_id_t id, const cluster_config& cluster_cfg)
     if (it != cluster_cfg.servers.cend()) {
         return false;
     }
-    it = std::find_if(cluster_cfg.servers.cbegin(), cluster_cfg.servers.cend(),
-        [id](const server_config& cfg) -> bool { return cfg.id == id; });
-    return it != cluster_cfg.servers.cend();
+    if (check_self) {
+        it = std::find_if(cluster_cfg.servers.cbegin(), cluster_cfg.servers.cend(),
+            [id](const server_config& cfg) -> bool { return cfg.id == id; });
+        return it != cluster_cfg.servers.cend();
+    }
+    return true;
 }
 
 bool load(context& ctx)
