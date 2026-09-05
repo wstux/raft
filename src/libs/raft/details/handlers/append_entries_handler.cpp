@@ -39,77 +39,22 @@ namespace details {
 namespace append_entries {
 namespace {
 
-void handle_request_strand(context& ctx, server_id_t src_id, bool accept, replication::entries::async::append_context::ptr p_async_ctx)
+void handle_request_async(context& ctx, server_id_t src_id, bool accept, replication::entries::async::append_context::ptr p_async_ctx)
 {
     assert(ctx.state.tasks_in_process > 0);
 
     --ctx.state.tasks_in_process;
 
+    const term_t term = p_async_ctx->term;
+    const index_t index = p_async_ctx->index;
+    const index_t leader_commit = p_async_ctx->leader_commit;
+
     // Apply changes to the logical state of entry replication
-    accept = replication::entries::append_callback(ctx, accept, p_async_ctx->term, p_async_ctx->index,
-                                                   p_async_ctx->leader_commit, p_async_ctx->entries);
+    accept = replication::entries::append_callback(ctx, accept, term, index, leader_commit, p_async_ctx->entries);
+
     // Calculate the index of the last successfully stored entry
     const index_t last_log_index = accept ? p_async_ctx->last_stored : p_async_ctx->last_index;
     return utils::send<message_type::append_entries_response>(ctx, src_id, p_async_ctx->term, ctx.id, accept, last_log_index);
-}
-
-/**
- *  \brief  Asynchronous handler for log disk-write completion (follower side).
- *  \param  ctx - current server state context.
- *  \param  src_id - identifier of the leader that sent the request.
- *  \param  p_async_ctx - asynchronous operation context.
- *
- *  \details    Called from the thread pool after the disk subsystem completes
- *      the write operation. Executes the commit callback, calculates the actual
- *      index, and sends a response to the leader.
- */
-void handle_request_async(context::ptr p_ctx, server_id_t src_id, replication::entries::async::append_context::ptr p_async_ctx)
-{
-    context& ctx = *p_ctx;
-
-    RAFT_AE_LOG_TRACE(ctx, "Server %llu(%s) is saving  %zu entries to io storage asynchronously.",
-        ctx.id, ctx.role.str(), p_async_ctx->entries.size());
-    // Perform blocking disk write outside the critical section (mutex)
-    bool accept = ctx.p_io->append(p_async_ctx->entries);
-
-    ctx.schd.execute_strand([&ctx, src_id, accept, p_async_ctx] { handle_request_strand(ctx, src_id, accept, p_async_ctx); });
-}
-
-/**
- *  \brief  Constructs and sends an AppendEntries network packet to a specific node.
- *  \param  ctx - current server state context.
- *  \param  lock - reference to the unique_lock holding the handler_mutex.
- *  \param  p_peer - the target node.
- *  \param  prev_index - index of log entry immediately preceding new ones (5.3).
- *  \param  prev_term - term of prev_index entry (5.3).
- */
-void send_request(context& ctx, const peer& p, const index_t prev_index, const term_t prev_term)
-{
-    const index_t next_index = prev_index + 1;
-    // Extract entries from the local log starting from next_index
-    entry::list entries = ctx.log.acquire(next_index);
-
-    RAFT_AE_LOG_TRACE(ctx, "Sending request to server %llu to append %zu entries with index %u. Server %llu(%s), current term %u",
-        p.id, entries.size(), next_index, ctx.id, ctx.role.str(), ctx.term);
-    return utils::send<message_type::append_entries_request>(ctx, p.id, ctx.term, ctx.id,
-        prev_index, prev_term, ctx.state.commit_index, std::move(entries));
-}
-
-/**
- *  \brief  Initiates a snapshot transfer to a lagging node.
- *  \param  ctx - current server state context.
- *  \param  lock - reference to the unique_lock holding the handler_mutex.
- *  \param  p_peer - the target node.
- *
- *  \details    Called if the `next_index` required for sending has already been
- *      deleted (compacted) from the leader's log.
- */
-void send_snapshot(context& ctx, const peer& p)
-{
-    RAFT_AE_LOG_TRACE(ctx, "Sending snapshot request to server %u. Server %llu(%s), current term %u",
-        p.id, ctx.id, ctx.role.str(), ctx.term);
-
-    snapshot::request(ctx, p);
 }
 
 } // <anonymous> namespace
@@ -154,11 +99,24 @@ void handle_request(context& ctx, term_t term, server_id_t src_id, const append_
     const bool accept = replication::entries::append(ctx, term, msg.leader_commit, msg.prev_log_index, msg.prev_log_term, msg.entries, p_async_ctx);
     // Support for asynchronous I/O
     if (accept && ctx.is_async_io) {
-        if (p_async_ctx) {
-            ctx.schd.execute_async([p_ctx = ctx.shared_from_this(), src_id, p_async_ctx] { handle_request_async(p_ctx, src_id, p_async_ctx); });
-        }
+        assert(p_async_ctx);
+
+        scheduler::handler_type handler_fn = [p_ctx = ctx.shared_from_this(), src_id, p_async_ctx = std::move(p_async_ctx)] () -> void {
+            RAFT_AE_LOG_TRACE((*p_ctx), "Server %llu(%s) is saving %zu entries to io storage asynchronously.",
+                p_ctx->id, p_ctx->role.str(), p_async_ctx->entries.size());
+            // Perform blocking disk write outside the critical section (mutex)
+            const bool accept = p_ctx->p_io->append(p_async_ctx->entries);
+            p_ctx->schd.execute_strand(
+                [p_ctx = std::move(p_ctx), src_id, accept, p_async_ctx = std::move(p_async_ctx)] {
+                    handle_request_async(*p_ctx, src_id, accept, p_async_ctx);
+                }
+            );
+        };
+        ++ctx.state.tasks_in_process;
+        ctx.schd.execute_async(std::move(handler_fn));
         return;
     }
+
     const index_t last_log_index = accept ? ctx.state.last_stored : ctx.log.last_index();
     return utils::send<message_type::append_entries_response>(ctx, src_id, ctx.term, ctx.id, accept, last_log_index);
 }
@@ -260,7 +218,10 @@ void request(context& ctx, const peer& p)
             // is compacted, we must send a Snapshot RPC
             assert(ctx.log.last_index() > 0);
             if (p.recent_recv) {
-                return send_snapshot(ctx, p);
+                RAFT_AE_LOG_TRACE(ctx, "Sending snapshot request to server %u. Server %llu(%s), current term %u",
+                    p.id, ctx.id, ctx.role.str(), ctx.term);
+
+                return snapshot::request(ctx, p);
             }
         } else {
             // Base case of an empty cluster startup
@@ -276,13 +237,22 @@ void request(context& ctx, const peer& p)
         if (prev_term == 0) {
             assert(prev_index < snapshot_index);
             if (p.recent_recv) {
+                RAFT_AE_LOG_TRACE(ctx, "Sending snapshot request to server %u. Server %llu(%s), current term %u",
+                    p.id, ctx.id, ctx.role.str(), ctx.term);
+
                 // The leader is forced to send an InstallSnapshot RPC instead of AppendEntries
-                return send_snapshot(ctx, p);
+                return snapshot::request(ctx, p);
             }
         }
     }
 
-    send_request(ctx, p, prev_index, prev_term);
+    // Extract entries from the local log starting from prev_index + 1
+    entry::list entries = ctx.log.acquire(prev_index + 1);
+
+    RAFT_AE_LOG_TRACE(ctx, "Sending request to server %llu to append %zu entries with index %u. Server %llu(%s), current term %u",
+        p.id, entries.size(), (prev_index + 1), ctx.id, ctx.role.str(), ctx.term);
+    return utils::send<message_type::append_entries_request>(ctx, p.id, ctx.term, ctx.id,
+        prev_index, prev_term, ctx.state.commit_index, std::move(entries));
 }
 
 } // namespace append_entries
