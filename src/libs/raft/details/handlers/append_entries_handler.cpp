@@ -98,9 +98,7 @@ void handle_request(context& ctx, term_t term, server_id_t src_id, const append_
     // contain entry at prevLogIndex matching prevLogTerm
     const bool accept = replication::entries::append(ctx, term, msg.leader_commit, msg.prev_log_index, msg.prev_log_term, msg.entries, p_async_ctx);
     // Support for asynchronous I/O
-    if (accept && ctx.is_async_io) {
-        assert(p_async_ctx);
-
+    if (accept && ctx.is_async_io && p_async_ctx) {
         scheduler::handler_type handler_fn = [&ctx, src_id, p_async_ctx = std::move(p_async_ctx)] () -> void {
             RAFT_AE_LOG_TRACE(ctx, "Server %llu(%s) is saving %zu entries to io storage asynchronously.",
                 ctx.id, ctx.role.str(), p_async_ctx->entries.size());
