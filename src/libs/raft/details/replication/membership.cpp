@@ -40,12 +40,13 @@ namespace {
 
 bool change_configuration(context& ctx, cluster_config& cluster_cfg)
 {
+    const index_t index = ctx.log.last_index() + 1;
+
     entries::async::apply_context::ptr p_async_ctx;
-    const bool accept = entries::apply_configuration(ctx, cluster_cfg, p_async_ctx);
+    const bool accept = entries::apply_configuration(ctx, std::move(cluster_cfg), p_async_ctx);
     if (accept && ctx.is_async_io) {
         assert(p_async_ctx);
 
-        const index_t index = p_async_ctx->index;
         scheduler::handler_type handler_fn = [&ctx, p_async_ctx = std::move(p_async_ctx)] () -> void {
             RAFT_LOG_TRACE(ctx, "Server %llu(%s) is changing new peer asynchronously.", ctx.id, ctx.role.str());
             // Perform blocking disk write outside the critical section (mutex)
@@ -59,7 +60,9 @@ bool change_configuration(context& ctx, cluster_config& cluster_cfg)
 
         ++ctx.state.tasks_in_process;
         ctx.schd.execute_async(std::move(handler_fn));
+    }
 
+    if (accept) {
         append_entries::request(ctx);
         ctx.state.configuration_uncommitted_index = index;
     }
