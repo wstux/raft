@@ -162,10 +162,69 @@
           };
 
           // Prepare data points for charts
-          return Object.keys(data.entries).map(name => ({
-            name,
-            dataSet: collectBenchesPerTestCase(data.entries[name]),
-          }));
+          const originalMap = collectBenchesPerTestCase(data.entries["Benchmark"]);
+          const suitesMap = new Map();
+
+          for (const [fullName, history] of originalMap.entries()) {
+            let plotName = fullName;
+            let lineName = "Base";
+
+            if (fullName.includes("::")) {
+              const parts = fullName.split("::");
+              plotName = parts[0];
+              lineName = parts[1];
+            }
+
+            history.forEach(h => { h.bench.name = lineName; });
+
+            if (!suitesMap.has(plotName)) {
+              suitesMap.set(plotName, new Map());
+            }
+            suitesMap.get(plotName).set(lineName, history);
+          }
+
+          return Array.from(suitesMap.keys()).map(pName => {
+            const linesMap = suitesMap.get(pName);
+            const mergedMap = new Map();
+
+            if (linesMap.size > 0) {
+              const firstLineHistory = linesMap.values().next().value;
+
+              const lineColors = ['#0969da', '#2da44e', '#cf222e', '#bf4b00', '#8250df', '#24292f'];
+              let colorIdx = 0;
+              // Convert Map to datasets array
+              const customDatasets = Array.from(linesMap.entries()).map(([lineName, history]) => {
+                const color = lineColors[colorIdx++ % lineColors.length];
+                return {
+                  label: lineName,
+                  data: history.map(h => h.bench.value),
+                  borderColor: color,
+                  backgroundColor: color + '15',
+                  borderWidth: 2,
+                  _history: history
+                };
+              });
+
+              // Create one virtual multilinear dataset to plot
+              const multiLineData = {
+                commit: firstLineHistory[0].commit,
+                date: firstLineHistory[0].date,
+                tool: firstLineHistory[0].tool,
+                bench: { unit: firstLineHistory[0].bench.unit, value: 0 },
+                isMulti: true,
+                customLabels: firstLineHistory.map(d => d.commit.id.slice(0, 7)),
+                customDatasets: customDatasets
+              };
+
+              // Put object to mergedMap to renderBenchSet gens only 1 canvas
+              mergedMap.set(pName, [multiLineData]);
+            }
+
+            return {
+              name: pName,
+              dataSet: mergedMap
+            };
+          });
         }
 
         function renderAllChars(dataSets) {
@@ -176,14 +235,15 @@
             parent.appendChild(canvas);
 
             const color = toolColors[dataset.length > 0 ? dataset[0].tool : '_'];
+            const isMulti = dataset.length > 0 && dataset[0].isMulti;
             const data = {
-              labels: dataset.map(d => d.commit.id.slice(0, 7)),
-              datasets: [
+              labels: isMulti ? dataset[0].customLabels : dataset.map(d => d.commit.id.slice(0, 7)),
+              datasets: isMulti ? dataset[0].customDatasets : [
                 {
                   label: name,
                   data: dataset.map(d => d.bench.value),
                   borderColor: color,
-                  backgroundColor: color + '60', // Add alpha for #rrggbbaa
+                  backgroundColor: color + '60',
                 }
               ],
             };
@@ -212,13 +272,21 @@
               tooltips: {
                 callbacks: {
                   afterTitle: items => {
-                    const {index} = items[0];
-                    const data = dataset[index];
-                    return '\n' + data.commit.message + '\n\n' + data.commit.timestamp + ' committed by @' + data.commit.committer.username + '\n';
+                    const item = items[0];
+                    const activeDataset = data.datasets[item.datasetIndex];
+                    const pointData = isMulti ? activeDataset._history[item.index] : dataset[item.index];
+
+                    if (!pointData) return '';
+                    const username = pointData.commit.committer ? pointData.commit.committer.username : 'author';
+                    return '\n' + pointData.commit.message + '\n\n' + pointData.commit.timestamp + ' committed by @' + username + '\n';
                   },
                   label: item => {
-                    let label = item.value;
-                    const { range, unit } = dataset[item.index].bench;
+                    const activeDataset = data.datasets[item.datasetIndex];
+                    const pointData = isMulti ? activeDataset._history[item.index] : dataset[item.index];
+
+                    if (!pointData) return item.value;
+                    let label = isMulti ? ` ${activeDataset.label}: ${item.value}` : item.value;
+                    const { range, unit } = pointData.bench;
                     label += ' ' + unit;
                     if (range) {
                       label += ' (' + range + ')';
@@ -226,7 +294,10 @@
                     return label;
                   },
                   afterLabel: item => {
-                    const { extra } = dataset[item.index].bench;
+                    const activeDataset = data.datasets[item.datasetIndex];
+                    const pointData = isMulti ? activeDataset._history[item.index] : dataset[item.index];
+                    if (!pointData) return '';
+                    const { extra } = pointData.bench;
                     return extra ? '\n' + extra : '';
                   }
                 }
@@ -235,10 +306,13 @@
                 if (activeElems.length === 0) {
                   return;
                 }
-                // XXX: Undocumented. How can we know the index?
-                const index = activeElems[0]._index;
-                const url = dataset[index].commit.url;
-                window.open(url, '_blank');
+                const active = activeElems[0];
+                const activeDataset = data.datasets[active._datasetIndex];
+                const pointData = isMulti ? activeDataset._history[active._index] : dataset[active._index];
+
+                if (pointData && pointData.commit.url) {
+                  window.open(pointData.commit.url, '_blank');
+                }
               },
             };
 
