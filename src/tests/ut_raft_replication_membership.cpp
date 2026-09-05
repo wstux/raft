@@ -74,6 +74,9 @@ TEST_F(raft_membership, append)
 {
     details::context& ctx = *m_p_ctx;
     ASSERT_TRUE(ctx.role.is_follower());
+    details::role::become_candidate(ctx);
+    details::role::become_leader(ctx);
+    ASSERT_TRUE(ctx.role.is_leader());
 
     ASSERT_TRUE(ctx.peers.size() == 2);
     ASSERT_TRUE(details::replication::membership::append(ctx, raft::server_config({5, true})));
@@ -116,6 +119,10 @@ TEST_F(raft_membership, remove)
 {
     details::context& ctx = *m_p_ctx;
     ASSERT_TRUE(ctx.role.is_follower());
+    ASSERT_TRUE(ctx.role.is_follower());
+    details::role::become_candidate(ctx);
+    details::role::become_leader(ctx);
+    ASSERT_TRUE(ctx.role.is_leader());
 
     ASSERT_TRUE(ctx.peers.size() == 2);
     ASSERT_TRUE(details::replication::membership::remove(ctx, 2));

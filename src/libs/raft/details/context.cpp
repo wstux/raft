@@ -132,12 +132,6 @@ bool check_contact_quorum(context& ctx)
     return contacts > quorum_for_election_size;
 }
 
-bool emplace(context& ctx, const server_config& cfg)
-{
-    ctx.peers.emplace_back(cfg);
-    return true;
-}
-
 peer::ptr find(context& ctx, server_id_t id)
 {
     peer::list::iterator it = std::find_if(ctx.peers.begin(), ctx.peers.end(), [id](const peer& p) { return p.id == id; });
@@ -145,11 +139,6 @@ peer::ptr find(context& ctx, server_id_t id)
         return &(*it);
     }
     return peer::ptr();
-}
-
-void remove(context& ctx, server_id_t id)
-{
-    ctx.peers.erase(std::remove_if(ctx.peers.begin(), ctx.peers.end(), [id](const peer& p) { return p.id == id; }), ctx.peers.end());
 }
 
 size_t quorum_for_election(context& ctx)
@@ -237,6 +226,16 @@ bool is_valid_cluster(const server_id_t id, const cluster_config& cluster_cfg, b
         return it != cluster_cfg.servers.cend();
     }
     return true;
+}
+
+cluster_config make_cluster_config(const context& ctx)
+{
+    cluster_config cluster_cfg;
+    cluster_cfg.servers.emplace_back(ctx.id, ctx.role.is_voter);
+    for (const peer& p : ctx.peers) {
+        cluster_cfg.servers.emplace_back(p.id, p.is_voter);
+    }
+    return cluster_cfg;
 }
 
 bool load(context& ctx)

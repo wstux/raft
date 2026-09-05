@@ -22,9 +22,12 @@
  * THE SOFTWARE.
  */
 
+#include <cassert>
 #include <algorithm>
 
 #include "raft/details/connection/serialization.h"
+#include "raft/details/handlers/append_entries_handler.h"
+#include "raft/details/replication/entries.h"
 #include "raft/details/replication/membership.h"
 #include "raft/details/role/convert.h"
 
@@ -33,29 +36,85 @@ namespace raft {
 namespace details {
 namespace replication {
 namespace membership {
+namespace {
+
+bool change_configuration(context& ctx, cluster_config& cluster_cfg)
+{
+    entries::async::apply_context::ptr p_async_ctx;
+    const bool accept = entries::apply_configuration(ctx, cluster_cfg, p_async_ctx);
+    if (ctx.is_async_io) {
+        assert(p_async_ctx);
+        if (! accept) {
+            return false;
+        }
+
+        const index_t index = p_async_ctx->index;
+        scheduler::handler_type handler_fn = [p_ctx = ctx.shared_from_this(), p_async_ctx = std::move(p_async_ctx)] () -> void {
+            RAFT_LOG_TRACE((*p_ctx), "Server %llu(%s) is changing new peer asynchronously.", p_ctx->id, p_ctx->role.str());
+            // Perform blocking disk write outside the critical section (mutex)
+            const bool accept = p_ctx->p_io->append(p_async_ctx->entries);
+            p_ctx->schd.execute_strand(
+                [p_ctx = std::move(p_ctx), accept, p_async_ctx = std::move(p_async_ctx)] {
+                    assert(p_ctx->state.tasks_in_process > 0);
+                    --(p_ctx->state.tasks_in_process);
+                    entries::apply_callback(*p_ctx, accept, p_async_ctx->index, p_async_ctx->entries);
+                }
+            );
+        };
+
+        ++ctx.state.tasks_in_process;
+        ctx.schd.execute_async(std::move(handler_fn));
+
+        append_entries::request(ctx);
+        ctx.state.configuration_uncommitted_index = index;
+    }
+
+    return accept;
+}
+
+} // <anonymous> namespace
 
 bool append(context& ctx, const server_config& cfg)
 {
+    if (! ctx.role.is_leader()) {
+        RAFT_LOG_TRACE(ctx, "Adding new member to cluster. Server %llu(%s) is not leader.", ctx.id, ctx.role.str());
+        return false;
+    }
+
+    if (ctx.state.configuration_uncommitted_index != 0) {
+        RAFT_LOG_TRACE(ctx, "Adding new member to cluster. Server %llu(%s) is busy.", ctx.id, ctx.role.str());
+        return false;
+    }
+
     if (peers::find(ctx, cfg.id) != nullptr) {
         RAFT_LOG_TRACE(ctx, "Adding new member to cluster. Server %llu already exists in cluster with leader %llu(%s).",
             cfg.id, ctx.id, ctx.role.str());
         return false;
     }
 
-    //cluster_config cluster_cfg = ctx.make_config();
-    //cluster_cfg.servers.push_back(cfg);
-
-    //if (! entries::apply_configuration(ctx, std::move(cluster_cfg))) {
-    //    return false;
-    //}
+    //assert(ctx.state.configuration_committed_index > 0);
+    assert(ctx.log.last_index() >= ctx.state.configuration_committed_index);
 
     RAFT_LOG_TRACE(ctx, "Server %llu(%s) is adding new peer with id %llu.", ctx.id, ctx.role.str(), cfg.id);
-    peers::emplace(ctx, cfg);
-    return true;
+    ctx.peers.emplace_back(cfg);
+
+    cluster_config cluster_cfg = utils::make_cluster_config(ctx);
+    assert(cluster_cfg.servers.size() == (ctx.peers.size() + 1));
+    return change_configuration(ctx, cluster_cfg);
 }
 
 bool remove(context& ctx, const server_id_t id)
 {
+    if (! ctx.role.is_leader()) {
+        RAFT_LOG_TRACE(ctx, "Removing member from cluster. Server %llu(%s) is not leader.", ctx.id, ctx.role.str());
+        return false;
+    }
+
+    if (ctx.state.configuration_uncommitted_index != 0) {
+        RAFT_LOG_TRACE(ctx, "Removing member from cluster. Server %llu(%s) is busy.", ctx.id, ctx.role.str());
+        return false;
+    }
+
     if (! peers::find(ctx, id)) {
         RAFT_LOG_TRACE(ctx, "Removing member from cluster. Server %llu already is not exist in cluster with leader %llu(%s).",
             id, ctx.id, ctx.role.str());
@@ -63,11 +122,11 @@ bool remove(context& ctx, const server_id_t id)
     }
 
     RAFT_LOG_TRACE(ctx, "Server %llu(%s) is removing existing peer with id %llu.", ctx.id, ctx.role.str(), id);
-    peers::remove(ctx, id);
+    ctx.peers.erase(std::remove_if(ctx.peers.begin(), ctx.peers.end(), [id](const peer& p) { return p.id == id; }), ctx.peers.end());
 
-    //cluster_config cluster_cfg = ctx.make_config();
-    //return entries::apply_configuration(ctx, std::move(cluster_cfg));
-    return true;
+    cluster_config cluster_cfg = utils::make_cluster_config(ctx);
+    assert(cluster_cfg.servers.size() == (ctx.peers.size() + 1));
+    return change_configuration(ctx, cluster_cfg);
 }
 
 bool update(context& ctx, const entry::ptr& p_entry)
