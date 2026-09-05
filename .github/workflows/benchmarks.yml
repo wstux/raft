@@ -32,6 +32,8 @@ jobs:
       run: |
         ./build_release/test/perf_raft_leader_election --benchmark_format=json > perf_le.json
         ./build_release/test/perf_raft_leader_election_async --benchmark_format=json > perf_le_async.json
+        ./build_release/test/perf_raft_membership --benchmark_format=json > perf_mem.json
+        ./build_release/test/perf_raft_membership_async --benchmark_format=json > perf_mem_async.json
         ./build_release/test/perf_raft_peers --benchmark_format=json > perf_peers.json
         ./build_release/test/perf_raft_serialization --benchmark_format=json > perf_srl.json
 
@@ -41,7 +43,7 @@ jobs:
           (.[1].benchmarks | map(. + {source: "async"})) +
           (.[2].benchmarks | map(. + {source: ""})) +
           (.[3].benchmarks | map(. + {source: ""}))
-        ' perf_le.json perf_le_async.json perf_peers.json perf_srl.json > perf_raft_merged.json
+        ' perf_le.json perf_le_async.json perf_mem.json perf_mem_async.json perf_peers.json perf_srl.json > perf_raft_merged.json
 
         jq '[ .[] |
           (if .source == "async" then " Async" else "" end) as $suffix |
