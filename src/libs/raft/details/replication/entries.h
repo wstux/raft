@@ -29,13 +29,35 @@
 
 #include "raft/io.h"
 #include "raft/details/context.h"
-#include "raft/details/replication/async.h"
 
 namespace wstux {
 namespace raft {
 namespace details {
 namespace replication {
 namespace entries {
+namespace async {
+
+struct append_context final
+{
+    using ptr = std::shared_ptr<append_context>;
+
+    term_t term;
+    index_t index;
+    index_t leader_commit;
+    index_t last_stored;
+    index_t last_index;
+    entry::list entries;
+};
+
+struct apply_context final
+{
+    using ptr = std::shared_ptr<apply_context>;
+
+    index_t index;
+    entry::list entries;
+};
+
+} // namespace async
 
 bool append(context& ctx, term_t term, index_t leader_commit, index_t prev_log_index, term_t prev_log_term,
             const entry::list& entries, async::append_context::ptr& p_async_ctx);
