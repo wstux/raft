@@ -104,7 +104,7 @@ public:
         for (const std::pair<server_id_t, bool>& srv_param : servers) {
             const server_id_t id = srv_param.first;
             const bool is_voter = srv_param.second;
-            m_p_cluster_cfg->servers.emplace_back(id, is_voter);
+            m_p_cluster_cfg->servers.emplace_back(id, std::to_string(id), is_voter);
         }
         for (const server_config& cfg : m_p_cluster_cfg->servers) {
             io_stub::ptr p_io = std::make_shared<io_stub>(m_p_cluster_cfg, this->shared_from_this());

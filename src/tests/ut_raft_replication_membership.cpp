@@ -51,9 +51,9 @@ public:
 
         m_p_ctx = std::make_unique<details::context>(1, m_p_io, m_p_fsm, raft::logging_handler::ptr(), is_stop_fn);
 
-        m_p_io->cluster_cfg.servers.emplace_back(1, true);
-        m_p_io->cluster_cfg.servers.emplace_back(2, true);
-        m_p_io->cluster_cfg.servers.emplace_back(3, true);
+        m_p_io->cluster_cfg.servers.emplace_back(1, std::to_string(1), true);
+        m_p_io->cluster_cfg.servers.emplace_back(2, std::to_string(2), true);
+        m_p_io->cluster_cfg.servers.emplace_back(3, std::to_string(3), true);
 
         details::utils::init(*m_p_ctx);
         details::utils::load(*m_p_ctx);
@@ -79,7 +79,7 @@ TEST_F(raft_membership, append)
     ASSERT_TRUE(ctx.role.is_leader());
 
     ASSERT_TRUE(ctx.peers.size() == 2);
-    ASSERT_TRUE(details::replication::membership::append(ctx, raft::server_config({5, true})));
+    ASSERT_TRUE(details::replication::membership::append(ctx, raft::server_config({5, std::to_string(5), true})));
     ASSERT_TRUE(ctx.peers.size() == 3);
     ASSERT_TRUE(details::peers::find(ctx, 2) != nullptr);
     ASSERT_TRUE(details::peers::find(ctx, 3) != nullptr);
@@ -94,7 +94,7 @@ TEST_F(raft_membership, append_existing_member)
     ASSERT_TRUE(ctx.peers.size() == 2);
     ASSERT_TRUE(details::peers::find(ctx, 2) != nullptr);
     ASSERT_TRUE(details::peers::find(ctx, 3) != nullptr);
-    ASSERT_FALSE(details::replication::membership::append(ctx, raft::server_config({2, true})));
+    ASSERT_FALSE(details::replication::membership::append(ctx, raft::server_config({2, std::to_string(2), true})));
     ASSERT_TRUE(ctx.peers.size() == 2);
     ASSERT_TRUE(details::peers::find(ctx, 2) != nullptr);
     ASSERT_TRUE(details::peers::find(ctx, 3) != nullptr);
@@ -109,7 +109,7 @@ TEST_F(raft_membership, DISABLED_append_failed_to_append_changes)
     ASSERT_TRUE(ctx.peers.size() == 2);
     ASSERT_TRUE(details::peers::find(ctx, 2) != nullptr);
     ASSERT_TRUE(details::peers::find(ctx, 3) != nullptr);
-    ASSERT_FALSE(details::replication::membership::append(ctx, raft::server_config({5, true})));
+    ASSERT_FALSE(details::replication::membership::append(ctx, raft::server_config({5, std::to_string(5), true})));
     ASSERT_TRUE(ctx.peers.size() == 2);
     ASSERT_TRUE(details::peers::find(ctx, 2) != nullptr);
     ASSERT_TRUE(details::peers::find(ctx, 3) != nullptr);
@@ -150,10 +150,10 @@ TEST_F(raft_membership, update)
     ASSERT_TRUE(ctx.role.is_follower());
 
     raft::cluster_config cfg;
-    cfg.servers.emplace_back(1, true);
-    cfg.servers.emplace_back(2, true);
-    cfg.servers.emplace_back(3, true);
-    cfg.servers.emplace_back(4, true);
+    cfg.servers.emplace_back(1, std::to_string(1), true);
+    cfg.servers.emplace_back(2, std::to_string(2), true);
+    cfg.servers.emplace_back(3, std::to_string(3), true);
+    cfg.servers.emplace_back(4, std::to_string(4), true);
 
     raft::entry::ptr p_entry = std::make_shared<raft::entry>();
     p_entry->term = 1;
@@ -192,10 +192,10 @@ TEST_F(raft_membership, update_invalid_configuration)
     ASSERT_TRUE(ctx.role.is_follower());
 
     raft::cluster_config cfg;
-    cfg.servers.emplace_back(1, true);
-    cfg.servers.emplace_back(2, true);
-    cfg.servers.emplace_back(3, true);
-    cfg.servers.emplace_back(3, true);
+    cfg.servers.emplace_back(1, std::to_string(1), true);
+    cfg.servers.emplace_back(2, std::to_string(2), true);
+    cfg.servers.emplace_back(3, std::to_string(3), true);
+    cfg.servers.emplace_back(3, std::to_string(3), true);
 
     raft::entry::ptr p_entry = std::make_shared<raft::entry>();
     p_entry->term = 1;
@@ -220,9 +220,9 @@ TEST_F(raft_membership, update_daungrade_to_follover)
     ASSERT_TRUE(ctx.role.is_leader());
 
     raft::cluster_config cfg;
-    cfg.servers.emplace_back(2, true);
-    cfg.servers.emplace_back(3, true);
-    cfg.servers.emplace_back(4, true);
+    cfg.servers.emplace_back(2, std::to_string(2), true);
+    cfg.servers.emplace_back(3, std::to_string(3), true);
+    cfg.servers.emplace_back(4, std::to_string(4), true);
 
     raft::entry::ptr p_entry = std::make_shared<raft::entry>();
     p_entry->term = 1;

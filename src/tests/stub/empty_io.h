@@ -105,7 +105,7 @@ public:
     virtual index_t load_start_index() override final { return start_index; }
     virtual term_t load_term() override final { return 0; }
     virtual bool reconfigure(server_id_t) override final { return true; }
-    virtual void send(server_id_t id, const buffer_type& msg) override final { clients.at(id)->send(msg); }
+    virtual void send(server_id_t id, const std::string&, const buffer_type& msg) override final { clients.at(id)->send(msg); }
 
     virtual bool set_snapshot(snapshot::ptr p_sh) override final
     {

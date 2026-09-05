@@ -97,7 +97,7 @@ context::context(server_id_t id, const io::ptr p_io, const fsm::ptr p_fsm, loggi
     , is_stop_fn(is_stop)
     , alloc(alloc)
     , is_async_io(false)
-    , config(gk_invalid_id, false)
+    , config(gk_invalid_id, "", false)
     , p_io(p_io)
     , p_fsm(p_fsm)
     , term(0)
@@ -231,9 +231,9 @@ bool is_valid_cluster(const server_id_t id, const cluster_config& cluster_cfg, b
 cluster_config make_cluster_config(const context& ctx)
 {
     cluster_config cluster_cfg;
-    cluster_cfg.servers.emplace_back(ctx.id, ctx.role.is_voter);
+    cluster_cfg.servers.emplace_back(ctx.config);
     for (const peer& p : ctx.peers) {
-        cluster_cfg.servers.emplace_back(p.id, p.is_voter);
+        cluster_cfg.servers.emplace_back(p.id, p.address, p.is_voter);
     }
     return cluster_cfg;
 }

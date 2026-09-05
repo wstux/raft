@@ -56,7 +56,7 @@ public:
     details::context& init(size_t servs_count = 1, bool is_voter = true)
     {
         for (size_t i = 0; i < servs_count; ++i) {
-            m_p_io->cluster_cfg.servers.emplace_back(i + 1, (i == 0) ? is_voter : true);
+            m_p_io->cluster_cfg.servers.emplace_back(i + 1, std::to_string(i + 1), (i == 0) ? is_voter : true);
         }
 
         return *m_p_ctx;
@@ -106,7 +106,7 @@ TEST_F(raft_context, load_failed)
     details::context& ctx = init(1);
     EXPECT_TRUE(details::utils::init(ctx));
 
-    ctx.peers.emplace_back(raft::server_config(2, true));
+    ctx.peers.emplace_back(raft::server_config(2, std::to_string(2), true));
     EXPECT_FALSE(details::utils::load(ctx));
 }
 
@@ -114,7 +114,7 @@ TEST_F(raft_context, load_failed_duplicated_peer)
 {
     details::context& ctx = init(3);
 
-    m_p_io->cluster_cfg.servers.emplace_back(2, true);
+    m_p_io->cluster_cfg.servers.emplace_back(2, std::to_string(2), true);
     EXPECT_TRUE(details::utils::init(ctx));
     EXPECT_FALSE(details::utils::load(ctx));
 }

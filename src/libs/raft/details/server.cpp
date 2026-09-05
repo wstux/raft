@@ -88,10 +88,11 @@ server::~server()
 {}
 
 
-void server::add(const server_id_t id, const bool is_voter)
+void server::add(const server_id_t id, const std::string& address, const bool is_voter)
 {
+    server_config config(id, address, is_voter);
     details::scheduler::handler_type handler =
-        [p_ctx = m_p_ctx.get(), id, is_voter]() -> void { details::replication::membership::append(*p_ctx, server_config(id, is_voter)); };
+        [p_ctx = m_p_ctx.get(), cfg = std::move(config)]() -> void { details::replication::membership::append(*p_ctx, cfg); };
     m_p_ctx->schd.execute_strand(std::move(handler));
 }
 

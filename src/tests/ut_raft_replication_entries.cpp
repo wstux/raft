@@ -50,7 +50,7 @@ public:
 
         m_p_ctx = std::make_unique<details::context>(1, m_p_io, m_p_fsm, raft::logging_handler::ptr(), is_stop_fn);
 
-        m_p_io->cluster_cfg.servers.emplace_back(1, true);
+        m_p_io->cluster_cfg.servers.emplace_back(1, std::to_string(1), true);
 
         details::utils::init(*m_p_ctx);
         details::utils::load(*m_p_ctx);
@@ -68,7 +68,7 @@ public:
         if (etype == raft::entry_type::change) {
             raft::cluster_config cfg;
             for (size_t i = 0; i < cluster_size; ++i) {
-                cfg.servers.emplace_back(i +1, true);
+                cfg.servers.emplace_back(i +1, std::to_string(i + 1), true);
             }
             entries.back()->buffer = details::serialize(cfg);
         }

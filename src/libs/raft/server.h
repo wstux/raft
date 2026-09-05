@@ -48,7 +48,7 @@ public:
 
     ~server();
 
-    void add(const server_id_t id, const bool is_voter);
+    void add(const server_id_t id, const std::string& address, const bool is_voter);
 
     void deinit();
 

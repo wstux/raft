@@ -43,6 +43,7 @@ struct peer final
 
     explicit peer(const server_config& cfg)
         : id(cfg.id)
+        , address(cfg.address)
         , is_voter(cfg.is_voter)
         , next_index(1)
         , match_index(0)
@@ -83,6 +84,7 @@ struct peer final
     }
 
     const server_id_t id;
+    std::string address;
     bool is_voter;
 
     index_t next_index;

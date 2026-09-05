@@ -264,7 +264,7 @@ public:
 
     virtual bool reconfigure(server_id_t) override final { return true; }
 
-    virtual void send(server_id_t id, const buffer_type& msg) override final { m_clients.at(id)->send(msg); }
+    virtual void send(server_id_t id, const std::string&, const buffer_type& msg) override final { m_clients.at(id)->send(msg); }
 
     virtual bool set_snapshot(snapshot::ptr p_sh) override final
     {
