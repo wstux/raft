@@ -31,24 +31,49 @@ jobs:
     - name: Run google benchmarks
       run: |
         ./build_release/test/perf_raft_leader_election --benchmark_format=json > perf_le.json
+        ./build_release/test/perf_raft_leader_election_async --benchmark_format=json > perf_le_async.json
         ./build_release/test/perf_raft_peers --benchmark_format=json > perf_peers.json
         ./build_release/test/perf_raft_serialization --benchmark_format=json > perf_srl.json
 
-        jq -s '[.[].benchmarks] | flatten' perf_le.json perf_peers.json perf_srl.json > perf_raft_merged.json
+        #jq -s '[.[].benchmarks] | flatten' perf_le.json perf_peers.json perf_srl.json > perf_raft_merged.json
+        jq -s '
+          (.[0].benchmarks | map(. + {source: ""})) +
+          (.[1].benchmarks | map(. + {source: "async"})) +
+          (.[2].benchmarks | map(. + {source: ""})) +
+          (.[3].benchmarks | map(. + {source: ""}))
+        ' perf_le.json perf_le_async.json perf_peers.json perf_srl.json > perf_raft_merged.json
 
         jq '[ .[] |
+          (if .source == "async" then " Async" else "" end) as $suffix |
           if .name | startswith("leader_election<") then
-            { name: ("Leader Election (Real Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .real_time, unit: .time_unit },
-            { name: ("Leader Election (CPU Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .cpu_time, unit: .time_unit }
+            { name: ("Leader Election" + $suffix + " (Real Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .real_time, unit: .time_unit },
+            { name: ("Leader Election" + $suffix + " (CPU Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .cpu_time, unit: .time_unit }
           elif .name | startswith("leader_election_default<") then
-            { name: ("Leader Election Default (Real Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .real_time, unit: .time_unit },
-            { name: ("Leader Election Default (CPU Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .cpu_time, unit: .time_unit }
+            { name: ("Leader Election" + $suffix + " Default (Real Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .real_time, unit: .time_unit },
+            { name: ("Leader Election" + $suffix + " Default (CPU Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .cpu_time, unit: .time_unit }
+
+          elif .name | startswith("add_member<") then
+            { name: ("Add New Member" + $suffix + " (Real Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .real_time, unit: .time_unit },
+            { name: ("Add New Member" + $suffix + " (CPU Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .cpu_time, unit: .time_unit }
+          elif .name | startswith("add_member_default<") then
+            { name: ("Add New Member" + $suffix + " Default (Real Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .real_time, unit: .time_unit },
+            { name: ("Add New Member" + $suffix + " Default (CPU Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .cpu_time, unit: .time_unit }
+
+          elif .name | startswith("remove_member<") then
+            { name: ("Remove Existing Member" + $suffix + " (Real Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .real_time, unit: .time_unit },
+            { name: ("Remove Existing Member" + $suffix + " (CPU Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .cpu_time, unit: .time_unit }
+          elif .name | startswith("remove_member_default<") then
+            { name: ("Remove Existing Member" + $suffix + " Default (Real Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .real_time, unit: .time_unit },
+            { name: ("Remove Existing Member" + $suffix + " Default (CPU Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .cpu_time, unit: .time_unit }
+
           elif .name | startswith("check_contact_quorum/threads:") then
             { name: ("Check Contact Quorum (Real Time)::" + (.name | capture("threads:(?<t>\\d+)") | .t + " threads")), value: .real_time, unit: .time_unit }
+
           elif .name | startswith("request_to_list/threads:") then
             { name: ("Request to List (Real Time)::" + (.name | capture("threads:(?<t>\\d+)") | .t + " threads")), value: .real_time, unit: .time_unit }
           elif .name | startswith("request_lock_list/threads:") then
             { name: ("Request Lock List (Real Time)::" + (.name | capture("threads:(?<t>\\d+)") | .t + " threads")), value: .real_time, unit: .time_unit }
+
           elif .name == "serialize_message" then
             { name: "Serialize Message (Real Time)::Base", value: .real_time, unit: .time_unit }
           else
