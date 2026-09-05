@@ -199,8 +199,8 @@ public:
     };
 
 public:
-    io_stub(const std::shared_ptr<cluster_config>& p_cluster_cfg, const iclient_factory::ptr& p_factory)
-        : m_p_cluster_cfg(p_cluster_cfg)
+    io_stub(const cluster_config& cluster_cfg, const iclient_factory::ptr& p_factory)
+        : m_cluster_cfg(cluster_cfg)
         , m_p_factory(p_factory)
         , m_term(0)
         , m_voted_for(gk_invalid_id)
@@ -209,23 +209,35 @@ public:
         , m_start_index(1)
     {
         m_cfg.scheduler_threads_count = 2;
+#if defined(USE_ASYNC_IO)
+        m_cfg.is_async_io = true;
+#endif
     }
 
     virtual ~io_stub() {}
 
     virtual bool append(const entry::list& entries) override final
     {
+        std::unique_lock<std::mutex> lock(m_entries_mutex);
         if (! m_is_append) {
             return false;
         }
         index_t i = m_start_index + m_entries.size();
+
+        entry::ptr cfg_entry;
         for (const entry::ptr& e : entries) {
             m_entries.emplace(i++, e);
+            if (e->type == entry_type::change) {
+                cfg_entry = e;
+            }
+        }
+        if (cfg_entry) {
+            m_cluster_cfg = details::deserialize<cluster_config>(cfg_entry->buffer);
         }
         return true;
     }
 
-    virtual cluster_config bootstrap() const override final { return *m_p_cluster_cfg; }
+    virtual cluster_config bootstrap() const override final { return m_cluster_cfg; }
 
     virtual config configuration() const override final { return m_cfg; };
 
@@ -235,8 +247,8 @@ public:
 
     virtual bool init(server_id_t id) override final
     {
-        if (m_clients.empty() && ! m_p_cluster_cfg->servers.empty()) {
-            for (const server_config& cfg : m_p_cluster_cfg->servers) {
+        if (m_clients.empty() && ! m_cluster_cfg.servers.empty()) {
+            for (const server_config& cfg : m_cluster_cfg.servers) {
                 if (cfg.id != id) {
                     m_clients.emplace(cfg.id, m_p_factory->create_client(cfg.id));
                 }
@@ -247,6 +259,7 @@ public:
 
     virtual entry::list load_entries() override final
     {
+        std::unique_lock<std::mutex> lock(m_entries_mutex);
         entry::list entries;
         for (const std::map<index_t, entry::ptr>::value_type& e : m_entries) {
             entries.push_back(e.second);
@@ -264,7 +277,20 @@ public:
 
     virtual bool reconfigure(server_id_t) override final { return true; }
 
-    virtual void send(server_id_t id, const std::string&, const buffer_type& msg) override final { m_clients.at(id)->send(msg); }
+    virtual void send(server_id_t id, const std::string&, const buffer_type& msg) override final
+    {
+        iclient* p_client = nullptr;
+        {
+            std::unique_lock<std::mutex> lock(m_clients_mutex);
+            std::unordered_map<server_id_t, iclient::ptr>::iterator it = m_clients.find(id);
+            if (it != m_clients.end()) {
+                p_client = it->second.get();
+            } else {
+                p_client = m_clients.emplace(id, m_p_factory->create_client(id)).first->second.get();
+            }
+        }
+        p_client->send(msg);
+    }
 
     virtual bool set_snapshot(snapshot::ptr p_sh) override final
     {
@@ -278,6 +304,7 @@ public:
 
     virtual bool truncate(const index_t begin) override final
     {
+        std::unique_lock<std::mutex> lock(m_entries_mutex);
         if (! m_is_truncate) {
             return false;
         }
@@ -292,7 +319,8 @@ public:
     virtual server_id_t voted_for() const override final { return m_voted_for; }
 
 public:
-    std::shared_ptr<cluster_config> m_p_cluster_cfg;
+    cluster_config m_cluster_cfg;
+    std::mutex m_clients_mutex;
     std::unordered_map<server_id_t, iclient::ptr> m_clients;
     iclient_factory::ptr m_p_factory;
     config m_cfg;
@@ -300,6 +328,7 @@ public:
     term_t m_term;
     server_id_t m_voted_for;
 
+    std::mutex m_entries_mutex;
     std::map<index_t, entry::ptr> m_entries;
 
     index_t m_snapshot_index;

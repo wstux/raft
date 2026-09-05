@@ -105,7 +105,20 @@ public:
     virtual index_t load_start_index() override final { return start_index; }
     virtual term_t load_term() override final { return 0; }
     virtual bool reconfigure(server_id_t) override final { return true; }
-    virtual void send(server_id_t id, const std::string&, const buffer_type& msg) override final { clients.at(id)->send(msg); }
+    virtual void send(server_id_t id, const std::string&, const buffer_type& msg) override final
+    {
+        empty_client* p_client = nullptr;
+        {
+            std::unique_lock<std::mutex> lock(clients_mutex);
+            std::unordered_map<server_id_t, empty_client::ptr>::iterator it = clients.find(id);
+            if (it != clients.end()) {
+                p_client = it->second.get();
+            } else {
+                p_client = clients.emplace(id, empty_client::make()).first->second.get();
+            }
+        }
+        p_client->send(msg);
+    }
 
     virtual bool set_snapshot(snapshot::ptr p_sh) override final
     {
@@ -133,6 +146,7 @@ public:
     config cfg;
     cluster_config cluster_cfg;
 
+    std::mutex clients_mutex;
     std::unordered_map<server_id_t, empty_client::ptr> clients;
 
     std::map<index_t, entry::ptr> entries;

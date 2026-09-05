@@ -55,7 +55,6 @@ public:
 public:
     explicit network_stub(const client_type type = client_type::single)
         : m_type(type)
-        , m_p_cluster_cfg(std::make_shared<cluster_config>())
     {}
 
     virtual ~network_stub() { stop(); }
@@ -70,6 +69,22 @@ public:
             p_client = std::make_shared<threaded_client_stub>(p_srv, m_type, [this]() -> bool { return m_is_stop; });
         }
         return p_client;
+    }
+
+    server_ptr create_server(server_id_t id, bool is_voter, bool is_start = true)
+    {
+        cluster_config cluster_cfg;
+        cluster_cfg.servers.emplace_back(id, std::to_string(id), is_voter);
+
+        io_stub::iclient_factory::ptr p_factory = this->shared_from_this();
+        io_stub::ptr p_io = std::make_shared<io_stub>(cluster_cfg, p_factory);
+        server_ptr p_srv = create_server_impl(id, p_io);
+
+        p_srv->init();
+        if (is_start) {
+            p_srv->start();
+        }
+        return p_srv;
     }
 
     server_ptr get_leader() const
@@ -104,10 +119,10 @@ public:
         for (const std::pair<server_id_t, bool>& srv_param : servers) {
             const server_id_t id = srv_param.first;
             const bool is_voter = srv_param.second;
-            m_p_cluster_cfg->servers.emplace_back(id, std::to_string(id), is_voter);
+            m_cluster_cfg.servers.emplace_back(id, std::to_string(id), is_voter);
         }
-        for (const server_config& cfg : m_p_cluster_cfg->servers) {
-            io_stub::ptr p_io = std::make_shared<io_stub>(m_p_cluster_cfg, this->shared_from_this());
+        for (const server_config& cfg : m_cluster_cfg.servers) {
+            io_stub::ptr p_io = std::make_shared<io_stub>(m_cluster_cfg, this->shared_from_this());
             create_server_impl(cfg.id, p_io);
         }
         if (is_init) {
@@ -212,7 +227,7 @@ private:
 private:
     const client_type m_type;
     std::atomic_bool m_is_stop{false};
-    std::shared_ptr<cluster_config> m_p_cluster_cfg;
+    cluster_config m_cluster_cfg;
 
     std::map<server_id_t, io_stub::ptr> m_io_map;
     std::map<server_id_t, server_ptr> m_servers;

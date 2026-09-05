@@ -120,3 +120,35 @@ TestTarget(ut_raft_server_leader_election
     DEPENDS
         googletest
 )
+
+TestTarget(ut_raft_server_leader_election_async
+    SOURCES
+        ut_raft_server_leader_election.cpp
+    COMPILE_DEFINITIONS USE_ASYNC_IO
+    LIBRARIES
+        raft
+        raft_stub
+    DEPENDS
+        googletest
+)
+
+TestTarget(ut_raft_server_membership
+    SOURCES
+        ut_raft_server_membership.cpp
+    LIBRARIES
+        raft
+        raft_stub
+    DEPENDS
+        googletest
+)
+
+TestTarget(ut_raft_server_membership_async
+    SOURCES
+        ut_raft_server_membership.cpp
+    COMPILE_DEFINITIONS USE_ASYNC_IO
+    LIBRARIES
+        raft
+        raft_stub
+    DEPENDS
+        googletest
+)
