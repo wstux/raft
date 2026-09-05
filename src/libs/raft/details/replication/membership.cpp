@@ -42,24 +42,19 @@ bool change_configuration(context& ctx, cluster_config& cluster_cfg)
 {
     entries::async::apply_context::ptr p_async_ctx;
     const bool accept = entries::apply_configuration(ctx, cluster_cfg, p_async_ctx);
-    if (ctx.is_async_io) {
+    if (accept && ctx.is_async_io) {
         assert(p_async_ctx);
-        if (! accept) {
-            return false;
-        }
 
         const index_t index = p_async_ctx->index;
-        scheduler::handler_type handler_fn = [p_ctx = ctx.shared_from_this(), p_async_ctx = std::move(p_async_ctx)] () -> void {
-            RAFT_LOG_TRACE((*p_ctx), "Server %llu(%s) is changing new peer asynchronously.", p_ctx->id, p_ctx->role.str());
+        scheduler::handler_type handler_fn = [&ctx, p_async_ctx = std::move(p_async_ctx)] () -> void {
+            RAFT_LOG_TRACE(ctx, "Server %llu(%s) is changing new peer asynchronously.", ctx.id, ctx.role.str());
             // Perform blocking disk write outside the critical section (mutex)
-            const bool accept = p_ctx->p_io->append(p_async_ctx->entries);
-            p_ctx->schd.execute_strand(
-                [p_ctx = std::move(p_ctx), accept, p_async_ctx = std::move(p_async_ctx)] {
-                    assert(p_ctx->state.tasks_in_process > 0);
-                    --(p_ctx->state.tasks_in_process);
-                    entries::apply_callback(*p_ctx, accept, p_async_ctx->index, p_async_ctx->entries);
-                }
-            );
+            const bool accept = ctx.p_io->append(p_async_ctx->entries);
+            ctx.schd.execute_strand([&ctx, accept, p_async_ctx = std::move(p_async_ctx)] () -> void {
+                assert(ctx.state.tasks_in_process > 0);
+                --ctx.state.tasks_in_process;
+                entries::apply_callback(ctx, accept, p_async_ctx->index, p_async_ctx->entries);
+            });
         };
 
         ++ctx.state.tasks_in_process;

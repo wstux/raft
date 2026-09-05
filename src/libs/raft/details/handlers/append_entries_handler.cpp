@@ -101,16 +101,14 @@ void handle_request(context& ctx, term_t term, server_id_t src_id, const append_
     if (accept && ctx.is_async_io) {
         assert(p_async_ctx);
 
-        scheduler::handler_type handler_fn = [p_ctx = ctx.shared_from_this(), src_id, p_async_ctx = std::move(p_async_ctx)] () -> void {
-            RAFT_AE_LOG_TRACE((*p_ctx), "Server %llu(%s) is saving %zu entries to io storage asynchronously.",
-                p_ctx->id, p_ctx->role.str(), p_async_ctx->entries.size());
+        scheduler::handler_type handler_fn = [&ctx, src_id, p_async_ctx = std::move(p_async_ctx)] () -> void {
+            RAFT_AE_LOG_TRACE(ctx, "Server %llu(%s) is saving %zu entries to io storage asynchronously.",
+                ctx.id, ctx.role.str(), p_async_ctx->entries.size());
             // Perform blocking disk write outside the critical section (mutex)
-            const bool accept = p_ctx->p_io->append(p_async_ctx->entries);
-            p_ctx->schd.execute_strand(
-                [p_ctx = std::move(p_ctx), src_id, accept, p_async_ctx = std::move(p_async_ctx)] {
-                    handle_request_async(*p_ctx, src_id, accept, p_async_ctx);
-                }
-            );
+            const bool accept = ctx.p_io->append(p_async_ctx->entries);
+            ctx.schd.execute_strand([&ctx, src_id, accept, p_async_ctx = std::move(p_async_ctx)] () -> void {
+                handle_request_async(ctx, src_id, accept, p_async_ctx);
+            });
         };
         ++ctx.state.tasks_in_process;
         ctx.schd.execute_async(std::move(handler_fn));
