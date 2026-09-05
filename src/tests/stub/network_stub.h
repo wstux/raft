@@ -183,6 +183,39 @@ public:
         m_io_map.clear();
     }
 
+    void wait_changed_cluster_cfg(const size_t limit_ms = 1500) const
+    {
+        using namespace std::chrono_literals;
+        bool is_changed = false;
+        for (size_t i = 0; (i < limit_ms) && ! is_changed; i += 10) {
+            is_changed = std::all_of(m_io_map.cbegin(), m_io_map.cend(),
+                [] (const std::map<server_id_t, io_stub::ptr>::value_type& io) -> bool {return io.second->m_is_changed_cluster_cfg; }
+            );
+            if (! is_changed) {
+                std::this_thread::sleep_for(10ms);
+            }
+        }
+    }
+
+    void wait_changed_cluster_cfg_except(server_id_t except_id, const size_t limit_ms = 1500) const
+    {
+        using namespace std::chrono_literals;
+        bool is_changed = false;
+        for (size_t i = 0; (i < limit_ms) && ! is_changed; i += 10) {
+            is_changed = std::all_of(m_io_map.cbegin(), m_io_map.cend(),
+                [except_id] (const std::map<server_id_t, io_stub::ptr>::value_type& io) -> bool {
+                    if (except_id != io.first) {
+                        return io.second->m_is_changed_cluster_cfg;
+                    }
+                    return true;
+                }
+            );
+            if (! is_changed) {
+                std::this_thread::sleep_for(10ms);
+            }
+        }
+    }
+
     void wait_leader(const size_t limit_ms = 1500) const
     {
         using namespace std::chrono_literals;

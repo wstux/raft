@@ -98,7 +98,7 @@ TYPED_TEST(raft_membership, add_server)
 
     p_leader->add(p_srv->id(), std::to_string(p_srv->id()), true);
 
-    std::this_thread::sleep_for(500ms);
+    p_network->wait_changed_cluster_cfg();
     EXPECT_FALSE(p_srv->is_leader());
 
     for (size_t i = 1; i < 5; ++i) {
@@ -134,7 +134,7 @@ TYPED_TEST(raft_membership, add_leader_server)
 
     p_leader->add(p_srv->id(), std::to_string(p_srv->id()), true);
 
-    std::this_thread::sleep_for(500ms);
+    p_network->wait_changed_cluster_cfg();
     EXPECT_FALSE(p_srv->is_leader());
 
     for (size_t i = 1; i < 5; ++i) {
@@ -158,32 +158,24 @@ TYPED_TEST(raft_membership, remove_server)
     EXPECT_TRUE(p_network->leaders_count() == 1) << p_network->leaders_count();
 
     server_ptr p_leader = p_network->get_leader();
-    server_ptr p_srv;
-    for (size_t i = 1; i < 4; ++i) {
-        if (! p_network->get_server(i)->is_leader()) {
-            p_srv = p_network->get_server(i);
-            break;
-        }
-    }
-    ASSERT_TRUE(p_srv.get() != nullptr);
+    const raft::server_id_t remove_id = (p_leader->id() == 3) ? 1 : (p_leader->id() + 1);
     ASSERT_TRUE(p_leader->is_leader());
-    ASSERT_FALSE(p_srv->is_leader());
-    ASSERT_TRUE(p_leader->id() != p_srv->id());
+    ASSERT_TRUE(p_leader->id() != remove_id);
 
     raft::cluster_config cfg = p_network->get_io(p_leader->id())->m_cluster_cfg;
     ASSERT_TRUE(cfg.servers.size() == 3) << cfg.servers.size();
 
-    p_leader->remove(p_srv->id());
+    p_leader->remove(remove_id);
 
-    std::this_thread::sleep_for(500ms);
+    p_network->wait_changed_cluster_cfg_except(remove_id);
     for (size_t i = 1; i < 4; ++i) {
-        if (i == p_srv->id()) {
+        if (i == remove_id) {
             continue;
         }
         cfg = p_network->get_io(i)->m_cluster_cfg;
         EXPECT_TRUE(cfg.servers.size() == 2) << cfg.servers.size();
         for (const raft::server_config& cfg : cfg.servers) {
-            EXPECT_TRUE(cfg.id != p_srv->id());
+            EXPECT_TRUE(cfg.id != remove_id);
         }
     }
 }

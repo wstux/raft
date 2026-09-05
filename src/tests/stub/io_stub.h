@@ -201,6 +201,7 @@ public:
 public:
     io_stub(const cluster_config& cluster_cfg, const iclient_factory::ptr& p_factory)
         : m_cluster_cfg(cluster_cfg)
+        , m_is_changed_cluster_cfg(false)
         , m_p_factory(p_factory)
         , m_term(0)
         , m_voted_for(gk_invalid_id)
@@ -233,6 +234,7 @@ public:
         }
         if (cfg_entry) {
             m_cluster_cfg = details::deserialize<cluster_config>(cfg_entry->buffer);
+            m_is_changed_cluster_cfg = true;
         }
         return true;
     }
@@ -320,6 +322,8 @@ public:
 
 public:
     cluster_config m_cluster_cfg;
+    std::atomic_bool m_is_changed_cluster_cfg;
+
     std::mutex m_clients_mutex;
     std::unordered_map<server_id_t, iclient::ptr> m_clients;
     iclient_factory::ptr m_p_factory;
