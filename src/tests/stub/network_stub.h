@@ -55,7 +55,6 @@ public:
 public:
     explicit network_stub(const client_type type = client_type::single)
         : m_type(type)
-        , m_p_cluster_cfg(std::make_shared<cluster_config>())
     {}
 
     virtual ~network_stub() { stop(); }
@@ -70,6 +69,22 @@ public:
             p_client = std::make_shared<threaded_client_stub>(p_srv, m_type, [this]() -> bool { return m_is_stop; });
         }
         return p_client;
+    }
+
+    server_ptr create_server(server_id_t id, bool is_voter, bool is_start = true)
+    {
+        cluster_config cluster_cfg;
+        cluster_cfg.servers.emplace_back(id, std::to_string(id), is_voter);
+
+        io_stub::iclient_factory::ptr p_factory = this->shared_from_this();
+        io_stub::ptr p_io = std::make_shared<io_stub>(cluster_cfg, p_factory);
+        server_ptr p_srv = create_server_impl(id, p_io);
+
+        p_srv->init();
+        if (is_start) {
+            p_srv->start();
+        }
+        return p_srv;
     }
 
     server_ptr get_leader() const
@@ -104,10 +119,10 @@ public:
         for (const std::pair<server_id_t, bool>& srv_param : servers) {
             const server_id_t id = srv_param.first;
             const bool is_voter = srv_param.second;
-            m_p_cluster_cfg->servers.emplace_back(id, is_voter);
+            m_cluster_cfg.servers.emplace_back(id, std::to_string(id), is_voter);
         }
-        for (const server_config& cfg : m_p_cluster_cfg->servers) {
-            io_stub::ptr p_io = std::make_shared<io_stub>(m_p_cluster_cfg, this->shared_from_this());
+        for (const server_config& cfg : m_cluster_cfg.servers) {
+            io_stub::ptr p_io = std::make_shared<io_stub>(m_cluster_cfg, this->shared_from_this());
             create_server_impl(cfg.id, p_io);
         }
         if (is_init) {
@@ -168,6 +183,39 @@ public:
         m_io_map.clear();
     }
 
+    void wait_changed_cluster_cfg(const size_t limit_ms = 1500) const
+    {
+        using namespace std::chrono_literals;
+        bool is_changed = false;
+        for (size_t i = 0; (i < limit_ms) && ! is_changed; i += 10) {
+            is_changed = std::all_of(m_io_map.cbegin(), m_io_map.cend(),
+                [] (const std::map<server_id_t, io_stub::ptr>::value_type& io) -> bool {return io.second->m_is_changed_cluster_cfg; }
+            );
+            if (! is_changed) {
+                std::this_thread::sleep_for(10ms);
+            }
+        }
+    }
+
+    void wait_changed_cluster_cfg_except(server_id_t except_id, const size_t limit_ms = 1500) const
+    {
+        using namespace std::chrono_literals;
+        bool is_changed = false;
+        for (size_t i = 0; (i < limit_ms) && ! is_changed; i += 10) {
+            is_changed = std::all_of(m_io_map.cbegin(), m_io_map.cend(),
+                [except_id] (const std::map<server_id_t, io_stub::ptr>::value_type& io) -> bool {
+                    if (except_id != io.first) {
+                        return io.second->m_is_changed_cluster_cfg;
+                    }
+                    return true;
+                }
+            );
+            if (! is_changed) {
+                std::this_thread::sleep_for(10ms);
+            }
+        }
+    }
+
     void wait_leader(const size_t limit_ms = 1500) const
     {
         using namespace std::chrono_literals;
@@ -212,7 +260,7 @@ private:
 private:
     const client_type m_type;
     std::atomic_bool m_is_stop{false};
-    std::shared_ptr<cluster_config> m_p_cluster_cfg;
+    cluster_config m_cluster_cfg;
 
     std::map<server_id_t, io_stub::ptr> m_io_map;
     std::map<server_id_t, server_ptr> m_servers;

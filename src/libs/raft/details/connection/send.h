@@ -78,7 +78,7 @@ template<> struct message_filler<message_type::vote_response>
 };
 
 template<message_type TMsgType, typename... TArgs>
-void send(io::ptr p_io, server_id_t dst_id, term_t term, server_id_t src_id, TArgs&&... args)
+void send(io::ptr p_io, server_id_t dst_id, const std::string& address, term_t term, server_id_t src_id, TArgs&&... args)
 {
     message msg(TMsgType);
 
@@ -88,7 +88,7 @@ void send(io::ptr p_io, server_id_t dst_id, term_t term, server_id_t src_id, TAr
 
     message_filler<TMsgType>::fill(msg, std::forward<TArgs>(args)...);
 
-    p_io->send(dst_id, serialize(msg));
+    p_io->send(dst_id, address, serialize(msg));
 }
 
 template<message_type TMsgType, typename... TArgs>
@@ -97,8 +97,9 @@ inline void send(context& ctx, server_id_t dst_id, TArgs&&... args)
     assert(ctx.id != dst_id);
     const peer::ptr p_peer = peers::find(ctx, dst_id);
     if (p_peer != nullptr) {
-        ctx.schd.execute_async([p_io = ctx.p_io, dst_id, args...]() mutable -> void {
-            send<TMsgType>(std::move(p_io), dst_id, std::move(args)...);
+        std::string address = p_peer->address;
+        ctx.schd.execute_async([p_io = ctx.p_io, dst_id, addr = std::move(address), args...]() mutable -> void {
+            send<TMsgType>(std::move(p_io), dst_id, addr, std::move(args)...);
         });
     } else {
         RAFT_LOG_WARN(ctx, "Server %llu does not exists", dst_id);

@@ -99,6 +99,7 @@ template<typename TArch>
 void serialize(TArch& ar, ::wstux::raft::server_config& cfg, const unsigned int /*version*/)
 {
     ar & cfg.id;
+    ar & cfg.address;
     ar & cfg.is_voter;
 }
 

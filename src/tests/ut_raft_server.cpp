@@ -42,7 +42,7 @@ public:
     {
         m_p_io = std::make_shared<tests::empty_io>();
         m_p_fsm = std::make_shared<tests::fsm_stub>();
-        m_p_io->cluster_cfg.servers.emplace_back(1, true);
+        m_p_io->cluster_cfg.servers.emplace_back(1, std::to_string(1), true);
 
         tests::empty_io* p_raw_io = m_p_io.get();
         std::function<bool()> is_stop_fn = [p_raw_io]()->bool { return p_raw_io->is_stop; };

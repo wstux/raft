@@ -48,23 +48,23 @@ namespace process {
 
 struct state final
 {
-    index_t commit_index;
-    index_t last_applied;
-    index_t last_stored;
+    index_t commit_index = 0;
+    index_t last_applied = 0;
+    index_t last_stored = 0;
 
-    index_t configuration_committed_index;
-    index_t configuration_uncommitted_index;
+    index_t configuration_committed_index = 0;
+    index_t configuration_uncommitted_index = 0;
 
     struct {
         bool is_in_process = false;
     } snapshot;
 
-    size_t tasks_in_process;
+    size_t tasks_in_process = 0;
 };
 
 } // namespace process
 
-struct context final: public std::enable_shared_from_this<context>
+struct context final
 {
     using ptr = std::shared_ptr<context>;
 
@@ -140,7 +140,9 @@ namespace utils {
 
 bool init(context& ctx);
 
-bool is_valid_cluster(const server_id_t id, const cluster_config& cluster_cfg);
+bool is_valid_cluster(const server_id_t id, const cluster_config& cluster_cfg, bool check_self = true);
+
+cluster_config make_cluster_config(const context& ctx);
 
 bool load(context& ctx);
 

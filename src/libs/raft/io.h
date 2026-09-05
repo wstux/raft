@@ -61,6 +61,8 @@ struct config final
 
     size_t scheduler_threads_count = 4;
 
+    size_t snapshot_threshold = 1024;
+
     bool is_async_io = false;
 };
 
@@ -68,15 +70,18 @@ struct server_config final
 {
     server_config()
         : id(gk_invalid_id)
+        , address()
         , is_voter(false)
     {}
 
-    server_config(const server_id_t id, bool is_voter)
+    server_config(const server_id_t id, std::string addr, bool is_voter)
         : id(id)
+        , address(std::move(addr))
         , is_voter(is_voter)
     {}
 
     server_id_t id;
+    std::string address;
     bool is_voter;
 };
 
@@ -161,7 +166,7 @@ public:
 
     virtual bool reconfigure(server_id_t id) = 0;
 
-    virtual void send(server_id_t id, const buffer_type& msg) = 0;
+    virtual void send(server_id_t id, const std::string& address, const buffer_type& msg) = 0;
 
     virtual bool set_snapshot(snapshot::ptr p_snapshot) = 0;
 

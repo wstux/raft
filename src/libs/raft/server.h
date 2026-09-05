@@ -48,6 +48,8 @@ public:
 
     ~server();
 
+    void add(const server_id_t id, const std::string& address, const bool is_voter);
+
     void deinit();
 
     server_id_t id() const { return m_id; }
@@ -63,6 +65,8 @@ public:
     void handle_message(const inbuffer_type& msg_buf);
 
     bool reconfigure();
+
+    void remove(const server_id_t id);
 
     bool start();
 

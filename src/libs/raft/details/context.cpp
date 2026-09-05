@@ -97,11 +97,12 @@ context::context(server_id_t id, const io::ptr p_io, const fsm::ptr p_fsm, loggi
     , is_stop_fn(is_stop)
     , alloc(alloc)
     , is_async_io(false)
-    , config(gk_invalid_id, false)
+    , config(gk_invalid_id, "", false)
     , p_io(p_io)
     , p_fsm(p_fsm)
     , term(0)
     , schd(alloc)
+    , snapshot_threshold(1024)
     , heartbeat_interval_ms(100)
     , rand_engine(std::chrono::system_clock::now().time_since_epoch().count() * id)
     , election_distribution(250, 500)
@@ -193,6 +194,8 @@ bool init(context& ctx)
     ctx.election_distribution = std::uniform_int_distribution<size_t>(cfg.vote_timeout_min_ms, cfg.vote_timeout_max_ms);
     ctx.heartbeat_interval_ms = cfg.heartbeat_interval_ms;
 
+    ctx.snapshot_threshold = cfg.snapshot_threshold;
+
     // Reserve memory. Statistically, the cluster has less than or equal to 32
     // nodes. Therefore, memory is reserved for 32 nodes. If more is needed,
     // just reallocation will occur.
@@ -206,7 +209,7 @@ bool init(context& ctx)
     return true;
 }
 
-bool is_valid_cluster(const server_id_t id, const cluster_config& cluster_cfg)
+bool is_valid_cluster(const server_id_t id, const cluster_config& cluster_cfg, bool check_self)
 {
     assert(std::is_sorted(cluster_cfg.servers.cbegin(), cluster_cfg.servers.cend(),
         [](const server_config& l, const server_config& r) -> bool { return l.id < r.id; }));
@@ -217,9 +220,22 @@ bool is_valid_cluster(const server_id_t id, const cluster_config& cluster_cfg)
     if (it != cluster_cfg.servers.cend()) {
         return false;
     }
-    it = std::find_if(cluster_cfg.servers.cbegin(), cluster_cfg.servers.cend(),
-        [id](const server_config& cfg) -> bool { return cfg.id == id; });
-    return it != cluster_cfg.servers.cend();
+    if (check_self) {
+        it = std::find_if(cluster_cfg.servers.cbegin(), cluster_cfg.servers.cend(),
+            [id](const server_config& cfg) -> bool { return cfg.id == id; });
+        return it != cluster_cfg.servers.cend();
+    }
+    return true;
+}
+
+cluster_config make_cluster_config(const context& ctx)
+{
+    cluster_config cluster_cfg;
+    cluster_cfg.servers.emplace_back(ctx.config);
+    for (const peer& p : ctx.peers) {
+        cluster_cfg.servers.emplace_back(p.id, p.address, p.is_voter);
+    }
+    return cluster_cfg;
 }
 
 bool load(context& ctx)

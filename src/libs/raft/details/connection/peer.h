@@ -43,11 +43,24 @@ struct peer final
 
     explicit peer(const server_config& cfg)
         : id(cfg.id)
+        , address(cfg.address)
         , is_voter(cfg.is_voter)
         , next_index(1)
         , match_index(0)
         , recent_recv(false)
     {}
+
+    peer(const peer&) = default;
+    peer(peer&&) noexcept = default;
+
+    peer& operator=(peer&& other) noexcept
+    {
+        if (this != &other) {
+            this->~peer();
+            ::new (static_cast<void*>(this)) peer(std::move(other));
+        }
+        return *this;
+    }
 
     void mark_recent_recv() { recent_recv = true; }
 
@@ -71,6 +84,7 @@ struct peer final
     }
 
     const server_id_t id;
+    std::string address;
     bool is_voter;
 
     index_t next_index;

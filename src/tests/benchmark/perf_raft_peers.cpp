@@ -47,7 +47,7 @@ constexpr size_t gk_cluster_size = 7;
     tests::empty_io::ptr p_io = std::make_shared<tests::empty_io>();
     tests::fsm_stub::ptr p_fsm = std::make_shared<tests::fsm_stub>();
     for (size_t i = 0; i < servs_count; ++i) {
-        p_io->cluster_cfg.servers.emplace_back(i + 1, true);
+        p_io->cluster_cfg.servers.emplace_back(i + 1, std::to_string(i + 1), true);
     }
 
     tests::empty_io* p_raw_io = p_io.get();

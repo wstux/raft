@@ -34,6 +34,7 @@
 #include "raft/details/handlers/heartbeat_handler.h"
 #include "raft/details/handlers/timeout_handler.h"
 #include "raft/details/handlers/vote_handler.h"
+#include "raft/details/replication/membership.h"
 #include "raft/details/role/convert.h"
 #include "raft/details/role/election.h"
 
@@ -85,6 +86,15 @@ server::server(const server_id_t id, const io::ptr& p_io, const fsm::ptr p_fsm, 
 
 server::~server()
 {}
+
+
+void server::add(const server_id_t id, const std::string& address, const bool is_voter)
+{
+    server_config config(id, address, is_voter);
+    details::scheduler::handler_type handler =
+        [p_ctx = m_p_ctx.get(), cfg = std::move(config)]() -> void { details::replication::membership::append(*p_ctx, cfg); };
+    m_p_ctx->schd.execute_strand(std::move(handler));
+}
 
 void server::deinit()
 {
@@ -169,6 +179,13 @@ bool server::reconfigure()
         };
     m_p_ctx->schd.execute_strand(std::move(handler));
     return true;
+}
+
+void server::remove(const server_id_t id)
+{
+    details::scheduler::handler_type handler =
+        [p_ctx = m_p_ctx.get(), id]() -> void { details::replication::membership::remove(*p_ctx, id); };
+    m_p_ctx->schd.execute_strand(std::move(handler));
 }
 
 bool server::start()

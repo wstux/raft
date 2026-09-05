@@ -62,11 +62,13 @@ public:
 
     virtual bool append(const entry::list& entrs) override final
     {
-        index_t i = start_index + entries.size();
-        for (const entry::ptr& e : entrs) {
-            entries.emplace(i++, e);
+        if (is_append) {
+            index_t i = start_index + entries.size();
+            for (const entry::ptr& e : entrs) {
+                entries.emplace(i++, e);
+            }
         }
-        return true;
+        return is_append;
     }
 
     virtual cluster_config bootstrap() const override final { return cluster_cfg; }
@@ -103,7 +105,20 @@ public:
     virtual index_t load_start_index() override final { return start_index; }
     virtual term_t load_term() override final { return 0; }
     virtual bool reconfigure(server_id_t) override final { return true; }
-    virtual void send(server_id_t id, const buffer_type& msg) override final { clients.at(id)->send(msg); }
+    virtual void send(server_id_t id, const std::string&, const buffer_type& msg) override final
+    {
+        empty_client* p_client = nullptr;
+        {
+            std::unique_lock<std::mutex> lock(clients_mutex);
+            std::unordered_map<server_id_t, empty_client::ptr>::iterator it = clients.find(id);
+            if (it != clients.end()) {
+                p_client = it->second.get();
+            } else {
+                p_client = clients.emplace(id, empty_client::make()).first->second.get();
+            }
+        }
+        p_client->send(msg);
+    }
 
     virtual bool set_snapshot(snapshot::ptr p_sh) override final
     {
@@ -116,11 +131,13 @@ public:
 
     virtual bool truncate(const index_t begin) override final
     {
-        std::map<index_t, entry::ptr>::iterator it = entries.find(begin);
-        if (it != entries.end()) {
-            entries.erase(it, entries.end());
+        if (is_truncate) {
+            std::map<index_t, entry::ptr>::iterator it = entries.find(begin);
+            if (it != entries.end()) {
+                entries.erase(it, entries.end());
+            }
         }
-        return true;
+        return is_truncate;
     }
 
     virtual server_id_t voted_for() const override final { return gk_invalid_id; }
@@ -129,6 +146,7 @@ public:
     config cfg;
     cluster_config cluster_cfg;
 
+    std::mutex clients_mutex;
     std::unordered_map<server_id_t, empty_client::ptr> clients;
 
     std::map<index_t, entry::ptr> entries;
@@ -141,6 +159,8 @@ public:
     snapshot::ptr p_snapshot = nullptr;
 
     bool is_init = true;
+    bool is_append = true;
+    bool is_truncate = true;
     bool is_stop = false;
 };
 
