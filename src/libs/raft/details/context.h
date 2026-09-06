@@ -25,6 +25,7 @@
 #ifndef _LIBS_RAFT_CONTEXT_H_
 #define _LIBS_RAFT_CONTEXT_H_
 
+#include <atomic>
 #include <functional>
 #include <iostream>
 #include <memory>
@@ -49,7 +50,7 @@ namespace process {
 struct state final
 {
     index_t commit_index = 0;
-    index_t last_applied = 0;
+    std::atomic<index_t> last_applied = 0;
     index_t last_stored = 0;
 
     index_t configuration_committed_index = 0;

@@ -221,7 +221,7 @@ bool append(context& ctx, term_t term, index_t leader_commit, index_t prev_log_i
             RAFT_LOG_TRACE(ctx, "Server %llu(%s) updated commit index. State: commit_index %u, "
                 "configuration_committed_index %u, configuration_uncommitted_index %u, last_applied %u, "
                 "last_stored %u", ctx.id, ctx.role.str(), ctx.state.commit_index, ctx.state.configuration_committed_index,
-                ctx.state.configuration_uncommitted_index, ctx.state.last_applied, ctx.state.last_stored);
+                ctx.state.configuration_uncommitted_index, ctx.state.last_applied.load(std::memory_order_acquire), ctx.state.last_stored);
             if (! commit(ctx)) {
                 return false;
             }
@@ -371,7 +371,7 @@ bool commit(context& ctx)
     RAFT_LOG_TRACE(ctx, "Server %llu(%s) committed changes. State: commit_index %u, "
                 "configuration_committed_index %u, configuration_uncommitted_index %u, last_applied %u, "
                 "last_stored %u", ctx.id, ctx.role.str(), ctx.state.commit_index, ctx.state.configuration_committed_index,
-                ctx.state.configuration_uncommitted_index, ctx.state.last_applied, ctx.state.last_stored);
+                ctx.state.configuration_uncommitted_index, ctx.state.last_applied.load(std::memory_order_acquire), ctx.state.last_stored);
     if (snapshot::should_take_snapshot(ctx)) {
         return snapshot::take_snapshot(ctx);
     }

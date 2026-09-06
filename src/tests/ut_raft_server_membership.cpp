@@ -96,9 +96,10 @@ TYPED_TEST(raft_membership, add_server)
     raft::cluster_config cfg = p_io->m_cluster_cfg;
     ASSERT_TRUE(cfg.servers.size() == 3) << cfg.servers.size();
 
+    const raft::index_t idx = p_leader->last_applied_index() + 1;
     p_leader->add(p_srv->id(), std::to_string(p_srv->id()), true);
 
-    p_network->wait_changed_cluster_cfg();
+    p_network->wait_for_update(idx);
     EXPECT_FALSE(p_srv->is_leader());
 
     for (size_t i = 1; i < 5; ++i) {
@@ -132,9 +133,10 @@ TYPED_TEST(raft_membership, add_leader_server)
     raft::cluster_config cfg = p_io->m_cluster_cfg;
     ASSERT_TRUE(cfg.servers.size() == 3) << cfg.servers.size();
 
+    const raft::index_t idx = p_leader->last_applied_index() + 1;
     p_leader->add(p_srv->id(), std::to_string(p_srv->id()), true);
 
-    p_network->wait_changed_cluster_cfg();
+    p_network->wait_for_update(idx);
     EXPECT_FALSE(p_srv->is_leader());
 
     for (size_t i = 1; i < 5; ++i) {
@@ -162,11 +164,12 @@ TYPED_TEST(raft_membership, apply)
         ASSERT_TRUE(p_network->get_fsm(i)->get<size_t>() == nullptr);
     }
 
+    const raft::index_t idx = p_leader->last_applied_index() + 1;
     const size_t value = 1234567;
     raft::buffer_type buffer((char*)&value, (char*)&value + sizeof(value));
     p_leader->apply(buffer);
 
-    p_network->wait_changed_fsm<size_t>();
+    p_network->wait_for_update(idx);
     for (size_t i = 1; i < 4; ++i) {
         const size_t* p_value = p_network->get_fsm(i)->get<size_t>();
         ASSERT_TRUE(p_value != nullptr);
@@ -196,9 +199,10 @@ TYPED_TEST(raft_membership, remove_server)
     raft::cluster_config cfg = p_network->get_io(p_leader->id())->m_cluster_cfg;
     ASSERT_TRUE(cfg.servers.size() == 3) << cfg.servers.size();
 
+    const raft::index_t idx = p_leader->last_applied_index() + 1;
     p_leader->remove(remove_id);
 
-    p_network->wait_changed_cluster_cfg_except(remove_id);
+    p_network->wait_for_update(idx, remove_id);
     for (size_t i = 1; i < 4; ++i) {
         if (i == remove_id) {
             continue;
