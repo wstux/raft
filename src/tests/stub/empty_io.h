@@ -60,7 +60,7 @@ public:
     empty_io() { cfg.scheduler_threads_count = 2; }
     virtual ~empty_io() {}
 
-    virtual bool append(const entry::list& entrs) override final
+    virtual bool append(const entry::list& entrs) noexcept override final
     {
         if (is_append) {
             index_t i = start_index + entries.size();
@@ -71,14 +71,14 @@ public:
         return is_append;
     }
 
-    virtual cluster_config bootstrap() const override final { return cluster_cfg; }
-    virtual config configuration() const override final { return cfg; };
+    virtual cluster_config bootstrap() const noexcept override final { return cluster_cfg; }
+    virtual config configuration() const noexcept override final { return cfg; };
 
-    virtual void deinit() override final {}
+    virtual void deinit() noexcept override final {}
 
-    virtual snapshot::ptr get_snapshot() const override final { return p_snapshot; }
+    virtual snapshot::ptr get_snapshot() const noexcept override final { return p_snapshot; }
 
-    virtual bool init(server_id_t id) override final
+    virtual bool init(server_id_t id) noexcept override final
     {
         if (clients.empty() && ! cluster_cfg.servers.empty()) {
             for (const server_config& cfg : cluster_cfg.servers) {
@@ -90,7 +90,7 @@ public:
         return is_init;
     }
 
-    virtual entry::list load_entries() override final
+    virtual entry::list load_entries() noexcept override final
     {
         entry::list entrs;
         entrs.reserve(entries.size());
@@ -100,12 +100,12 @@ public:
         return entrs;
     }
 
-    virtual index_t load_snapshot_index() override final { return snapshot_index; }
-    virtual term_t load_snapshot_term() override final { return snapshot_term; }
-    virtual index_t load_start_index() override final { return start_index; }
-    virtual term_t load_term() override final { return 0; }
-    virtual bool reconfigure(server_id_t) override final { return true; }
-    virtual void send(server_id_t id, const std::string&, const buffer_type& msg) override final
+    virtual index_t load_snapshot_index() noexcept override final { return snapshot_index; }
+    virtual term_t load_snapshot_term() noexcept override final { return snapshot_term; }
+    virtual index_t load_start_index() noexcept override final { return start_index; }
+    virtual term_t load_term() noexcept override final { return 0; }
+    virtual bool reconfigure(server_id_t) noexcept override final { return true; }
+    virtual void send(server_id_t id, std::string_view, const buffer_type& msg) noexcept override final
     {
         empty_client* p_client = nullptr;
         {
@@ -120,16 +120,16 @@ public:
         p_client->send(msg);
     }
 
-    virtual bool set_snapshot(snapshot::ptr p_sh) override final
+    virtual bool set_snapshot(snapshot::ptr p_sh) noexcept override final
     {
         p_snapshot = p_sh;
         return true;
     }
 
-    virtual void set_term(term_t) override final {}
-    virtual void set_voted_for(server_id_t) override final {}
+    virtual void set_term(term_t) noexcept override final {}
+    virtual void set_voted_for(server_id_t) noexcept override final {}
 
-    virtual bool truncate(const index_t begin) override final
+    virtual bool truncate(const index_t begin) noexcept override final
     {
         if (is_truncate) {
             std::map<index_t, entry::ptr>::iterator it = entries.find(begin);
@@ -140,7 +140,7 @@ public:
         return is_truncate;
     }
 
-    virtual server_id_t voted_for() const override final { return gk_invalid_id; }
+    virtual server_id_t voted_for() const noexcept override final { return gk_invalid_id; }
 
 public:
     config cfg;

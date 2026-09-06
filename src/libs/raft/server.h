@@ -75,6 +75,8 @@ public:
 
     void handle_message(const inbuffer_type& msg_buf);
 
+    server_id_t leader_id() const;
+
     bool reconfigure();
 
     void remove(const server_id_t id);

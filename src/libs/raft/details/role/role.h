@@ -26,6 +26,7 @@
 #define _LIBS_RAFT_ROLE_ROLE_H_
 
 #include <cstdint>
+#include <atomic>
 
 #include "raft/io.h"
 
@@ -42,28 +43,13 @@ enum role_type : int32_t
     leader    = 3
 };
 
-struct follower_role final
-{
-    server_id_t leader_id;
-};
-
-struct candidate_role final
-{
-    size_t votes_granted;
-    bool is_prevote;
-};
-
-struct leader_role final
-{
-};
-
 struct state final
 {
     inline bool is_follower() const { return role == role_type::follower; }
     inline bool is_candidate() const { return role == role_type::candidate; }
     inline bool is_leader() const { return role == role_type::leader; }
 
-    inline bool has_leader() const { return is_follower() && follower_state.leader_id != gk_invalid_id; }
+    inline bool has_leader() const { return is_follower() && leader_id != gk_invalid_id; }
 
     const char* str() const
     {
@@ -82,12 +68,17 @@ struct state final
         return p_undefined_str;
     }
 
-    role_type role = role_type::undefined;
+    std::atomic<role_type> role = role_type::undefined;
+
+    std::atomic<server_id_t> leader_id = gk_invalid_id;
 
     union {
-        follower_role  follower_state;
-        candidate_role candidate_state;
-        leader_role    leader_state;
+        struct {} follower;
+        struct {
+            size_t votes_granted;
+            bool is_prevote;
+        } candidate;
+        struct {} leader;
     };
 
     bool is_voter;

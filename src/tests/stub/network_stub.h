@@ -93,7 +93,8 @@ public:
 
         std::map<server_id_t, server_ptr>::const_iterator it =
             std::find_if(m_servers.cbegin(), m_servers.cend(),
-                         [](const servers_map::value_type& v) -> bool { return v.second->is_leader(); });
+                [](const servers_map::value_type& v) -> bool { return v.second->is_leader(); }
+            );
         if (it != m_servers.cend()) {
             return it->second;
         }
@@ -112,7 +113,7 @@ public:
 
         std::vector<server_ptr> servers;
         std::transform(m_servers.cbegin(), m_servers.cend(), std::back_inserter(servers),
-                       [](const servers_map::value_type& v) -> server_ptr { return v.second; });
+            [](const servers_map::value_type& v) -> server_ptr { return v.second; });
         return servers;
     }
 

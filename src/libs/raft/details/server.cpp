@@ -147,6 +147,11 @@ void server::handle_message(const inbuffer_type& msg_buf)
     m_p_ctx->schd.execute_strand([p_ctx = m_p_ctx.get(), msg = std::move(msg)]() { raft::handle_message(*p_ctx, msg); });
 }
 
+server_id_t server::leader_id() const
+{
+    return m_p_ctx->role.leader_id.load(std::memory_order_acquire);
+}
+
 bool server::load(details::context& ctx)
 {
     const bool is_loaded = details::utils::load(ctx);

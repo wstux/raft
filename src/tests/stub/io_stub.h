@@ -217,7 +217,7 @@ public:
 
     virtual ~io_stub() {}
 
-    virtual bool append(const entry::list& entries) override final
+    virtual bool append(const entry::list& entries) noexcept override final
     {
         std::unique_lock<std::mutex> lock(m_entries_mutex);
         if (! m_is_append) {
@@ -239,15 +239,15 @@ public:
         return true;
     }
 
-    virtual cluster_config bootstrap() const override final { return m_cluster_cfg; }
+    virtual cluster_config bootstrap() const noexcept override final { return m_cluster_cfg; }
 
-    virtual config configuration() const override final { return m_cfg; };
+    virtual config configuration() const noexcept override final { return m_cfg; };
 
-    virtual void deinit() override final {}
+    virtual void deinit() noexcept override final {}
 
-    virtual snapshot::ptr get_snapshot() const override final { return m_p_snapshot; }
+    virtual snapshot::ptr get_snapshot() const noexcept override final { return m_p_snapshot; }
 
-    virtual bool init(server_id_t id) override final
+    virtual bool init(server_id_t id) noexcept override final
     {
         if (m_clients.empty() && ! m_cluster_cfg.servers.empty()) {
             for (const server_config& cfg : m_cluster_cfg.servers) {
@@ -259,7 +259,7 @@ public:
         return true;
     }
 
-    virtual entry::list load_entries() override final
+    virtual entry::list load_entries() noexcept override final
     {
         std::unique_lock<std::mutex> lock(m_entries_mutex);
         entry::list entries;
@@ -269,17 +269,17 @@ public:
         return entries;
     }
 
-    virtual index_t load_snapshot_index() override final { return m_snapshot_index; }
+    virtual index_t load_snapshot_index() noexcept override final { return m_snapshot_index; }
 
-    virtual term_t load_snapshot_term() override final { return m_snapshot_term; }
+    virtual term_t load_snapshot_term() noexcept override final { return m_snapshot_term; }
 
-    virtual index_t load_start_index() override final { return m_start_index; }
+    virtual index_t load_start_index() noexcept override final { return m_start_index; }
 
-    virtual term_t load_term() override final { return m_term; }
+    virtual term_t load_term() noexcept override final { return m_term; }
 
-    virtual bool reconfigure(server_id_t) override final { return true; }
+    virtual bool reconfigure(server_id_t) noexcept override final { return true; }
 
-    virtual void send(server_id_t id, const std::string&, const buffer_type& msg) override final
+    virtual void send(server_id_t id, std::string_view, const buffer_type& msg) noexcept override final
     {
         iclient* p_client = nullptr;
         {
@@ -294,17 +294,17 @@ public:
         p_client->send(msg);
     }
 
-    virtual bool set_snapshot(snapshot::ptr p_sh) override final
+    virtual bool set_snapshot(snapshot::ptr p_sh) noexcept override final
     {
         m_p_snapshot = p_sh;
         return true;
     }
 
-    virtual void set_term(term_t term) override final { m_term = term; }
+    virtual void set_term(term_t term) noexcept override final { m_term = term; }
 
-    virtual void set_voted_for(server_id_t id) override final { m_voted_for = id; }
+    virtual void set_voted_for(server_id_t id) noexcept override final { m_voted_for = id; }
 
-    virtual bool truncate(const index_t begin) override final
+    virtual bool truncate(const index_t begin) noexcept override final
     {
         std::unique_lock<std::mutex> lock(m_entries_mutex);
         if (! m_is_truncate) {
@@ -318,7 +318,7 @@ public:
         return true;
     }
 
-    virtual server_id_t voted_for() const override final { return m_voted_for; }
+    virtual server_id_t voted_for() const noexcept override final { return m_voted_for; }
 
 public:
     cluster_config m_cluster_cfg;

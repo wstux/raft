@@ -129,11 +129,11 @@ TEST_F(raft_role_convert, update_leader)
 
     details::role::become_follower(ctx);
     EXPECT_TRUE(ctx.role.is_follower());
-    EXPECT_TRUE(ctx.role.follower_state.leader_id == raft::gk_invalid_id);
+    EXPECT_TRUE(ctx.role.leader_id == raft::gk_invalid_id);
 
     details::role::update_leader(ctx, 3);
     EXPECT_TRUE(ctx.role.is_follower());
-    EXPECT_TRUE(ctx.role.follower_state.leader_id == 3);
+    EXPECT_TRUE(ctx.role.leader_id == 3);
 }
 
 TEST_F(raft_role_convert, update_term)
