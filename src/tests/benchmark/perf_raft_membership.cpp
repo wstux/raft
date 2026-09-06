@@ -71,6 +71,45 @@ static void add_member(benchmark::State& state)
 }
 
 template<size_t N>
+static void apply_member(benchmark::State& state)
+{
+    namespace raft = ::wstux::raft;
+    namespace tests = ::wstux::raft::tests;
+
+    for (auto _ : state) {
+        state.PauseTiming();
+
+        tests::network_stub::ptr p_network = std::make_shared<tests::network_stub>(tests::client_type::threaded);
+        std::vector<std::pair<raft::server_id_t, bool>> cluster;
+        cluster.reserve(N);
+        for (size_t i = 0; i < N; ++i) {
+            cluster.emplace_back(i + 1, true);
+        }
+        p_network->create_cluster(cluster, false);
+        for (size_t i = 0; i < N; ++i) {
+            tests::io_stub::ptr p_io = p_network->get_io(i + 1);
+            p_io->m_cfg.heartbeat_interval_ms = 5;
+            p_io->m_cfg.vote_timeout_min_ms = 10;
+            p_io->m_cfg.vote_timeout_max_ms = 15;
+        }
+        p_network->init();
+        p_network->start();
+        p_network->wait_leader();
+
+        raft::server::ptr p_leader = p_network->get_leader();
+
+        state.ResumeTiming();
+        p_leader->apply<size_t>(1234567);
+        p_network->wait_changed_fsm<size_t>();
+        state.PauseTiming();
+
+        p_network->stop();
+        p_network.reset();
+        benchmark::DoNotOptimize(p_network);
+    }
+}
+
+template<size_t N>
 static void remove_member(benchmark::State& state)
 {
     namespace raft = ::wstux::raft;
@@ -144,6 +183,38 @@ static void add_member_default(benchmark::State& state)
 }
 
 template<size_t N>
+static void apply_member_default(benchmark::State& state)
+{
+    namespace raft = ::wstux::raft;
+    namespace tests = ::wstux::raft::tests;
+
+    for (auto _ : state) {
+        state.PauseTiming();
+
+        tests::network_stub::ptr p_network = std::make_shared<tests::network_stub>(tests::client_type::threaded);
+        std::vector<std::pair<raft::server_id_t, bool>> cluster;
+        cluster.reserve(N);
+        for (size_t i = 0; i < N; ++i) {
+            cluster.emplace_back(i + 1, true);
+        }
+        p_network->create_cluster(cluster);
+        p_network->start();
+        p_network->wait_leader();
+
+        raft::server::ptr p_leader = p_network->get_leader();
+
+        state.ResumeTiming();
+        p_leader->apply<size_t>(1234567);
+        p_network->wait_changed_fsm<size_t>();
+        state.PauseTiming();
+
+        p_network->stop();
+        p_network.reset();
+        benchmark::DoNotOptimize(p_network);
+    }
+}
+
+template<size_t N>
 static void remove_member_default(benchmark::State& state)
 {
     namespace raft = ::wstux::raft;
@@ -180,6 +251,10 @@ BENCHMARK(add_member<3>)->Unit(benchmark::kMillisecond);
 BENCHMARK(add_member<5>)->Unit(benchmark::kMillisecond);
 BENCHMARK(add_member<7>)->Unit(benchmark::kMillisecond);
 
+BENCHMARK(apply_member<3>)->Unit(benchmark::kMillisecond);
+BENCHMARK(apply_member<5>)->Unit(benchmark::kMillisecond);
+BENCHMARK(apply_member<7>)->Unit(benchmark::kMillisecond);
+
 BENCHMARK(remove_member<3>)->Unit(benchmark::kMillisecond);
 BENCHMARK(remove_member<5>)->Unit(benchmark::kMillisecond);
 BENCHMARK(remove_member<7>)->Unit(benchmark::kMillisecond);
@@ -187,6 +262,10 @@ BENCHMARK(remove_member<7>)->Unit(benchmark::kMillisecond);
 BENCHMARK(add_member_default<3>)->Unit(benchmark::kMillisecond);
 BENCHMARK(add_member_default<5>)->Unit(benchmark::kMillisecond);
 BENCHMARK(add_member_default<7>)->Unit(benchmark::kMillisecond);
+
+BENCHMARK(apply_member_default<3>)->Unit(benchmark::kMillisecond);
+BENCHMARK(apply_member_default<5>)->Unit(benchmark::kMillisecond);
+BENCHMARK(apply_member_default<7>)->Unit(benchmark::kMillisecond);
 
 BENCHMARK(remove_member_default<3>)->Unit(benchmark::kMillisecond);
 BENCHMARK(remove_member_default<5>)->Unit(benchmark::kMillisecond);

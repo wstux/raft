@@ -38,35 +38,35 @@ namespace replication {
 namespace membership {
 namespace {
 
+void async_io_cb(context& ctx, bool accept, entries::async::apply_context::ptr p_async_ctx)
+{
+    assert(ctx.state.tasks_in_process > 0);
+    --ctx.state.tasks_in_process;
+    entries::apply_callback(ctx, accept, p_async_ctx->index, p_async_ctx->entries);
+}
+
 bool change_configuration(context& ctx, cluster_config& cluster_cfg)
 {
     const index_t index = ctx.log.last_index() + 1;
 
     entries::async::apply_context::ptr p_async_ctx;
     const bool accept = entries::apply_configuration(ctx, std::move(cluster_cfg), p_async_ctx);
-    if (accept && ctx.is_async_io) {
-        assert(p_async_ctx);
-
-        scheduler::handler_type handler_fn = [&ctx, p_async_ctx = std::move(p_async_ctx)] () -> void {
-            RAFT_LOG_TRACE(ctx, "Server %llu(%s) is changing new peer asynchronously.", ctx.id, ctx.role.str());
-            // Perform blocking disk write outside the critical section (mutex)
-            const bool accept = ctx.p_io->append(p_async_ctx->entries);
-            ctx.schd.execute_strand([&ctx, accept, p_async_ctx = std::move(p_async_ctx)] () -> void {
-                assert(ctx.state.tasks_in_process > 0);
-                --ctx.state.tasks_in_process;
-                entries::apply_callback(ctx, accept, p_async_ctx->index, p_async_ctx->entries);
-            });
-        };
-
-        ++ctx.state.tasks_in_process;
-        ctx.schd.execute_async(std::move(handler_fn));
-    }
-
     if (accept) {
+        if (ctx.is_async_io && p_async_ctx) {
+            scheduler::handler_type handler_fn = [&ctx, p_async_ctx = std::move(p_async_ctx)] () -> void {
+                RAFT_LOG_TRACE(ctx, "Server %llu(%s) is changing new peer asynchronously.", ctx.id, ctx.role.str());
+                const bool accept = ctx.p_io->append(p_async_ctx->entries);
+                ctx.schd.execute_strand([&ctx, accept, p_async_ctx = std::move(p_async_ctx)] () -> void {
+                    async_io_cb(ctx, accept, p_async_ctx);
+                });
+            };
+
+            ++ctx.state.tasks_in_process;
+            ctx.schd.execute_async(std::move(handler_fn));
+        }
         append_entries::request(ctx);
         ctx.state.configuration_uncommitted_index = index;
     }
-
     return accept;
 }
 
@@ -99,6 +99,28 @@ bool append(context& ctx, const server_config& cfg)
     cluster_config cluster_cfg = utils::make_cluster_config(ctx);
     assert(cluster_cfg.servers.size() == (ctx.peers.size() + 1));
     return change_configuration(ctx, cluster_cfg);
+}
+
+bool apply(context& ctx, buffer_type buf)
+{
+    entries::async::apply_context::ptr p_async_ctx;
+    bool accept = entries::apply_command(ctx, std::move(buf), p_async_ctx);
+    if (accept) {
+        if (ctx.is_async_io && p_async_ctx) {
+            scheduler::handler_type handler_fn = [&ctx, p_async_ctx = std::move(p_async_ctx)] () -> void {
+                RAFT_LOG_TRACE(ctx, "Server %llu(%s) is saving new command asynchronously.", ctx.id, ctx.role.str());
+                const bool accept = ctx.p_io->append(p_async_ctx->entries);
+                ctx.schd.execute_strand([&ctx, accept, p_async_ctx = std::move(p_async_ctx)] () -> void {
+                    async_io_cb(ctx, accept, p_async_ctx);
+                });
+            };
+
+            ++ctx.state.tasks_in_process;
+            ctx.schd.execute_async(std::move(handler_fn));
+        }
+        append_entries::request(ctx);
+    }
+    return accept;
 }
 
 bool remove(context& ctx, const server_id_t id)

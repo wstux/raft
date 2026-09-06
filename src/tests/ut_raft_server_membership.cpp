@@ -143,6 +143,37 @@ TYPED_TEST(raft_membership, add_leader_server)
     }
 }
 
+TYPED_TEST(raft_membership, apply)
+{
+    using namespace std::chrono_literals;
+    using server_ptr = tests::network_stub::server_ptr;
+
+    tests::network_stub::ptr p_network = this->m_p_network;
+    p_network->create_cluster({{1, true}, {2, true}, {3, true}});
+    EXPECT_TRUE(p_network->leaders_count() == 0);
+
+    p_network->start();
+
+    p_network->wait_leader();
+    EXPECT_TRUE(p_network->leaders_count() == 1) << p_network->leaders_count();
+
+    server_ptr p_leader = p_network->get_leader();
+    for (size_t i = 1; i < 4; ++i) {
+        ASSERT_TRUE(p_network->get_fsm(i)->get<size_t>() == nullptr);
+    }
+
+    const size_t value = 1234567;
+    raft::buffer_type buffer((char*)&value, (char*)&value + sizeof(value));
+    p_leader->apply(buffer);
+
+    p_network->wait_changed_fsm<size_t>();
+    for (size_t i = 1; i < 4; ++i) {
+        const size_t* p_value = p_network->get_fsm(i)->get<size_t>();
+        ASSERT_TRUE(p_value != nullptr);
+        ASSERT_TRUE(*p_value == value) << "Server " << i << ", value " << *p_value;
+    }
+}
+
 TYPED_TEST(raft_membership, remove_server)
 {
     using namespace std::chrono_literals;

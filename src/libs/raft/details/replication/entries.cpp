@@ -124,7 +124,7 @@ bool store_log_to_storage(context& ctx, index_t index, async::apply_context::ptr
     assert(entries.size() > 0);
 
     if (ctx.is_async_io) {
-        p_async_ctx = std::make_shared<async::apply_context>();
+        p_async_ctx = std::allocate_shared<async::apply_context>(ctx.alloc);
         p_async_ctx->index = index;
         p_async_ctx->entries.swap(entries);
         return true;
@@ -241,7 +241,7 @@ bool append(context& ctx, term_t term, index_t leader_commit, index_t prev_log_i
     assert(ac_entries.size() != 0);
 
     if (ctx.is_async_io) {
-        p_async_ctx = std::make_shared<async::append_context>();
+        p_async_ctx = std::allocate_shared<async::append_context>(ctx.alloc);
         p_async_ctx->term = term;
         p_async_ctx->index = index;
         p_async_ctx->leader_commit = leader_commit;

@@ -100,6 +100,8 @@ public:
         return nullptr;
     }
 
+    fsm_stub::ptr get_fsm(server_id_t id) const { return m_fsm_map.at(id); }
+
     io_stub::ptr get_io(server_id_t id) const { return m_io_map.at(id); }
 
     server_ptr get_server(server_id_t id) const { return m_servers.at(id); }
@@ -183,6 +185,21 @@ public:
         m_io_map.clear();
     }
 
+    template<typename T>
+    void wait_changed_fsm(const size_t limit_ms = 1500) const
+    {
+        using namespace std::chrono_literals;
+        bool is_changed = false;
+        for (size_t i = 0; (i < limit_ms) && ! is_changed; i += 10) {
+            is_changed = std::all_of(m_fsm_map.cbegin(), m_fsm_map.cend(),
+                [] (const std::map<server_id_t, fsm_stub::ptr>::value_type& fsm) -> bool {return (fsm.second->get<T>() != nullptr); }
+            );
+            if (! is_changed) {
+                std::this_thread::sleep_for(10ms);
+            }
+        }
+    }
+
     void wait_changed_cluster_cfg(const size_t limit_ms = 1500) const
     {
         using namespace std::chrono_literals;
@@ -237,10 +254,11 @@ private:
     {
         std::function<bool()> is_stop_fn = []()->bool { return false; };
 
-        fsm::ptr p_fsm = std::make_shared<fsm_stub>();
+        fsm_stub::ptr p_fsm = std::make_shared<fsm_stub>();
         server_ptr p_srv = std::make_shared<server>(id, p_io, p_fsm, std::make_unique<tests::logging_handler_file>(log_file(id)), is_stop_fn);
 
         m_io_map.emplace(id, p_io);
+        m_fsm_map.emplace(id, p_fsm);
         m_servers.emplace(id, p_srv);
 
         return p_srv;
@@ -263,6 +281,7 @@ private:
     cluster_config m_cluster_cfg;
 
     std::map<server_id_t, io_stub::ptr> m_io_map;
+    std::map<server_id_t, fsm_stub::ptr> m_fsm_map;
     std::map<server_id_t, server_ptr> m_servers;
 
     static std::string m_test_fixture;
