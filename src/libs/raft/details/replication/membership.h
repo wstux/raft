@@ -36,6 +36,8 @@ namespace membership {
 
 bool append(context& ctx, const server_config& cfg);
 
+bool apply(context& ctx, buffer_type buf);
+
 bool remove(context& ctx, const server_id_t id);
 
 bool update(context& ctx, const entry::ptr& p_entry);

@@ -28,6 +28,7 @@
 #include <atomic>
 #include <memory>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include "raft/io.h"
@@ -49,6 +50,16 @@ public:
     ~server();
 
     void add(const server_id_t id, const std::string& address, const bool is_voter);
+
+    template<typename T, typename = typename std::enable_if<std::is_trivially_copyable<T>::value>::type>
+    void apply(const T& var)
+    {
+        const char* ptr = reinterpret_cast<const char*>(&var);
+        std::vector<char> buf(ptr, ptr + sizeof(T));
+        return apply(std::move(buf));
+    }
+
+    void apply(buffer_type buf);
 
     void deinit();
 

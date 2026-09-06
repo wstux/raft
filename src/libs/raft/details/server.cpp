@@ -96,6 +96,13 @@ void server::add(const server_id_t id, const std::string& address, const bool is
     m_p_ctx->schd.execute_strand(std::move(handler));
 }
 
+void server::apply(buffer_type buf)
+{
+    details::scheduler::handler_type handler =
+        [p_ctx = m_p_ctx.get(), buf = std::move(buf)]() -> void { details::replication::membership::apply(*p_ctx, std::move(buf)); };
+    m_p_ctx->schd.execute_strand(std::move(handler));
+}
+
 void server::deinit()
 {
     m_p_ctx->p_io->deinit();
