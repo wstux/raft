@@ -78,7 +78,7 @@ struct vote_message final
 {
     bool is_prevote;
     index_t last_log_index;
-    index_t last_log_term;
+    term_t last_log_term;
 };
 
 struct vote_response_message final

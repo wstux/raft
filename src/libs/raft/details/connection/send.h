@@ -65,7 +65,12 @@ template<> struct message_filler<message_type::append_entries_response>
 
 template<> struct message_filler<message_type::vote_request>
 {
-    static void fill(message& msg, bool is_prevote) { msg.vote_req.is_prevote = is_prevote; }
+    static void fill(message& msg, bool is_prevote, index_t last_log_index, term_t last_log_term)
+    {
+        msg.vote_req.is_prevote = is_prevote;
+        msg.vote_req.last_log_index = last_log_index;
+        msg.vote_req.last_log_term = last_log_term;
+    }
 };
 
 template<> struct message_filler<message_type::vote_response>
@@ -134,9 +139,10 @@ inline void send_append_entries_response(context& ctx, server_id_t dst_id, const
     }
 }
 
-inline void send_vote_request(context& ctx, const peer& p, const term_t term, const bool is_prevote)
+inline void send_vote_request(context& ctx, const peer& p, const term_t term, const bool is_prevote,
+                              const index_t last_log_index, const term_t last_log_term)
 {
-    send_async<message_type::vote_request>(ctx, p.id, p.address, term, ctx.id, is_prevote);
+    send_async<message_type::vote_request>(ctx, p.id, p.address, term, ctx.id, is_prevote, last_log_index, last_log_term);
 }
 
 inline void send_vote_response(context& ctx, const peer& p, const term_t term, const bool is_prevote, const bool accept)

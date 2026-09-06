@@ -55,6 +55,11 @@ void commmit_change(context& ctx, const index_t index)
             role::become_follower(ctx);
         }
     }
+
+    RAFT_LOG_TRACE(ctx, "Server %llu(%s) committed chacnges to index %u. State: commit_index %u, "
+        "configuration_committed_index %u, configuration_uncommitted_index %u, last_applied %u, "
+        "last_stored %u", ctx.id, ctx.role.str(), index, ctx.state.commit_index, ctx.state.configuration_committed_index,
+        ctx.state.configuration_uncommitted_index, ctx.state.last_applied.load(std::memory_order_acquire), ctx.state.last_stored);
 }
 
 bool commmit_command(context& ctx, const index_t index, const entry::ptr& p_entry)
