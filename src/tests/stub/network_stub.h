@@ -146,8 +146,19 @@ public:
     {
         using servers_map = std::map<server_id_t, server_ptr>;
 
-        return std::count_if(m_servers.begin(), m_servers.end(),
-                             [](const servers_map::value_type& v) -> bool { return v.second->is_leader(); });
+        size_t candidates = 0;
+        size_t leaders = 0;
+        for (const servers_map::value_type& v : m_servers) {
+            if (v.second->is_leader()) {
+                ++leaders;
+            } else if (v.second->is_candidate()) {
+                ++candidates;
+            }
+        }
+        if (leaders == 0) {
+            return 0;
+        }
+        return (leaders + candidates);
     }
 
     void remove_leader()
@@ -156,7 +167,7 @@ public:
 
         std::map<server_id_t, server_ptr>::iterator it =
             std::find_if(m_servers.begin(), m_servers.end(),
-                         [](const servers_map::value_type& v) -> bool { return v.second->is_leader(); });
+                [](const servers_map::value_type& v) -> bool { return v.second->is_leader(); });
         if (it != m_servers.end()) {
             m_servers.erase(it);
         }
@@ -223,7 +234,7 @@ public:
     void wait_leader(const size_t limit_ms = 1500) const
     {
         using namespace std::chrono_literals;
-        for (size_t i = 0; (i < limit_ms) && (! has_leader()); i += 10) {
+        for (size_t i = 0; (i < limit_ms) && (leaders_count() != 1); i += 10) {
             std::this_thread::sleep_for(10ms);
         }
     }
