@@ -196,6 +196,10 @@ bool init(context& ctx)
 
     ctx.snapshot_threshold = cfg.snapshot_threshold;
 
+    ctx.raft_logger.is_heartbeat_channel_enabled = cfg.is_heartbeat_log_ch_enabled;
+    ctx.raft_logger.is_timeout_channel_enabled = cfg.is_timeout_log_ch_enabled;
+    ctx.raft_logger.is_vote_channel_enabled = cfg.is_vote_log_ch_enabled;
+
     // Reserve memory. Statistically, the cluster has less than or equal to 32
     // nodes. Therefore, memory is reserved for 32 nodes. If more is needed,
     // just reallocation will occur.
@@ -287,6 +291,10 @@ void reconfigure(context& ctx, const config& cfg, const cluster_config& cluster_
     ctx.election_distribution = std::uniform_int_distribution<size_t>(cfg.vote_timeout_min_ms, cfg.vote_timeout_max_ms);
 
     ctx.heartbeat_interval_ms = cfg.heartbeat_interval_ms;
+
+    ctx.raft_logger.is_heartbeat_channel_enabled = cfg.is_heartbeat_log_ch_enabled;
+    ctx.raft_logger.is_timeout_channel_enabled = cfg.is_timeout_log_ch_enabled;
+    ctx.raft_logger.is_vote_channel_enabled = cfg.is_vote_log_ch_enabled;
 
     details::peers::update(ctx, cluster_cfg);
 }

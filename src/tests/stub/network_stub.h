@@ -93,7 +93,8 @@ public:
 
         std::map<server_id_t, server_ptr>::const_iterator it =
             std::find_if(m_servers.cbegin(), m_servers.cend(),
-                         [](const servers_map::value_type& v) -> bool { return v.second->is_leader(); });
+                [](const servers_map::value_type& v) -> bool { return v.second->is_leader(); }
+            );
         if (it != m_servers.cend()) {
             return it->second;
         }
@@ -112,7 +113,7 @@ public:
 
         std::vector<server_ptr> servers;
         std::transform(m_servers.cbegin(), m_servers.cend(), std::back_inserter(servers),
-                       [](const servers_map::value_type& v) -> server_ptr { return v.second; });
+            [](const servers_map::value_type& v) -> server_ptr { return v.second; });
         return servers;
     }
 
@@ -145,8 +146,19 @@ public:
     {
         using servers_map = std::map<server_id_t, server_ptr>;
 
-        return std::count_if(m_servers.begin(), m_servers.end(),
-                             [](const servers_map::value_type& v) -> bool { return v.second->is_leader(); });
+        size_t candidates = 0;
+        size_t leaders = 0;
+        for (const servers_map::value_type& v : m_servers) {
+            if (v.second->is_leader()) {
+                ++leaders;
+            } else if (v.second->is_candidate()) {
+                ++candidates;
+            }
+        }
+        if (leaders == 0) {
+            return 0;
+        }
+        return (leaders + candidates);
     }
 
     void remove_leader()
@@ -155,7 +167,7 @@ public:
 
         std::map<server_id_t, server_ptr>::iterator it =
             std::find_if(m_servers.begin(), m_servers.end(),
-                         [](const servers_map::value_type& v) -> bool { return v.second->is_leader(); });
+                [](const servers_map::value_type& v) -> bool { return v.second->is_leader(); });
         if (it != m_servers.end()) {
             m_servers.erase(it);
         }
@@ -200,29 +212,15 @@ public:
         }
     }
 
-    void wait_changed_cluster_cfg(const size_t limit_ms = 1500) const
+    void wait_for_update(const index_t index, const server_id_t except_id = gk_invalid_id, const size_t limit_ms = 1500) const
     {
         using namespace std::chrono_literals;
         bool is_changed = false;
         for (size_t i = 0; (i < limit_ms) && ! is_changed; i += 10) {
-            is_changed = std::all_of(m_io_map.cbegin(), m_io_map.cend(),
-                [] (const std::map<server_id_t, io_stub::ptr>::value_type& io) -> bool {return io.second->m_is_changed_cluster_cfg; }
-            );
-            if (! is_changed) {
-                std::this_thread::sleep_for(10ms);
-            }
-        }
-    }
-
-    void wait_changed_cluster_cfg_except(server_id_t except_id, const size_t limit_ms = 1500) const
-    {
-        using namespace std::chrono_literals;
-        bool is_changed = false;
-        for (size_t i = 0; (i < limit_ms) && ! is_changed; i += 10) {
-            is_changed = std::all_of(m_io_map.cbegin(), m_io_map.cend(),
-                [except_id] (const std::map<server_id_t, io_stub::ptr>::value_type& io) -> bool {
-                    if (except_id != io.first) {
-                        return io.second->m_is_changed_cluster_cfg;
+            is_changed = std::all_of(m_servers.cbegin(), m_servers.cend(),
+                [index, except_id] (const std::map<server_id_t, server_ptr>::value_type& srv) -> bool {
+                    if (except_id != srv.first) {
+                        return (srv.second->last_applied_index() == index);
                     }
                     return true;
                 }
@@ -236,7 +234,7 @@ public:
     void wait_leader(const size_t limit_ms = 1500) const
     {
         using namespace std::chrono_literals;
-        for (size_t i = 0; (i < limit_ms) && (! has_leader()); i += 10) {
+        for (size_t i = 0; (i < limit_ms) && (leaders_count() != 1); i += 10) {
             std::this_thread::sleep_for(10ms);
         }
     }

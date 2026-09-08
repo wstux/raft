@@ -235,7 +235,7 @@ TEST_F(raft_timeout_handler, election_start)
     details::role::become_candidate(ctx);
     EXPECT_TRUE(ctx.role.is_candidate());
     ctx.term = 1;
-    ctx.role.candidate_state.is_prevote = false;
+    ctx.role.candidate.is_prevote = false;
     EXPECT_TRUE(ctx.term == 1);
 
     details::timeout::election_timeout_task(ctx);
@@ -315,14 +315,14 @@ TEST_F(raft_vote_handler, handle_response_invalid_src_id)
     details::context& ctx = init(2);
     details::role::become_follower(ctx);
     details::role::become_candidate(ctx);
-    ctx.role.candidate_state.is_prevote = true;
-    ctx.role.candidate_state.votes_granted = 0;
+    ctx.role.candidate.is_prevote = true;
+    ctx.role.candidate.votes_granted = 0;
 
     details::vote_response_message msg;
     msg.is_prevote = true;
     msg.accept = true;
     details::vote::handle_response(ctx, 1, 10, msg);
-    EXPECT_TRUE(ctx.role.candidate_state.votes_granted == 0);
+    EXPECT_TRUE(ctx.role.candidate.votes_granted == 0);
 }
 
 TEST_F(raft_vote_handler, handle_response_invalid_term)
@@ -333,14 +333,14 @@ TEST_F(raft_vote_handler, handle_response_invalid_term)
     details::role::become_follower(ctx);
     details::role::become_candidate(ctx);
     ctx.term = 5;
-    ctx.role.candidate_state.is_prevote = true;
-    ctx.role.candidate_state.votes_granted = 0;
+    ctx.role.candidate.is_prevote = true;
+    ctx.role.candidate.votes_granted = 0;
 
     details::vote_response_message msg;
     msg.is_prevote = true;
     msg.accept = true;
     details::vote::handle_response(ctx, 1, 2, msg);
-    EXPECT_TRUE(ctx.role.candidate_state.votes_granted == 0);
+    EXPECT_TRUE(ctx.role.candidate.votes_granted == 0);
 }
 
 TEST_F(raft_vote_handler, handle_response_outdated_term)
@@ -351,8 +351,8 @@ TEST_F(raft_vote_handler, handle_response_outdated_term)
     details::role::become_follower(ctx);
     details::role::become_candidate(ctx);
     ctx.term = 1;
-    ctx.role.candidate_state.is_prevote = false;
-    ctx.role.candidate_state.votes_granted = 0;
+    ctx.role.candidate.is_prevote = false;
+    ctx.role.candidate.votes_granted = 0;
 
     details::vote_response_message msg;
     msg.is_prevote = false;
@@ -369,8 +369,8 @@ TEST_F(raft_vote_handler, handle_response_outdated_prevote_term)
     details::role::become_follower(ctx);
     details::role::become_candidate(ctx);
     ctx.term = 1;
-    ctx.role.candidate_state.is_prevote = true;
-    ctx.role.candidate_state.votes_granted = 0;
+    ctx.role.candidate.is_prevote = true;
+    ctx.role.candidate.votes_granted = 0;
 
     details::vote_response_message msg;
     msg.is_prevote = true;

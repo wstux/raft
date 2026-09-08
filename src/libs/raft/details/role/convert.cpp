@@ -26,6 +26,7 @@
 
 #include "raft/details/logger.h"
 #include "raft/details/handlers/timeout_handler.h"
+#include "raft/details/replication/entries.h"
 #include "raft/details/role/convert.h"
 #include "raft/details/role/election.h"
 
@@ -38,8 +39,10 @@ void become_follower(context& ctx)
 {
     RAFT_LOG_INFO(ctx, "Server %llu(%s) is becoming follower, term %u", ctx.id, ctx.role.str(), ctx.term);
 
+    timeout::election_restart_task(ctx);
+
     ctx.role.role = role_type::follower;
-    ctx.role.follower_state.leader_id = gk_invalid_id;
+    ctx.role.leader_id = gk_invalid_id;
     ctx.role.voted_for = gk_invalid_id;
 }
 
@@ -51,9 +54,10 @@ void become_candidate(context& ctx)
     assert(ctx.role.is_voter);
 
     ctx.role.role = role_type::candidate;
+    ctx.role.leader_id = gk_invalid_id;
 
-    ctx.role.candidate_state.votes_granted = 0;
-    ctx.role.candidate_state.is_prevote = true;
+    ctx.role.candidate.votes_granted = 0;
+    ctx.role.candidate.is_prevote = true;
 
     if (peers::voting_members_count(ctx) == 1) {
         become_leader(ctx);
@@ -69,16 +73,24 @@ void become_leader(context& ctx)
     assert(ctx.role.is_candidate());
 
     ctx.role.role = role_type::leader;
+    ctx.role.leader_id = ctx.id;
+
+    const size_t voters_count = peers::voting_members_count(ctx);
+    if (voters_count == 0 && (ctx.state.last_stored > ctx.state.commit_index)) {
+        ctx.state.commit_index = ctx.state.last_stored;
+        // do replication
+        replication::entries::commit(ctx);
+    }
 }
 
 void update_leader(context& ctx, server_id_t leader_id)
 {
     assert(ctx.role.is_follower());
 
-    if (ctx.role.follower_state.leader_id != leader_id) {
+    if (ctx.role.leader_id != leader_id) {
         RAFT_LOG_INFO(ctx, "Updating leader for server %llu(%s) to server with id %llu",
             ctx.id, ctx.role.str(), leader_id);
-        ctx.role.follower_state.leader_id = leader_id;
+        ctx.role.leader_id = leader_id;
     }
     timeout::election_restart_task(ctx);
 }

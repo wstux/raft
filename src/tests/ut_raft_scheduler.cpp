@@ -25,6 +25,7 @@
 #include <atomic>
 #include <chrono>
 #include <functional>
+#include <future>
 #include <memory>
 #include <thread>
 
@@ -443,6 +444,100 @@ TEST(raft_scheduler, double_start)
     schd.init(4);
     schd.start();
     EXPECT_NO_THROW(schd.start());
+}
+
+TEST(raft_scheduler, reschedule)
+{
+    raft::scheduler schd;
+    schd.init(4);
+    schd.start();
+
+    std::atomic_size_t counter{0};
+    raft::scheduler::task_type task = schd.make_task([&counter]() { counter.fetch_add(1); });
+    schd.schedule(task, 100);
+
+    schd.reschedule(task, 40);
+    schd.reschedule(task, 40);
+    schd.reschedule(task, 40);
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(150));
+
+    EXPECT_TRUE(counter == 1) << counter;
+}
+
+TEST(raft_scheduler, reschedule_race_condition)
+{
+    raft::scheduler schd;
+    schd.init(1);
+    schd.start();
+
+    std::atomic_size_t counter{0};
+    raft::scheduler::task_type task = schd.make_task([&counter]() { counter.fetch_add(1); });
+
+    std::promise<void> blocked_promise;
+    std::shared_future<void> blocked_future = blocked_promise.get_future().share();
+    std::promise<void> proceed_promise;
+    std::future<void> proceed_future = proceed_promise.get_future();
+
+    schd.execute_strand([blocked_future, &proceed_promise]() mutable {
+        proceed_promise.set_value();
+        blocked_future.wait();
+    });
+
+    proceed_future.wait();
+
+    schd.schedule(task, 5);
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
+    EXPECT_TRUE(counter == 0) << counter;
+    schd.reschedule(task, 100);
+
+    blocked_promise.set_value();
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+
+    EXPECT_TRUE(counter == 0) << counter;
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    EXPECT_TRUE(counter == 1) << counter;
+}
+
+TEST(raft_scheduler, multi_reschedule_race_condition)
+{
+    raft::scheduler schd;
+    schd.init(1);
+    schd.start();
+
+    std::atomic_size_t counter{0};
+    raft::scheduler::task_type task = schd.make_task([&counter]() { counter.fetch_add(1); });
+
+    std::promise<void> blocked_promise;
+    std::shared_future<void> blocked_future = blocked_promise.get_future().share();
+    std::promise<void> proceed_promise;
+    std::future<void> proceed_future = proceed_promise.get_future();
+
+    schd.execute_strand([blocked_future, &proceed_promise]() mutable {
+        proceed_promise.set_value();
+        blocked_future.wait();
+    });
+
+    proceed_future.wait();
+
+    schd.schedule(task, 0);
+    schd.reschedule(task, 10);
+    schd.reschedule(task, 10);
+    schd.reschedule(task, 10);
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+
+    EXPECT_TRUE(counter == 0) << counter;
+    schd.reschedule(task, 50);
+
+    blocked_promise.set_value();
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+
+    EXPECT_TRUE(counter == 0) << counter;
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    EXPECT_TRUE(counter == 1) << counter;
 }
 
 int main(int argc, char** argv)

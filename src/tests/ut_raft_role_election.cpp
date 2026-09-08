@@ -121,7 +121,7 @@ TEST_F(raft_role_election, election_false_results)
     details::role::become_candidate(ctx);
     ASSERT_TRUE(ctx.role.is_candidate());
 
-    ctx.role.candidate_state.votes_granted = 1;
+    ctx.role.candidate.votes_granted = 1;
     EXPECT_FALSE(details::role::election_results(ctx));
 }
 
@@ -133,10 +133,10 @@ TEST_F(raft_role_election, election_true_results)
     details::role::become_candidate(ctx);
     ASSERT_TRUE(ctx.role.is_candidate());
 
-    ctx.role.candidate_state.votes_granted = 2;
+    ctx.role.candidate.votes_granted = 2;
     EXPECT_TRUE(details::role::election_results(ctx));
 
-    ctx.role.candidate_state.votes_granted = 3;
+    ctx.role.candidate.votes_granted = 3;
     EXPECT_TRUE(details::role::election_results(ctx));
 }
 
@@ -148,9 +148,9 @@ TEST_F(raft_role_election, election_start_prevote)
     details::role::become_candidate(ctx);
     ASSERT_TRUE(ctx.role.is_candidate());
 
-    EXPECT_TRUE(ctx.role.candidate_state.is_prevote);
+    EXPECT_TRUE(ctx.role.candidate.is_prevote);
     details::role::election_start(ctx);
-    EXPECT_TRUE(ctx.role.candidate_state.is_prevote);
+    EXPECT_TRUE(ctx.role.candidate.is_prevote);
     EXPECT_TRUE(ctx.term == 0) << "Term: " << ctx.term;
     EXPECT_TRUE(ctx.role.voted_for == 0) << "Voted for: " << ctx.role.voted_for;
 }
@@ -163,9 +163,9 @@ TEST_F(raft_role_election, election_start)
     details::role::become_candidate(ctx);
     ASSERT_TRUE(ctx.role.is_candidate());
 
-    ctx.role.candidate_state.is_prevote = false;
+    ctx.role.candidate.is_prevote = false;
     details::role::election_start(ctx);
-    EXPECT_FALSE(ctx.role.candidate_state.is_prevote);
+    EXPECT_FALSE(ctx.role.candidate.is_prevote);
     EXPECT_TRUE(ctx.term == 1) << "Term: " << ctx.term;
     EXPECT_TRUE(ctx.role.voted_for == 1) << "Voted for: " << ctx.role.voted_for;
 }

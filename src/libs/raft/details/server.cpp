@@ -121,6 +121,16 @@ bool server::init()
     return true;
 }
 
+bool server::is_candidate() const
+{
+    return m_p_ctx->role.is_candidate();
+}
+
+bool server::is_follower() const
+{
+    return m_p_ctx->role.is_follower();
+}
+
 bool server::is_inited() const
 {
     return (m_p_ctx->election_task.get() != nullptr);
@@ -145,6 +155,16 @@ void server::handle_message(const inbuffer_type& msg_buf)
     details::deserialize(msg_buf, msg);
 
     m_p_ctx->schd.execute_strand([p_ctx = m_p_ctx.get(), msg = std::move(msg)]() { raft::handle_message(*p_ctx, msg); });
+}
+
+index_t server::last_applied_index() const
+{
+      return m_p_ctx->state.last_applied.load(std::memory_order_acquire);
+}
+
+server_id_t server::leader_id() const
+{
+    return m_p_ctx->role.leader_id.load(std::memory_order_acquire);
 }
 
 bool server::load(details::context& ctx)

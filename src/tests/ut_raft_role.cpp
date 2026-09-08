@@ -121,7 +121,7 @@ TEST_F(raft_role, has_leader)
     EXPECT_FALSE(role.has_leader());
 
     role.role = raft::details::role::role_type::follower;
-    role.follower_state.leader_id = 1;
+    role.leader_id = 1;
     EXPECT_TRUE(role.has_leader());
 }
 

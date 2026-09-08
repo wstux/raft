@@ -66,6 +66,15 @@ void election_timeout_task(context& ctx)
 
     RAFT_TO_LOG_TRACE(ctx, "Election task timeout. %llu(%s), current term %u", ctx.id, ctx.role.str(), ctx.term);
 
+    // \todo: Need to implement.
+    // The Raft standard requires deferring elections if an intensive and valid
+    // operation is currently in progress, such as receiving large snapshot
+    // chunks from a legitimate leader.
+    // if receiving snapshot {
+    //    election_task_restart(ctx);
+    //    return;
+    // }
+
     if (ctx.role.is_leader()) {
         // Raft Paper, Section 6 (Leader lease): "A leader steps down if it does
         // not receive heartbeat responses from a majority of the cluster nodes."
@@ -79,9 +88,11 @@ void election_timeout_task(context& ctx)
         role::election_start(ctx);
     } else if (ctx.role.is_follower()) {
         if (ctx.role.is_voter) {
-            // Raft Paper, Section 5.2 (Leader election): "To begin an election,
-            // a follower increments its current term and transitions to candidate state."
-            role::become_candidate(ctx);
+            if (ctx.state.tasks_in_process == 0) {
+                // Raft Paper, Section 5.2 (Leader election): "To begin an election,
+                // a follower increments its current term and transitions to candidate state."
+                role::become_candidate(ctx);
+            }
         }
     }
 

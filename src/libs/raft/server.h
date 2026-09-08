@@ -67,6 +67,10 @@ public:
 
     bool init();
 
+    bool is_candidate() const;
+
+    bool is_follower() const;
+
     bool is_inited() const;
 
     bool is_leader() const;
@@ -74,6 +78,10 @@ public:
     bool is_stop() const { return m_is_stop || m_is_stop_fn(); }
 
     void handle_message(const inbuffer_type& msg_buf);
+
+    index_t last_applied_index() const;
+
+    server_id_t leader_id() const;
 
     bool reconfigure();
 
