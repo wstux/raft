@@ -67,6 +67,10 @@ public:
 
     bool init();
 
+    bool is_candidate() const;
+
+    bool is_follower() const;
+
     bool is_inited() const;
 
     bool is_leader() const;

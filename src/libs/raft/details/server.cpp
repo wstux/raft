@@ -121,6 +121,16 @@ bool server::init()
     return true;
 }
 
+bool server::is_candidate() const
+{
+    return m_p_ctx->role.is_candidate();
+}
+
+bool server::is_follower() const
+{
+    return m_p_ctx->role.is_follower();
+}
+
 bool server::is_inited() const
 {
     return (m_p_ctx->election_task.get() != nullptr);
