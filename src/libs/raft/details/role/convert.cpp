@@ -26,6 +26,7 @@
 
 #include "raft/details/logger.h"
 #include "raft/details/handlers/timeout_handler.h"
+#include "raft/details/replication/entries.h"
 #include "raft/details/role/convert.h"
 #include "raft/details/role/election.h"
 
@@ -37,6 +38,8 @@ namespace role {
 void become_follower(context& ctx)
 {
     RAFT_LOG_INFO(ctx, "Server %llu(%s) is becoming follower, term %u", ctx.id, ctx.role.str(), ctx.term);
+
+    timeout::election_restart_task(ctx);
 
     ctx.role.role = role_type::follower;
     ctx.role.leader_id = gk_invalid_id;
@@ -71,6 +74,13 @@ void become_leader(context& ctx)
 
     ctx.role.role = role_type::leader;
     ctx.role.leader_id = ctx.id;
+
+    const size_t voters_count = peers::voting_members_count(ctx);
+    if (voters_count == 0 && (ctx.state.last_stored > ctx.state.commit_index)) {
+        ctx.state.commit_index = ctx.state.last_stored;
+        // do replication
+        replication::entries::commit(ctx);
+    }
 }
 
 void update_leader(context& ctx, server_id_t leader_id)
