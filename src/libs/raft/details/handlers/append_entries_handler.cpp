@@ -169,8 +169,7 @@ void handle_response(context& ctx, term_t term, server_id_t src_id, const append
         return;
     }
 
-    // Race condition protection: the index from the response cannot exceed the
-    // current size of log
+    // Race condition protection: the index from the response cannot exceed the current size of log
     const index_t last_index = std::min(msg.last_log_index, ctx.log.last_index());
 
     // Raft Paper, Section 5.3: Rules for Servers - Leaders: "If successful:
@@ -181,8 +180,7 @@ void handle_response(context& ctx, term_t term, server_id_t src_id, const append
 
     // Check if commitIndex can be advanced forward
     replication::entries::update_commit_index(ctx, last_index);
-    // Raft Paper, Section 5.3 (State Machine Application): Apply committed
-    // entries to the State Machine
+    // Raft Paper, Section 5.3 (State Machine Application): Apply committed entries to the State Machine
     replication::entries::commit(ctx);
 }
 
@@ -207,34 +205,30 @@ void request(context& ctx, const peer& p)
 
     index_t snapshot_index = ctx.log.snapshot.last_index;
     index_t next_index = p.next_index;
-    index_t prev_index = ctx.log.last_index();
-    term_t prev_term = ctx.log.last_term();
+    index_t prev_index = 0;
+    term_t prev_term = 0;
 
     assert(next_index >= 1);
 
     // If the node initializes from the very beginning of the log
     if (next_index == 1) {
         if (snapshot_index > 0) {
-            // Raft Paper, Section 7: If we already have a snapshot and the log
-            // is compacted, we must send a Snapshot RPC
+            // Raft Paper, Section 7: If we already have a snapshot and the log is compacted, we must send a Snapshot RPC.
             assert(ctx.log.last_index() > 0);
             if (p.recent_recv) {
                 RAFT_AE_LOG_TRACE(ctx, "Sending snapshot request to server %u. Server %llu(%s), current term %u",
                     p.id, ctx.id, ctx.role.str(), ctx.term);
-
                 return snapshot::request(ctx, p);
+            } else {
+                prev_index = ctx.log.last_index();
+                prev_term = ctx.log.last_term();
             }
-        } else {
-            // Base case of an empty cluster startup
-            prev_index = 0;
-            prev_term = 0;
         }
     } else {
         // Normal calculation according to the specification: prevLogIndex = nextIndex - 1
         prev_index = next_index - 1;
         prev_term = ctx.log.term(prev_index);
-        // Raft Paper, Section 7: If the term for prev_index returns 0, it means
-        // this entry is already inside a compacted snapshot.
+        // Raft Paper, Section 7: If the term for prev_index returns 0, it means this entry is already inside a compacted snapshot.
         if (prev_term == 0) {
             assert(prev_index < snapshot_index);
             if (p.recent_recv) {
@@ -243,6 +237,9 @@ void request(context& ctx, const peer& p)
 
                 // The leader is forced to send an InstallSnapshot RPC instead of AppendEntries
                 return snapshot::request(ctx, p);
+            } else {
+                prev_index = ctx.log.last_index();
+                prev_term = ctx.log.last_term();
             }
         }
     }
