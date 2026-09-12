@@ -63,6 +63,20 @@ template<> struct message_filler<message_type::append_entries_response>
     }
 };
 
+template<> struct message_filler<message_type::snapshot_request>
+{
+    static void fill(message& msg, raft::snapshot&& sh)
+    {
+        msg.snapshot_req.last_index = sh.index;
+        msg.snapshot_req.last_term = sh.term;
+
+        msg.snapshot_req.conf = std::move(sh.conf);
+        msg.snapshot_req.conf_index = sh.conf_index;
+
+        msg.snapshot_req.buffer.swap(sh.buffer);
+    }
+};
+
 template<> struct message_filler<message_type::vote_request>
 {
     static void fill(message& msg, bool is_prevote, index_t last_log_index, term_t last_log_term)
@@ -134,6 +148,21 @@ inline void send_append_entries_response(context& ctx, server_id_t dst_id, const
     const peer::ptr p_peer = peers::find(ctx, dst_id);
     if (p_peer != nullptr) {
         send_append_entries_response(ctx, *p_peer, term, accept, last_log_index);
+    } else {
+        RAFT_LOG_WARN(ctx, "Server %llu does not exists", dst_id);
+    }
+}
+
+inline void send_snapshot_request(context& ctx, const peer& p, const term_t term, raft::snapshot&& sh)
+{
+    send_async<message_type::snapshot_request>(ctx, p.id, p.address, term, ctx.id, std::move(sh));
+}
+
+inline void send_snapshot_request(context& ctx, server_id_t dst_id, const term_t term, raft::snapshot&& sh)
+{
+    const peer::ptr p_peer = peers::find(ctx, dst_id);
+    if (p_peer != nullptr) {
+        send_snapshot_request(ctx, *p_peer, term, std::move(sh));
     } else {
         RAFT_LOG_WARN(ctx, "Server %llu does not exists", dst_id);
     }
