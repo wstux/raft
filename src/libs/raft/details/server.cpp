@@ -32,6 +32,7 @@
 #include "raft/details/connection/serialization.h"
 #include "raft/details/handlers/append_entries_handler.h"
 #include "raft/details/handlers/heartbeat_handler.h"
+#include "raft/details/handlers/snapshot_handler.h"
 #include "raft/details/handlers/timeout_handler.h"
 #include "raft/details/handlers/vote_handler.h"
 #include "raft/details/replication/membership.h"
@@ -48,16 +49,19 @@ void handle_message(details::context& ctx, const details::message& msg)
 
     switch(msg.type) {
     case details::message_type::append_entries_request:
-        details::append_entries::handle_request(ctx, msg.term, msg.src_id, msg.append_entries_req);
+        details::append_entries::handle_request(ctx, msg.term, msg.src_id, msg.address, msg.append_entries_req);
         break;
     case details::message_type::append_entries_response:
-        details::append_entries::handle_response(ctx, msg.term, msg.src_id, msg.append_entries_resp);
+        details::append_entries::handle_response(ctx, msg.term, msg.src_id, msg.address, msg.append_entries_resp);
+        break;
+    case details::message_type::snapshot_request:
+        details::snapshot::handle_request(ctx, msg.term, msg.src_id, msg.address, msg.snapshot_req);
         break;
     case details::message_type::vote_request:
-        details::vote::handle_request(ctx, msg.term, msg.src_id, msg.vote_req);
+        details::vote::handle_request(ctx, msg.term, msg.src_id, msg.address, msg.vote_req);
         break;
     case details::message_type::vote_response:
-        details::vote::handle_response(ctx, msg.term, msg.src_id, msg.vote_resp);
+        details::vote::handle_response(ctx, msg.term, msg.src_id, msg.address, msg.vote_resp);
         break;
     default:
         RAFT_LOG_WARN(ctx, "Unsupported message type %d", msg.type);

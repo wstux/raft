@@ -27,8 +27,10 @@
 
 #include <cstdint>
 #include <atomic>
+#include <string>
 
 #include "raft/io.h"
+#include "raft/details/connection/peer.h"
 
 namespace wstux {
 namespace raft {
@@ -45,6 +47,37 @@ enum role_type : int32_t
 
 struct state final
 {
+    state() {}
+    ~state() { clear(); }
+
+    inline void become_follower()
+    {
+        clear();
+        role = role_type::follower;
+        ::new (static_cast<void*>(&follower.leader_address)) std::string();
+    }
+
+    inline void become_candidate()
+    {
+        clear();
+        role = role_type::candidate;
+    }
+
+    inline void become_leader()
+    {
+        clear();
+        role = role_type::leader;
+    }
+
+    inline void clear()
+    {
+        if (is_follower()) {
+            follower.leader_address.~basic_string();
+        /*} else if (is_leader()) {
+            leader.peers.~vector();*/
+        }
+    }
+
     inline bool is_follower() const { return role == role_type::follower; }
     inline bool is_candidate() const { return role == role_type::candidate; }
     inline bool is_leader() const { return role == role_type::leader; }
@@ -73,12 +106,16 @@ struct state final
     std::atomic<server_id_t> leader_id = gk_invalid_id;
 
     union {
-        struct {} follower;
+        struct {
+            std::string leader_address;
+        } follower;
         struct {
             size_t votes_granted;
             bool is_prevote;
         } candidate;
-        struct {} leader;
+        struct {
+            //peer::list peers;
+        } leader;
     };
 
     bool is_voter;

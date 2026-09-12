@@ -41,7 +41,7 @@ void become_follower(context& ctx)
 
     timeout::election_restart_task(ctx);
 
-    ctx.role.role = role_type::follower;
+    ctx.role.become_follower();
     ctx.role.leader_id = gk_invalid_id;
     ctx.role.voted_for = gk_invalid_id;
 }
@@ -53,7 +53,7 @@ void become_candidate(context& ctx)
     assert(ctx.role.is_follower());
     assert(ctx.role.is_voter);
 
-    ctx.role.role = role_type::candidate;
+    ctx.role.become_candidate();
     ctx.role.leader_id = gk_invalid_id;
 
     ctx.role.candidate.votes_granted = 0;
@@ -72,7 +72,7 @@ void become_leader(context& ctx)
 
     assert(ctx.role.is_candidate());
 
-    ctx.role.role = role_type::leader;
+    ctx.role.become_leader();
     ctx.role.leader_id = ctx.id;
 
     const size_t voters_count = peers::voting_members_count(ctx);

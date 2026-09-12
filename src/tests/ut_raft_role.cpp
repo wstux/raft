@@ -51,7 +51,7 @@ TEST_F(raft_role, follower)
     using raft_role = raft::details::role::state;
 
     raft_role role;
-    role.role = raft::details::role::role_type::follower;
+    role.become_follower();
 
     EXPECT_TRUE(role.is_follower()) << "role: " << role.role;
     EXPECT_FALSE(role.is_candidate()) << "role: " << role.role;
@@ -68,7 +68,7 @@ TEST_F(raft_role, candidate)
     using raft_role = raft::details::role::state;
 
     raft_role role;
-    role.role = raft::details::role::role_type::candidate;
+    role.become_candidate();
 
     EXPECT_FALSE(role.is_follower()) << "role: " << role.role;
     EXPECT_TRUE(role.is_candidate()) << "role: " << role.role;
@@ -85,7 +85,7 @@ TEST_F(raft_role, leader)
     using raft_role = raft::details::role::state;
 
     raft_role role;
-    role.role = raft::details::role::role_type::leader;
+    role.become_leader();
 
     EXPECT_FALSE(role.is_follower()) << "role: " << role.role;
     EXPECT_FALSE(role.is_candidate()) << "role: " << role.role;
@@ -116,11 +116,11 @@ TEST_F(raft_role, has_leader)
     using raft_role = raft::details::role::state;
 
     raft_role role;
-    role.role = raft::details::role::role_type::leader;
+    role.become_leader();
 
     EXPECT_FALSE(role.has_leader());
 
-    role.role = raft::details::role::role_type::follower;
+    role.become_follower();
     role.leader_id = 1;
     EXPECT_TRUE(role.has_leader());
 }

@@ -55,7 +55,7 @@ namespace snapshot {
  *      5. Reset state machine using snapshot contents.
  *
  */
-void handle_request(context& ctx, term_t term, server_id_t src_id, const snapshot_message& msg);
+void handle_request(context& ctx, term_t term, server_id_t src_id, const std::string& address, const snapshot_message& msg);
 
 /**
  *  \brief  Initiates sending a snapshot to a specific follower.

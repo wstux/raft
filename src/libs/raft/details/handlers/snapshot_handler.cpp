@@ -48,7 +48,8 @@ namespace {
  *  \details    This method executes within a dedicated worker thread to avoid
  *      blocking the main event loop with heavy disk operations.
  */
-void handle_request_async(context& ctx, server_id_t src_id, bool accept, replication::snapshot::async::install_context::ptr p_async_ctx)
+void handle_request_async(context& ctx, server_id_t src_id, std::string address, bool accept,
+                          replication::snapshot::async::install_context::ptr p_async_ctx)
 {
     assert(ctx.state.snapshot.is_in_process);
     ctx.state.snapshot.is_in_process = false;
@@ -56,13 +57,13 @@ void handle_request_async(context& ctx, server_id_t src_id, bool accept, replica
     // Protect the context state while invoking the replication callback
     if (p_async_ctx->term == ctx.term) {
         accept = replication::snapshot::install_callback(ctx, accept, p_async_ctx->snapshot);
-        utils::send_append_entries_response(ctx, src_id, p_async_ctx->term, accept, p_async_ctx->last_log_index);
+        utils::send_append_entries_response(ctx, src_id, std::move(address), p_async_ctx->term, accept, p_async_ctx->last_log_index);
     }
 }
 
 } // <anonymous> namespace
 
-void handle_request(context& ctx, term_t term, server_id_t src_id, const snapshot_message& msg)
+void handle_request(context& ctx, term_t term, server_id_t src_id, const std::string& address, const snapshot_message& msg)
 {
     RAFT_SH_LOG_TRACE(ctx, "Handle snapshot. Request from server %llu to server %llu(%s), current term %u",
         src_id, ctx.id, ctx.role.str(), ctx.term);
@@ -71,7 +72,7 @@ void handle_request(context& ctx, term_t term, server_id_t src_id, const snapsho
     role::update_term(ctx, term);
     if (ctx.term > term) {
         RAFT_SH_LOG_DEBUG(ctx, "Handle snapshot. Local term %u is higher then request term %u", ctx.term, term);
-        return utils::send_append_entries_response(ctx, src_id, ctx.term, false, ctx.log.last_index());
+        return utils::send_append_entries_response(ctx, src_id, address, ctx.term, false, ctx.log.last_index());
     }
 
     // Defensive assertions for internal state (Node must be a Follower or a Candidate that has reset its state)
@@ -96,12 +97,12 @@ void handle_request(context& ctx, term_t term, server_id_t src_id, const snapsho
     const bool accept = replication::snapshot::install(ctx, msg.last_index, msg.last_term, msg.conf, msg.conf_index, msg.buffer, p_async_ctx);
     // Support for non-blocking asynchronous I/O
     if (accept && ctx.is_async_io && p_async_ctx) {
-        scheduler::handler_type handler_fn = [&ctx, src_id, p_async_ctx = std::move(p_async_ctx)] () -> void {
+        scheduler::handler_type handler_fn = [&ctx, src_id, addr = address, p_async_ctx = std::move(p_async_ctx)] () -> void {
             RAFT_SH_LOG_TRACE(ctx, "Server %llu(%s) is installing %zu snapshot asynchronously.", ctx.id, ctx.role.str());
             // Perform blocking disk write outside the critical section
             const bool accept = ctx.p_io->set_snapshot(p_async_ctx->snapshot);
-            ctx.schd.execute_strand([&ctx, src_id, accept, p_async_ctx = std::move(p_async_ctx)] () -> void {
-                handle_request_async(ctx, src_id, accept, p_async_ctx);
+            ctx.schd.execute_strand([&ctx, src_id, addr = std::move(addr), accept, p_async_ctx = std::move(p_async_ctx)] () -> void {
+                handle_request_async(ctx, src_id, std::move(addr), accept, p_async_ctx);
             });
         };
         ctx.state.snapshot.is_in_process = true;
@@ -110,7 +111,7 @@ void handle_request(context& ctx, term_t term, server_id_t src_id, const snapsho
     }
     // Synchronous execution path
     const index_t last_log_index = accept ? msg.last_index : ctx.state.last_stored;
-    return utils::send_append_entries_response(ctx, src_id, ctx.term, accept, last_log_index);
+    return utils::send_append_entries_response(ctx, src_id, address, ctx.term, accept, last_log_index);
 }
 
 void request(context& ctx, const peer& p)
@@ -133,7 +134,7 @@ void request(context& ctx, const peer& p)
 
     // Transmitting the InstallSnapshot RPC over the network. According to the Specification, the
     // parameters passed are: term, leaderId, lastIncludedIndex, lastIncludedTerm, offset, data, done.
-    utils::send_snapshot_request(ctx, p, ctx.term, std::move(*p_sh));
+    utils::send_snapshot_request(ctx, p.id, p.address, ctx.term, std::move(*p_sh));
 }
 
 } // namespace snapshot

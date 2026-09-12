@@ -39,7 +39,8 @@ namespace details {
 namespace append_entries {
 namespace {
 
-void handle_request_async(context& ctx, server_id_t src_id, bool accept, replication::entries::async::append_context::ptr p_async_ctx)
+void handle_request_async(context& ctx, server_id_t src_id, std::string address, bool accept,
+                          replication::entries::async::append_context::ptr p_async_ctx)
 {
     assert(ctx.state.tasks_in_process > 0);
 
@@ -54,12 +55,12 @@ void handle_request_async(context& ctx, server_id_t src_id, bool accept, replica
 
     // Calculate the index of the last successfully stored entry
     const index_t last_log_index = accept ? p_async_ctx->last_stored : p_async_ctx->last_index;
-    utils::send_append_entries_response(ctx, src_id, p_async_ctx->term, accept, last_log_index);
+    utils::send_append_entries_response(ctx, src_id, std::move(address), p_async_ctx->term, accept, last_log_index);
 }
 
 } // <anonymous> namespace
 
-void handle_request(context& ctx, term_t term, server_id_t src_id, const append_entries_message& msg)
+void handle_request(context& ctx, term_t term, server_id_t src_id, const std::string& address, const append_entries_message& msg)
 {
     RAFT_AE_LOG_TRACE(ctx, "Handle append entries. Request from server %llu to server %llu(%s), current term %u",
         src_id, ctx.id, ctx.role.str(), ctx.term);
@@ -69,7 +70,7 @@ void handle_request(context& ctx, term_t term, server_id_t src_id, const append_
     // Raft Paper, Section 5.1: AppendEntries RPC: 1. Reply false if term < currentTerm
     if (ctx.term > term) {
         RAFT_AE_LOG_DEBUG(ctx, "Handle append entries. Local term %u is higher then request term %u", ctx.term, term);
-        return utils::send_append_entries_response(ctx, src_id, ctx.term, false, ctx.log.last_index());
+        return utils::send_append_entries_response(ctx, src_id, address, ctx.term, false, ctx.log.last_index());
     }
 
     assert(ctx.role.is_follower() || ctx.role.is_candidate());
@@ -105,13 +106,13 @@ void handle_request(context& ctx, term_t term, server_id_t src_id, const append_
     const bool accept = replication::entries::append(ctx, term, msg.leader_commit, msg.prev_log_index, msg.prev_log_term, msg.entries, p_async_ctx);
     // Support for asynchronous I/O
     if (accept && ctx.is_async_io && p_async_ctx) {
-        scheduler::handler_type handler_fn = [&ctx, src_id, p_async_ctx = std::move(p_async_ctx)] () -> void {
+        scheduler::handler_type handler_fn = [&ctx, src_id, addr = address, p_async_ctx = std::move(p_async_ctx)] () -> void {
             RAFT_AE_LOG_TRACE(ctx, "Server %llu(%s) is saving %zu entries to io storage asynchronously.",
                 ctx.id, ctx.role.str(), p_async_ctx->entries.size());
             // Perform blocking disk write outside the critical section
             const bool accept = ctx.p_io->append(p_async_ctx->entries);
-            ctx.schd.execute_strand([&ctx, src_id, accept, p_async_ctx = std::move(p_async_ctx)] () -> void {
-                handle_request_async(ctx, src_id, accept, p_async_ctx);
+            ctx.schd.execute_strand([&ctx, src_id, addr = std::move(addr), accept, p_async_ctx = std::move(p_async_ctx)] () -> void {
+                handle_request_async(ctx, src_id, std::move(addr), accept, p_async_ctx);
             });
         };
         ++ctx.state.tasks_in_process;
@@ -120,10 +121,10 @@ void handle_request(context& ctx, term_t term, server_id_t src_id, const append_
     }
 
     const index_t last_log_index = accept ? ctx.state.last_stored : ctx.log.last_index();
-    return utils::send_append_entries_response(ctx, src_id, ctx.term, accept, last_log_index);
+    return utils::send_append_entries_response(ctx, src_id, address, ctx.term, accept, last_log_index);
 }
 
-void handle_response(context& ctx, term_t term, server_id_t src_id, const append_entries_response_message& msg)
+void handle_response(context& ctx, term_t term, server_id_t src_id, const std::string& /*address*/, const append_entries_response_message& msg)
 {
     RAFT_AE_LOG_TRACE(ctx, "Handle append entries response. Response from server %llu to server %llu(%s), current term %u",
         src_id, ctx.id, ctx.role.str(), ctx.term);
@@ -249,7 +250,7 @@ void request(context& ctx, const peer& p)
 
     RAFT_AE_LOG_TRACE(ctx, "Sending request to server %llu to append %zu entries with index %u. Server %llu(%s), current term %u",
         p.id, entries.size(), (prev_index + 1), ctx.id, ctx.role.str(), ctx.term);
-    return utils::send_append_entries_request(ctx, p, ctx.term, prev_index, prev_term, ctx.state.commit_index, std::move(entries));
+    return utils::send_append_entries_request(ctx, p.id, p.address, ctx.term, prev_index, prev_term, ctx.state.commit_index, std::move(entries));
 }
 
 } // namespace append_entries

@@ -122,6 +122,7 @@ struct message final
 
     server_id_t src_id;
     server_id_t dst_id;
+    std::string address;
     term_t term;
 
     union {

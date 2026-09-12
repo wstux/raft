@@ -25,6 +25,8 @@
 #ifndef _LIBS_RAFT_HANDLERS_APPEND_ENTRIES_HANDLER_H_
 #define _LIBS_RAFT_HANDLERS_APPEND_ENTRIES_HANDLER_H_
 
+#include <string>
+
 #include "raft/io.h"
 #include "raft/details/context.h"
 #include "raft/details/connection/messages.h"
@@ -47,7 +49,7 @@ namespace append_entries {
  *      2. Reverting candidate state upon discovering a legitimate leader (5.2).
  *      3. Log consistency checks and writing new data (5.3).
  */
-void handle_request(context& ctx, term_t term, server_id_t src_id, const append_entries_message& msg);
+void handle_request(context& ctx, term_t term, server_id_t src_id, const std::string& address, const append_entries_message& msg);
 
 /**
  *  \brief  Handler for AppendEntries RPC responses (Leader side).
@@ -59,7 +61,7 @@ void handle_request(context& ctx, term_t term, server_id_t src_id, const append_
  *  \details    Processes replication results: either advances tracking indices
  *  (matchIndex, nextIndex), or rolls them back in case of log inconsistency.
  */
-void handle_response(context& ctx, term_t term, server_id_t src_id, const append_entries_response_message& msg);
+void handle_response(context& ctx, term_t term, server_id_t src_id, const std::string& address, const append_entries_response_message& msg);
 
 /**
  *  \brief  Sends a broadcast AppendEntries request to all peers.

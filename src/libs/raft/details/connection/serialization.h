@@ -50,6 +50,7 @@ void serialize(TArch& ar, ::wstux::raft::details::message& msg, const unsigned i
 
     ar & msg.src_id;
     ar & msg.dst_id;
+    ar & msg.address;
     ar & msg.term;
 
     if (TArch::is_loading::value) {

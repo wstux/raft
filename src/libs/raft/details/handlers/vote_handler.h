@@ -52,7 +52,7 @@ namespace vote {
  *  \see    Raft Dissertation, Section 9.6 (Preventing disruptions when a server
  *      rejoins a cluster) - Pre-Vote phase specification.
  */
-void handle_request(context& ctx, term_t term, server_id_t src_id, const vote_message& msg);
+void handle_request(context& ctx, term_t term, server_id_t src_id, const std::string& address, const vote_message& msg);
 
 /**
  *  \brief  Handler for responses to voting messages (pre-vote response/vote
@@ -69,7 +69,7 @@ void handle_request(context& ctx, term_t term, server_id_t src_id, const vote_me
  *      request. It tracks vote accumulation, verifies term invariants, and handles
  *      state transitions from Pre-Candidate to Candidate, or Candidate to Leader.
  */
-void handle_response(context& ctx, term_t term, server_id_t src_id, const vote_response_message& msg);
+void handle_response(context& ctx, term_t term, server_id_t src_id, const std::string& address, const vote_response_message& msg);
 
 /**
  *  \brief  Initiates the voting procedure from the current server side.

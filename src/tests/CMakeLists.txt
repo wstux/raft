@@ -150,7 +150,6 @@ TestTarget(ut_raft_server_membership
         raft_stub
     DEPENDS
         googletest
-    DISABLE
 )
 
 TestTarget(ut_raft_server_membership_async
@@ -162,5 +161,25 @@ TestTarget(ut_raft_server_membership_async
         raft_stub
     DEPENDS
         googletest
-    DISABLE
+)
+
+TestTarget(ut_raft_server_snapshot
+    SOURCES
+        ut_raft_server_snapshot.cpp
+    LIBRARIES
+        raft
+        raft_stub
+    DEPENDS
+        googletest
+)
+
+TestTarget(ut_raft_server_snapshot_async
+    SOURCES
+        ut_raft_server_snapshot.cpp
+    COMPILE_DEFINITIONS USE_ASYNC_IO
+    LIBRARIES
+        raft
+        raft_stub
+    DEPENDS
+        googletest
 )

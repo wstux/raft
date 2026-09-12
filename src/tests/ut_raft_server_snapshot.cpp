@@ -100,8 +100,7 @@ TYPED_TEST(raft_snapshot, take_snapshot)
     p_leader->apply(value);
     p_leader->apply(value);
     p_leader->apply(value);
-    ++value;
-    p_leader->apply(value);
+    p_leader->apply(++value);
 
     p_network->wait_for_update(idx);
     EXPECT_TRUE(p_leader->last_applied_index() == 6) << p_leader->last_applied_index();
@@ -114,6 +113,15 @@ TYPED_TEST(raft_snapshot, take_snapshot)
     for (size_t i = 1; i < 5; ++i) {
         cfg = p_network->get_io(i)->m_cluster_cfg;
         ASSERT_TRUE(cfg.servers.size() == 4) << "Server " << i << " has " << cfg.servers.size() << " peers";
+    }
+
+    p_leader->apply(++value);
+    p_network->wait_for_update(idx);
+    EXPECT_TRUE(p_leader->last_applied_index() == 8) << p_leader->last_applied_index();
+
+    for (size_t i = 1; i < 5; ++i) {
+        ASSERT_TRUE(p_network->get_fsm(i)->get_value<size_t>(0) == value)
+            << "Server " << i << " has fsm value " << p_network->get_fsm(i)->get_value<size_t>(0) << " instead of " << value;
     }
 }
 
