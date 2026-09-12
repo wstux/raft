@@ -76,7 +76,7 @@ public:
 
     virtual void deinit() noexcept override final {}
 
-    virtual snapshot::ptr get_snapshot() const noexcept override final { return p_snapshot; }
+    virtual std::optional<snapshot> get_snapshot() const noexcept override final { return p_snapshot; }
 
     virtual bool init(server_id_t id) noexcept override final
     {
@@ -120,9 +120,12 @@ public:
         p_client->send(msg);
     }
 
-    virtual bool set_snapshot(snapshot::ptr p_sh) noexcept override final
+    virtual bool set_snapshot(const snapshot& sh) noexcept override final
     {
-        p_snapshot = p_sh;
+        if (! is_snapshot) {
+            return is_snapshot;
+        }
+        p_snapshot = sh;
         return true;
     }
 
@@ -156,10 +159,11 @@ public:
 
     index_t start_index = 1;
 
-    snapshot::ptr p_snapshot = nullptr;
+    std::optional<snapshot> p_snapshot;
 
     bool is_init = true;
     bool is_append = true;
+    bool is_snapshot = true;
     bool is_truncate = true;
     bool is_stop = false;
 };

@@ -296,14 +296,15 @@ bool load(context& ctx)
     term_t snapshot_term = p_io->load_snapshot_term();
     index_t start_index = p_io->load_start_index();
 
-    snapshot::ptr p_snapshot = p_io->get_snapshot();
+    std::optional<snapshot> p_sh = p_io->get_snapshot();
     entry::list entries = p_io->load_entries();
-    if (p_snapshot.get() != nullptr) {
-        if (! replication::snapshot::restore(ctx, *p_snapshot)) {
+    if (p_sh.has_value()) {
+        if (! replication::snapshot::restore(ctx, *p_sh)) {
+            RAFT_LOG_ERROR(ctx, "Server %llu(%s) failed to restore snapshot.", ctx.id, ctx.role.str());
             return false;
         }
-        snapshot_index = p_snapshot->index;
-        snapshot_term = p_snapshot->term;
+        snapshot_index = p_sh->index;
+        snapshot_term = p_sh->term;
     } else if (entries.size() > 0) {
         assert(start_index == 1);
         assert(entries[0]->type == entry_type::change);
