@@ -95,6 +95,7 @@ bool append(context& ctx, const server_config& cfg)
 
     RAFT_LOG_TRACE(ctx, "Server %llu(%s) is adding new peer with id %llu.", ctx.id, ctx.role.str(), cfg.id);
     ctx.peers.emplace_back(cfg);
+    std::sort(ctx.peers.begin(), ctx.peers.end(), [](const peer& l, const peer& r) -> bool { return l.id < r.id; });
 
     cluster_config cluster_cfg = utils::make_cluster_config(ctx);
     assert(cluster_cfg.servers.size() == (ctx.peers.size() + 1));

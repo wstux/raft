@@ -151,18 +151,34 @@ size_t quorum_for_election(context& ctx)
 
 void update(context& ctx, const cluster_config& cluster_cfg)
 {
-    ctx.peers.clear();
     ctx.peers.reserve(std::max(ctx.peers.capacity(), cluster_cfg.servers.size()));
+
+    std::vector<server_config>::const_iterator srv_it = cluster_cfg.servers.cbegin();
+    ctx.peers.erase(
+        std::remove_if(ctx.peers.begin(), ctx.peers.end(),
+            [&srv_it, &cluster_cfg](const peer& p) {
+                srv_it = std::find_if(srv_it, cluster_cfg.servers.cend(), [&p](const server_config& s) { return s.id >= p.id; });
+                return (srv_it == cluster_cfg.servers.end() || srv_it->id != p.id);
+            }
+        ),
+        ctx.peers.end()
+    );
 
     for (const server_config& cfg : cluster_cfg.servers) {
         if (ctx.id != cfg.id) {
-            assert(peers::find(ctx, cfg.id) == nullptr);
-            ctx.peers.emplace_back(cfg);
+            peer::ptr p_peer = peers::find(ctx, cfg.id);
+            if (p_peer == nullptr) {
+                ctx.peers.emplace_back(cfg);
+            } else {
+                p_peer->address = cfg.address;
+                p_peer->is_voter = cfg.is_voter;
+            }
         } else {
             ctx.config = cfg;
             ctx.role.is_voter = cfg.is_voter;
         }
     }
+    std::sort(ctx.peers.begin(), ctx.peers.end(), [](const peer& l, const peer& r) -> bool { return l.id < r.id; });
 }
 
 size_t voting_members_count(context& ctx)
