@@ -33,6 +33,23 @@ namespace raft {
 namespace details {
 namespace replication {
 namespace snapshot {
+namespace async {
+
+struct install_context final
+{
+    using ptr = std::shared_ptr<install_context>;
+
+    raft::snapshot snapshot;
+    index_t last_log_index;
+    term_t term;
+};
+
+} // namespace async
+
+bool install(context& ctx, index_t last_index, term_t last_term, cluster_config conf,
+             index_t conf_index, buffer_type buffer, async::install_context::ptr& p_async_ctx);
+
+bool install_callback(context& ctx, bool accept, raft::snapshot& snapshot);
 
 bool restore(context& ctx, raft::snapshot& snapshot);
 
