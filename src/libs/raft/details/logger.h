@@ -45,6 +45,7 @@ struct logger
     bool can_root_log(logging_handler::severity_level lvl) const { return cal_log(lvl); }
     bool can_append_entries_log(logging_handler::severity_level lvl) const { return is_append_entries_channel_enabled && cal_log(lvl); }
     bool can_heartbeat_log(logging_handler::severity_level lvl) const { return is_heartbeat_channel_enabled && cal_log(lvl); }
+    bool can_snapshot_log(logging_handler::severity_level lvl) const { return is_snapshot_channel_enabled && cal_log(lvl); }
     bool can_timeout_log(logging_handler::severity_level lvl) const { return is_timeout_channel_enabled && cal_log(lvl); }
     bool can_vote_log(logging_handler::severity_level lvl) const { return is_vote_channel_enabled && cal_log(lvl); }
 
@@ -62,6 +63,7 @@ struct logger
 
     bool is_append_entries_channel_enabled = true;
     bool is_heartbeat_channel_enabled = true;
+    bool is_snapshot_channel_enabled = true;
     bool is_timeout_channel_enabled = true;
     bool is_vote_channel_enabled = true;
     logging_handler::ptr p_hdlr;
@@ -143,6 +145,16 @@ struct logger
 #define RAFT_HB_LOG_INFO(ctx,   fmt, ...)  RAFT_LOG_CH_INFO(ctx,   heartbeat, "Heartbeat", fmt, ##__VA_ARGS__)
 #define RAFT_HB_LOG_DEBUG(ctx,  fmt, ...)  RAFT_LOG_CH_DEBUG(ctx,  heartbeat, "Heartbeat", fmt, ##__VA_ARGS__)
 #define RAFT_HB_LOG_TRACE(ctx,  fmt, ...)  RAFT_LOG_CH_TRACE(ctx,  heartbeat, "Heartbeat", fmt, ##__VA_ARGS__)
+
+#define RAFT_SH_LOG_EMERG(ctx,  fmt, ...)  RAFT_LOG_CH_EMERG(ctx,  snapshot, "Snapshot", fmt, ##__VA_ARGS__)
+#define RAFT_SH_LOG_FATAL(ctx,  fmt, ...)  RAFT_LOG_CH_FATAL(ctx,  snapshot, "Snapshot", fmt, ##__VA_ARGS__)
+#define RAFT_SH_LOG_CRIT(ctx,   fmt, ...)  RAFT_LOG_CH_CRIT(ctx,   snapshot, "Snapshot", fmt, ##__VA_ARGS__)
+#define RAFT_SH_LOG_ERROR(ctx,  fmt, ...)  RAFT_LOG_CH_ERROR(ctx,  snapshot, "Snapshot", fmt, ##__VA_ARGS__)
+#define RAFT_SH_LOG_WARN(ctx,   fmt, ...)  RAFT_LOG_CH_WARN(ctx,   snapshot, "Snapshot", fmt, ##__VA_ARGS__)
+#define RAFT_SH_LOG_NOTICE(ctx, fmt, ...)  RAFT_LOG_CH_NOTICE(ctx, snapshot, "Snapshot", fmt, ##__VA_ARGS__)
+#define RAFT_SH_LOG_INFO(ctx,   fmt, ...)  RAFT_LOG_CH_INFO(ctx,   snapshot, "Snapshot", fmt, ##__VA_ARGS__)
+#define RAFT_SH_LOG_DEBUG(ctx,  fmt, ...)  RAFT_LOG_CH_DEBUG(ctx,  snapshot, "Snapshot", fmt, ##__VA_ARGS__)
+#define RAFT_SH_LOG_TRACE(ctx,  fmt, ...)  RAFT_LOG_CH_TRACE(ctx,  snapshot, "Snapshot", fmt, ##__VA_ARGS__)
 
 #define RAFT_TO_LOG_EMERG(ctx,  fmt, ...)  RAFT_LOG_CH_EMERG(ctx,  timeout, "Timeout", fmt, ##__VA_ARGS__)
 #define RAFT_TO_LOG_FATAL(ctx,  fmt, ...)  RAFT_LOG_CH_FATAL(ctx,  timeout, "Timeout", fmt, ##__VA_ARGS__)
