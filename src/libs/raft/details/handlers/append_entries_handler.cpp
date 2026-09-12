@@ -60,7 +60,7 @@ void handle_request_async(context& ctx, server_id_t src_id, std::string address,
 
 } // <anonymous> namespace
 
-void handle_request(context& ctx, term_t term, server_id_t src_id, const std::string& address, const append_entries_message& msg)
+void handle_request(context& ctx, server_id_t src_id, const std::string& address, term_t term, const append_entries_message& msg)
 {
     RAFT_AE_LOG_TRACE(ctx, "Handle append entries. Request from server %llu to server %llu(%s), current term %u",
         src_id, ctx.id, ctx.role.str(), ctx.term);
@@ -124,7 +124,7 @@ void handle_request(context& ctx, term_t term, server_id_t src_id, const std::st
     return utils::send_append_entries_response(ctx, src_id, address, ctx.term, accept, last_log_index);
 }
 
-void handle_response(context& ctx, term_t term, server_id_t src_id, const std::string& /*address*/, const append_entries_response_message& msg)
+void handle_response(context& ctx, server_id_t src_id, const std::string& /*address*/, term_t term, const append_entries_response_message& msg)
 {
     RAFT_AE_LOG_TRACE(ctx, "Handle append entries response. Response from server %llu to server %llu(%s), current term %u",
         src_id, ctx.id, ctx.role.str(), ctx.term);

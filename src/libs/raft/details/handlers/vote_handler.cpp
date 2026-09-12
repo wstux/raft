@@ -139,7 +139,7 @@ bool got_vote(context& ctx, const server_id_t candidate_id, const vote_message& 
 
 } // <anonymous> namespace
 
-void handle_request(context& ctx, term_t term, server_id_t src_id, const std::string& address, const vote_message& msg)
+void handle_request(context& ctx, server_id_t src_id, const std::string& address, term_t term, const vote_message& msg)
 {
     RAFT_VOTE_LOG_DEBUG(ctx, "Handle %s. Request from server %llu to server %llu(%s), current term %u",
         (msg.is_prevote ? "prevote" : "vote"), src_id, ctx.id, ctx.role.str(), ctx.term);
@@ -197,7 +197,7 @@ void handle_request(context& ctx, term_t term, server_id_t src_id, const std::st
     utils::send_vote_response(ctx, src_id, address, cur_term, msg.is_prevote, accept);
 }
 
-void handle_response(context& ctx, term_t term, server_id_t src_id, const std::string& /*address*/, const vote_response_message& msg)
+void handle_response(context& ctx, server_id_t src_id, const std::string& /*address*/, term_t term, const vote_response_message& msg)
 {
     RAFT_VOTE_LOG_DEBUG(ctx, "Handle %s response. Response from server %llu to server %llu(%s), current term %u",
         (msg.is_prevote ? "prevote" : "vote"), src_id, ctx.id, ctx.role.str(), ctx.term);

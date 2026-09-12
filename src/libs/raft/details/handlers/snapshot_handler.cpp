@@ -63,7 +63,7 @@ void handle_request_async(context& ctx, server_id_t src_id, std::string address,
 
 } // <anonymous> namespace
 
-void handle_request(context& ctx, term_t term, server_id_t src_id, const std::string& address, const snapshot_message& msg)
+void handle_request(context& ctx, server_id_t src_id, const std::string& address, term_t term, const snapshot_message& msg)
 {
     RAFT_SH_LOG_TRACE(ctx, "Handle snapshot. Request from server %llu to server %llu(%s), current term %u",
         src_id, ctx.id, ctx.role.str(), ctx.term);

@@ -36,8 +36,9 @@ namespace vote {
 /**
  *  \brief  Handler for incoming vote requests (both vote and pre-vote).
  *  \param  ctx - current server state context.
- *  \param  term - the term of the candidate that sent the request.
  *  \param  src_id - the id of the candidate server that sent the request.
+ *  \param  address - the address of the candidate server that sent the request.
+ *  \param  term - the term of the candidate that sent the request.
  *  \param  msg - message.
  *
  *  \details    Implements the processing of incoming voting requests
@@ -52,14 +53,15 @@ namespace vote {
  *  \see    Raft Dissertation, Section 9.6 (Preventing disruptions when a server
  *      rejoins a cluster) - Pre-Vote phase specification.
  */
-void handle_request(context& ctx, term_t term, server_id_t src_id, const std::string& address, const vote_message& msg);
+void handle_request(context& ctx, server_id_t src_id, const std::string& address, term_t term, const vote_message& msg);
 
 /**
  *  \brief  Handler for responses to voting messages (pre-vote response/vote
  *      response).
  *  \param  ctx - current server state context.
- *  \param  term - the term in which this response was generated.
  *  \param  src_id - the id of the server that sent the message.
+ *  \param  address - the address of the server that sent the message.
+ *  \param  term - the term in which this response was generated.
  *  \param  msg - message.
  *
  *  \details    Counts votes. Based on the results, decides whether to transition
@@ -69,7 +71,7 @@ void handle_request(context& ctx, term_t term, server_id_t src_id, const std::st
  *      request. It tracks vote accumulation, verifies term invariants, and handles
  *      state transitions from Pre-Candidate to Candidate, or Candidate to Leader.
  */
-void handle_response(context& ctx, term_t term, server_id_t src_id, const std::string& address, const vote_response_message& msg);
+void handle_response(context& ctx, server_id_t src_id, const std::string& address, term_t term, const vote_response_message& msg);
 
 /**
  *  \brief  Initiates the voting procedure from the current server side.
