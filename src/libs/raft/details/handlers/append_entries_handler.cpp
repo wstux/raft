@@ -90,7 +90,6 @@ void handle_request(context& ctx, server_id_t src_id, const std::string& address
 
     // Update current leader because the term in this message is up to date.
     role::update_leader(ctx, src_id);
-    timeout::election_restart_task(ctx);
 
     if (utils::is_installing_snapshot(ctx) && (msg.entries.size() > 0)) {
         RAFT_AE_LOG_DEBUG(ctx, "Server %llu(%s) is installing snapshot. Request from server %llu will be ignored.",
@@ -179,6 +178,10 @@ void handle_response(context& ctx, server_id_t src_id, const std::string& /*addr
         return;
     }
 
+    if (p_src_peer->shapshot.is_in_process) {
+        p_src_peer->update_state();
+    }
+
     // Check if commitIndex can be advanced forward
     replication::entries::update_commit_index(ctx, last_index);
     // Raft Paper, Section 5.3 (State Machine Application): Apply committed entries to the State Machine
@@ -191,12 +194,12 @@ void request(context& ctx)
 
     assert(ctx.role.is_leader());
 
-    for (const peer::list::value_type& p : ctx.peers) {
+    for (peer::list::value_type& p : ctx.peers) {
         request(ctx, p);
     }
 }
 
-void request(context& ctx, const peer& p)
+void request(context& ctx, peer& p)
 {
     assert(ctx.role.is_leader());
     assert(p.id != ctx.id);
@@ -216,13 +219,10 @@ void request(context& ctx, const peer& p)
         if (snapshot_index > 0) {
             // Raft Paper, Section 7: If we already have a snapshot and the log is compacted, we must send a Snapshot RPC.
             assert(ctx.log.last_index() > 0);
-            if (p.recent_recv) {
+            if (p.recent_recv && ! p.shapshot.is_in_process) {
                 RAFT_AE_LOG_TRACE(ctx, "Sending snapshot request to server %u. Server %llu(%s), current term %u",
                     p.id, ctx.id, ctx.role.str(), ctx.term);
                 return snapshot::request(ctx, p);
-            } else {
-                prev_index = ctx.log.last_index();
-                prev_term = ctx.log.last_term();
             }
         }
     } else {
@@ -232,17 +232,19 @@ void request(context& ctx, const peer& p)
         // Raft Paper, Section 7: If the term for prev_index returns 0, it means this entry is already inside a compacted snapshot.
         if (prev_term == 0) {
             assert(prev_index < snapshot_index);
-            if (p.recent_recv) {
+            if (p.recent_recv && ! p.shapshot.is_in_process) {
                 RAFT_AE_LOG_TRACE(ctx, "Sending snapshot request to server %u. Server %llu(%s), current term %u",
                     p.id, ctx.id, ctx.role.str(), ctx.term);
 
                 // The leader is forced to send an InstallSnapshot RPC instead of AppendEntries
                 return snapshot::request(ctx, p);
-            } else {
-                prev_index = ctx.log.last_index();
-                prev_term = ctx.log.last_term();
             }
         }
+    }
+
+    if (p.shapshot.is_in_process) {
+        prev_index = ctx.log.last_index();
+        prev_term = ctx.log.last_term();
     }
 
     // Extract entries from the local log starting from prev_index + 1

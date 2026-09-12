@@ -73,7 +73,7 @@ void handle_request(context& ctx, server_id_t src_id, const std::string& address
  *      that the log entries required for replication via AppendEntries RPC have
  *      already been discarded (compacted) from the leader's log.
  */
-void request(context& ctx, const peer& p);
+void request(context& ctx, peer& p);
 
 } // namespace snapshot
 } // namespace details

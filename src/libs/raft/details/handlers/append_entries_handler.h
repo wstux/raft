@@ -84,7 +84,7 @@ void request(context& ctx);
  *      an incremental log or if the node is hopelessly lagging and requires a
  *      state snapshot (Snapshot).
  */
-void request(context& ctx, const peer& p);
+void request(context& ctx, peer& p);
 
 } // namespace append_entries
 } // namespace details

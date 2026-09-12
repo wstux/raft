@@ -114,7 +114,7 @@ void handle_request(context& ctx, server_id_t src_id, const std::string& address
     return utils::send_append_entries_response(ctx, src_id, address, ctx.term, accept, last_log_index);
 }
 
-void request(context& ctx, const peer& p)
+void request(context& ctx, peer& p)
 {
     assert(ctx.role.is_leader());
     assert(p.id != ctx.id);
@@ -132,6 +132,8 @@ void request(context& ctx, const peer& p)
         return;
     }
 
+    p.shapshot.is_in_process = true;
+    p.shapshot.index = ctx.log.snapshot.last_index;
     // Transmitting the InstallSnapshot RPC over the network. According to the Specification, the
     // parameters passed are: term, leaderId, lastIncludedIndex, lastIncludedTerm, offset, data, done.
     utils::send_snapshot_request(ctx, p.id, p.address, ctx.term, std::move(*p_sh));

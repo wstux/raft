@@ -27,10 +27,10 @@
 
 #include <cstdint>
 #include <atomic>
-#include <string>
+//#include <string>
 
 #include "raft/io.h"
-#include "raft/details/connection/peer.h"
+//#include "raft/details/connection/peer.h"
 
 namespace wstux {
 namespace raft {
@@ -54,7 +54,7 @@ struct state final
     {
         clear();
         role = role_type::follower;
-        ::new (static_cast<void*>(&follower.leader_address)) std::string();
+        //::new (static_cast<void*>(&follower.leader_address)) std::string();
     }
 
     inline void become_candidate()
@@ -67,15 +67,16 @@ struct state final
     {
         clear();
         role = role_type::leader;
+        //::new (static_cast<void*>(&leader.peers)) peer::list();
     }
 
     inline void clear()
     {
-        if (is_follower()) {
+        /*if (is_follower()) {
             follower.leader_address.~basic_string();
-        /*} else if (is_leader()) {
-            leader.peers.~vector();*/
-        }
+        } else if (is_leader()) {
+            leader.peers.~vector();
+        }*/
     }
 
     inline bool is_follower() const { return role == role_type::follower; }
@@ -107,7 +108,7 @@ struct state final
 
     union {
         struct {
-            std::string leader_address;
+            //std::string leader_address;
         } follower;
         struct {
             size_t votes_granted;
