@@ -83,7 +83,7 @@ TYPED_TEST(raft_election, one_server)
     std::shared_ptr<raft::server> p_srv = p_network->get_server(1);
     EXPECT_FALSE(p_srv->is_leader());
 
-    p_srv->init();
+    p_srv->init(p_network->get_io(1)->m_cluster_cfg);
     p_srv->start();
 
     p_network->wait_leader();

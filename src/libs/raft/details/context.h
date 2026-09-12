@@ -135,7 +135,9 @@ size_t voting_members_count(context& ctx);
 
 namespace utils {
 
-bool init(context& ctx);
+bool init(context& ctx, cluster_config cluster_cfg);
+
+bool is_installing_snapshot(const context& ctx);
 
 bool is_installing_snapshot(const context& ctx);
 

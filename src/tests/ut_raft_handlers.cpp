@@ -64,7 +64,7 @@ public:
             m_p_io->cluster_cfg.servers.emplace_back(i + 1, std::to_string(i + 1), (i == 0) ? is_voter : true);
         }
 
-        details::utils::init(*m_p_ctx);
+        details::utils::init(*m_p_ctx, m_p_io->cluster_cfg);
         details::utils::load(*m_p_ctx);
         m_p_ctx->schd.start();
         return *m_p_ctx;
@@ -87,6 +87,7 @@ TEST_F(raft_append_entries_handler, handle_request_invalid_src_id)
     using namespace std::chrono_literals;
 
     details::context& ctx = init(2);
+    details::role::become_follower(ctx);
     ASSERT_TRUE(m_p_io->clients.size() == 1) << m_p_io->clients.size();
 
     tests::empty_client::ptr p_client = m_p_io->clients.at(2);
@@ -118,7 +119,6 @@ TEST_F(raft_append_entries_handler, handle_request_downgrade_role)
     using namespace std::chrono_literals;
 
     details::context& ctx = init(2);
-    ctx.term = 1;
     details::role::become_follower(ctx);
     details::role::become_candidate(ctx);
     EXPECT_TRUE(ctx.role.is_candidate());
@@ -132,7 +132,6 @@ TEST_F(raft_append_entries_handler, handle_response_not_leader)
     using namespace std::chrono_literals;
 
     details::context& ctx = init(2);
-    ctx.term = 1;
     ASSERT_TRUE(ctx.peers.size() == 1) << ctx.peers.size();
     details::peer::ptr p_peer = details::peers::find(ctx, 2);
     ASSERT_FALSE(p_peer->recent_recv);
@@ -168,7 +167,6 @@ TEST_F(raft_append_entries_handler, handle_response_src_higher_term)
     using namespace std::chrono_literals;
 
     details::context& ctx = init(2);
-    ctx.term = 1;
     ASSERT_TRUE(ctx.peers.size() == 1) << ctx.peers.size();
     details::peer::ptr p_peer = details::peers::find(ctx, 2);
     ASSERT_FALSE(p_peer->recent_recv);
@@ -189,7 +187,6 @@ TEST_F(raft_append_entries_handler, handle_response_invalid_peer)
     using namespace std::chrono_literals;
 
     details::context& ctx = init(2);
-    ctx.term = 1;
     ASSERT_TRUE(ctx.peers.size() == 1) << ctx.peers.size();
     details::peer::ptr p_peer = details::peers::find(ctx, 2);
     ASSERT_FALSE(p_peer->recent_recv);

@@ -27,6 +27,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <map>
 #include <unordered_map>
 
 #include "raft/io.h"
@@ -71,7 +72,6 @@ public:
         return is_append;
     }
 
-    virtual cluster_config bootstrap() const noexcept override final { return cluster_cfg; }
     virtual config configuration() const noexcept override final { return cfg; };
 
     virtual void deinit() noexcept override final {}
@@ -103,7 +103,7 @@ public:
     virtual index_t load_snapshot_index() noexcept override final { return snapshot_index; }
     virtual term_t load_snapshot_term() noexcept override final { return snapshot_term; }
     virtual index_t load_start_index() noexcept override final { return start_index; }
-    virtual term_t load_term() noexcept override final { return 0; }
+    virtual term_t load_term() noexcept override final { return 1; }
     virtual bool reconfigure(server_id_t) noexcept override final { return true; }
     virtual void send(server_id_t id, std::string_view, const buffer_type& msg) noexcept override final
     {

@@ -67,6 +67,7 @@ struct config final
     bool is_async_io = false;
 
     bool is_heartbeat_log_ch_enabled = true;
+    bool is_snapshot_log_ch_enabled = true;
     bool is_timeout_log_ch_enabled = true;
     bool is_vote_log_ch_enabled = true;
 };
@@ -148,8 +149,6 @@ public:
     virtual ~io() {}
 
     virtual bool append(const entry::list& entries) noexcept = 0;
-
-    virtual cluster_config bootstrap() const noexcept = 0;
 
     virtual config configuration() const noexcept = 0;
 

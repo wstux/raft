@@ -27,6 +27,7 @@
 #include <mutex>
 
 #include "raft/details/context.h"
+#include "raft/details/logger.h"
 #include "raft/details/connection/serialization.h"
 #include "raft/details/replication/snapshot.h"
 
@@ -192,9 +193,10 @@ size_t voting_members_count(context& ctx)
 
 namespace utils {
 
-bool init(context& ctx)
+bool init(context& ctx, cluster_config cluster_cfg)
 {
     if (! ctx.p_io->init(ctx.id)) {
+        RAFT_LOG_ERROR(ctx, "Server %llu(%s) failed to init I/O.", ctx.id, ctx.role.str());
         return false;
     }
 
@@ -202,6 +204,14 @@ bool init(context& ctx)
     if (cfg.heartbeat_interval_ms == 0 || cfg.vote_timeout_max_ms == 0 || cfg.vote_timeout_max_ms < cfg.vote_timeout_min_ms) {
         return false;
     }
+
+    std::sort(cluster_cfg.servers.begin(), cluster_cfg.servers.end(),
+        [](const server_config& l, const server_config& r) -> bool { return l.id < r.id; });
+    if (! utils::is_valid_cluster(ctx.id, cluster_cfg)) {
+        return false;
+    }
+
+    ctx.state.snapshot.cluster_cfg = std::move(cluster_cfg);
 
     ctx.is_async_io = cfg.is_async_io;
 
@@ -216,6 +226,7 @@ bool init(context& ctx)
     ctx.state.snapshot.trailing = cfg.snapshot_trailing;
 
     ctx.raft_logger.is_heartbeat_channel_enabled = cfg.is_heartbeat_log_ch_enabled;
+    ctx.raft_logger.is_snapshot_channel_enabled = cfg.is_snapshot_log_ch_enabled;
     ctx.raft_logger.is_timeout_channel_enabled = cfg.is_timeout_log_ch_enabled;
     ctx.raft_logger.is_vote_channel_enabled = cfg.is_vote_log_ch_enabled;
 
@@ -275,6 +286,10 @@ bool load(context& ctx)
     io::ptr p_io = ctx.p_io;
 
     ctx.term = p_io->load_term();
+    if (ctx.term == 0) {
+        RAFT_LOG_ERROR(ctx, "Server %llu(%s) loaded invalig term.", ctx.id, ctx.role.str());
+        return false;
+    }
     ctx.role.voted_for = p_io->voted_for();
 
     index_t snapshot_index = p_io->load_snapshot_index();
@@ -295,16 +310,19 @@ bool load(context& ctx)
 
         ctx.state.commit_index = 1;
         ctx.state.last_applied = 1;
+    } else {
+        entries.resize(1);
+        entries[0] = std::make_shared<entry>();
+        entry::ptr& e = entries[0];
+        e->term = ctx.term;
+        e->type = entry_type::change;
+        e->buffer = serialize<cluster_config>(ctx.state.snapshot.cluster_cfg);
+        ctx.state.snapshot.cluster_cfg.servers.clear();
     }
 
     if (! restore_entries(ctx, snapshot_index, snapshot_term, start_index, entries)) {
+        RAFT_LOG_ERROR(ctx, "Server %llu(%s) failed to restore entries.", ctx.id, ctx.role.str());
         return false;
-    }
-    if (ctx.peers.empty()) {
-        cluster_config cluster_cfg = p_io->bootstrap();
-        if (! load_peers(ctx, cluster_cfg)) {
-            return false;
-        }
     }
     return true;
 }
@@ -317,6 +335,7 @@ void reconfigure(context& ctx, const config& cfg, const cluster_config& cluster_
     ctx.heartbeat_interval_ms = cfg.heartbeat_interval_ms;
 
     ctx.raft_logger.is_heartbeat_channel_enabled = cfg.is_heartbeat_log_ch_enabled;
+    ctx.raft_logger.is_snapshot_channel_enabled = cfg.is_snapshot_log_ch_enabled;
     ctx.raft_logger.is_timeout_channel_enabled = cfg.is_timeout_log_ch_enabled;
     ctx.raft_logger.is_vote_channel_enabled = cfg.is_vote_log_ch_enabled;
 

@@ -59,7 +59,7 @@ public:
             m_p_io->cluster_cfg.servers.emplace_back(i + 1, std::to_string(i + 1), (i == 0) ? is_voter : true);
         }
 
-        details::utils::init(*m_p_ctx);
+        details::utils::init(*m_p_ctx, m_p_io->cluster_cfg);
         m_p_ctx->election_task = m_p_ctx->schd.make_task(std::bind(&details::timeout::election_timeout_task, std::ref(*m_p_ctx)));
         m_p_ctx->heartbeat_task = m_p_ctx->schd.make_task(std::bind(&details::timeout::heartbeat_timeout_task, std::ref(*m_p_ctx)));
 

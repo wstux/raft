@@ -108,9 +108,9 @@ void server::deinit()
     m_p_ctx->p_io->deinit();
 }
 
-bool server::init()
+bool server::init(const cluster_config& cluster_cfg)
 {
-    const bool is_inited = details::utils::init(*m_p_ctx);
+    const bool is_inited = details::utils::init(*m_p_ctx, cluster_cfg);
     if (! is_inited) {
         RAFT_LOG_ERROR((*m_p_ctx), "Filed to init raft server.");
         return false;
@@ -190,7 +190,7 @@ bool server::reconfigure()
         return false;
     }
 
-    cluster_config cluster_cfg = m_p_ctx->p_io->bootstrap();
+    /*cluster_config cluster_cfg = m_p_ctx->p_io->bootstrap();
     std::sort(cluster_cfg.servers.begin(), cluster_cfg.servers.end(),
         [](const server_config& l, const server_config& r) -> bool { return l.id < r.id; });
 
@@ -204,7 +204,7 @@ bool server::reconfigure()
         [p_ctx = m_p_ctx.get(), cfg = std::move(cfg), cluster_cfg = std::move(cluster_cfg)]() -> void {
             details::utils::reconfigure(*p_ctx, cfg, cluster_cfg);
         };
-    m_p_ctx->schd.execute_strand(std::move(handler));
+    m_p_ctx->schd.execute_strand(std::move(handler));*/
     return true;
 }
 
