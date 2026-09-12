@@ -259,7 +259,7 @@ bool append(context& ctx, term_t term, index_t leader_commit, index_t prev_log_i
 
     RAFT_LOG_TRACE(ctx, "Server %llu(%s) is saving %zu entries to io storage.", ctx.id, ctx.role.str(), ac_entries.size());
     const bool accept = ctx.p_io->append(ac_entries);
-    return append_callback(ctx, accept, term, index, leader_commit, entries);
+    return append_callback(ctx, accept, term, index, leader_commit, ac_entries);
 }
 
 bool append_callback(context& ctx, bool accept, term_t term, index_t index, index_t leader_commit, const entry::list& entries)
