@@ -180,10 +180,10 @@ void handle_request(context& ctx, term_t term, server_id_t src_id, const vote_me
         return utils::send_vote_response(ctx, *p_src, cur_term, msg.is_prevote, false);
     }
 
-    //if installing snapshot {
-    //    wrap_send(ctx, p_src_peer, &peer::send_vote_response, cur_term, ctx.id, msg.is_prevote, false);
-    //    return;
-    //}
+    if (utils::is_installing_snapshot(ctx)) {
+        RAFT_VOTE_LOG_DEBUG(ctx, "Server %llu(%s) is installing snapshot. Reject disput.", ctx.id, ctx.role.str());
+        return utils::send_vote_response(ctx, *p_src, cur_term, msg.is_prevote, false);
+    }
 
     if (! msg.is_prevote) {
         assert(ctx.term == term);

@@ -56,7 +56,7 @@ void commmit_change(context& ctx, const index_t index)
         }
     }
 
-    RAFT_LOG_TRACE(ctx, "Server %llu(%s) committed chacnges to index %u. State: commit_index %u, "
+    RAFT_LOG_TRACE(ctx, "Server %llu(%s) committed changes to index %u. State: commit_index %u, "
         "configuration_committed_index %u, configuration_uncommitted_index %u, last_applied %u, "
         "last_stored %u", ctx.id, ctx.role.str(), index, ctx.state.commit_index, ctx.state.configuration_committed_index,
         ctx.state.configuration_uncommitted_index, ctx.state.last_applied.load(std::memory_order_acquire), ctx.state.last_stored);
@@ -210,8 +210,9 @@ bool append(context& ctx, term_t term, index_t leader_commit, index_t prev_log_i
         return false;
     }
 
-    /* Delete conflicting entries. */
+    // Delete conflicting entries.
     const size_t begin = resolve_conflicts(ctx, prev_log_index, entries);
+
     if (begin == std::numeric_limits<size_t>::max()) {
         RAFT_LOG_WARN(ctx, "Server %llu(%s) failed to resolve conflicts.", ctx.id, ctx.role.str());
         return false;
@@ -221,7 +222,7 @@ bool append(context& ctx, term_t term, index_t leader_commit, index_t prev_log_i
         ctx.id, ctx.role.str(), entries.size(), leader_commit, prev_log_index);
     if (begin == entries.size()) {
         RAFT_LOG_TRACE(ctx, "Server %llu(%s) does not need to add new entries.", ctx.id, ctx.role.str());
-        if ((leader_commit > ctx.state.commit_index) && ctx.state.last_stored >= ctx.state.commit_index) {
+        if ((leader_commit > ctx.state.commit_index) && ctx.state.last_stored >= ctx.state.commit_index && ! utils::is_installing_snapshot(ctx)) {
             ctx.state.commit_index = std::min(leader_commit, ctx.state.last_stored);
             RAFT_LOG_TRACE(ctx, "Server %llu(%s) updated commit index. State: commit_index %u, "
                 "configuration_committed_index %u, configuration_uncommitted_index %u, last_applied %u, "
@@ -256,7 +257,7 @@ bool append(context& ctx, term_t term, index_t leader_commit, index_t prev_log_i
         return true;
     }
 
-    RAFT_LOG_TRACE(ctx, "Server %llu(%s) is saving %zu entries to io storeage.", ctx.id, ctx.role.str(), ac_entries.size());
+    RAFT_LOG_TRACE(ctx, "Server %llu(%s) is saving %zu entries to io storage.", ctx.id, ctx.role.str(), ac_entries.size());
     const bool accept = ctx.p_io->append(ac_entries);
     return append_callback(ctx, accept, term, index, leader_commit, entries);
 }
@@ -268,7 +269,13 @@ bool append_callback(context& ctx, bool accept, term_t term, index_t index, inde
         return false;
     }
 
+    if (utils::is_installing_snapshot(ctx)) {
+        RAFT_LOG_DEBUG(ctx, "Server %llu(%s) is installing snapshot. Reject append new entries.", ctx.id, ctx.role.str());
+        return false;;
+    }
+
     if (! update_configuration(ctx, index, term, leader_commit, entries)) {
+        RAFT_LOG_ERROR(ctx, "Server %llu(%s) failed to update configuration.", ctx.id, ctx.role.str());
         return false;
     }
 

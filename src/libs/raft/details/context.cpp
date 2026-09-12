@@ -216,6 +216,11 @@ bool init(context& ctx)
     return true;
 }
 
+bool is_installing_snapshot(const context& ctx)
+{
+    return ctx.state.snapshot.is_in_process && (ctx.state.last_stored == 0);
+}
+
 bool is_valid_cluster(const server_id_t id, const cluster_config& cluster_cfg, bool check_self)
 {
     assert(std::is_sorted(cluster_cfg.servers.cbegin(), cluster_cfg.servers.cend(),

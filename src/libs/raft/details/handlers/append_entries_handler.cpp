@@ -54,7 +54,7 @@ void handle_request_async(context& ctx, server_id_t src_id, bool accept, replica
 
     // Calculate the index of the last successfully stored entry
     const index_t last_log_index = accept ? p_async_ctx->last_stored : p_async_ctx->last_index;
-    return utils::send_append_entries_response(ctx, src_id, p_async_ctx->term, accept, last_log_index);
+    utils::send_append_entries_response(ctx, src_id, p_async_ctx->term, accept, last_log_index);
 }
 
 } // <anonymous> namespace
@@ -91,6 +91,12 @@ void handle_request(context& ctx, term_t term, server_id_t src_id, const append_
     role::update_leader(ctx, src_id);
     timeout::election_restart_task(ctx);
 
+    if (utils::is_installing_snapshot(ctx) && (msg.entries.size() > 0)) {
+        RAFT_AE_LOG_DEBUG(ctx, "Server %llu(%s) is installing snapshot. Request from server %llu will be ignored.",
+                ctx.id, ctx.role.str(), src_id);
+        return;
+    }
+
     replication::entries::async::append_context::ptr p_async_ctx;
     // Invoke internal consistency check logic: the log must contain an entry at
     // msg.prev_log_index matching msg.prev_log_term
@@ -102,7 +108,7 @@ void handle_request(context& ctx, term_t term, server_id_t src_id, const append_
         scheduler::handler_type handler_fn = [&ctx, src_id, p_async_ctx = std::move(p_async_ctx)] () -> void {
             RAFT_AE_LOG_TRACE(ctx, "Server %llu(%s) is saving %zu entries to io storage asynchronously.",
                 ctx.id, ctx.role.str(), p_async_ctx->entries.size());
-            // Perform blocking disk write outside the critical section (mutex)
+            // Perform blocking disk write outside the critical section
             const bool accept = ctx.p_io->append(p_async_ctx->entries);
             ctx.schd.execute_strand([&ctx, src_id, accept, p_async_ctx = std::move(p_async_ctx)] () -> void {
                 handle_request_async(ctx, src_id, accept, p_async_ctx);
@@ -179,7 +185,6 @@ void handle_response(context& ctx, term_t term, server_id_t src_id, const append
     // entries to the State Machine
     replication::entries::commit(ctx);
 }
-
 
 void request(context& ctx)
 {
