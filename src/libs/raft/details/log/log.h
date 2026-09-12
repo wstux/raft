@@ -56,7 +56,7 @@ struct store final
 
     void restore(index_t last_idx, term_t last_term);
 
-    void take_snapshot(index_t new_last_index);
+    void take_snapshot(index_t new_last_index, size_t trailing);
 
     term_t term(index_t idx) const;
 

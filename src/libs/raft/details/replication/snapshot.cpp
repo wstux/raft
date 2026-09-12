@@ -41,7 +41,7 @@ bool should_take_snapshot(context& ctx)
         return false;
     };
 
-    if ((ctx.state.last_applied - ctx.log.snapshot.last_index) < ctx.snapshot_threshold) {
+    if ((ctx.state.last_applied - ctx.log.snapshot.last_index) < ctx.state.snapshot.threshold) {
         return false;
     }
 

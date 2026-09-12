@@ -61,7 +61,8 @@ struct config final
 
     size_t scheduler_threads_count = 4;
 
-    size_t snapshot_threshold = 1024;
+    size_t snapshot_threshold = 512;
+    size_t snapshot_trailing = 1024; // The number of records to leave in the log after a snapshot is created
 
     bool is_async_io = false;
 

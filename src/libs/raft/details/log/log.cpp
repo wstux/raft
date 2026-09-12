@@ -33,9 +33,6 @@ namespace raft {
 namespace details {
 namespace log {
 
-////////////////////////////////////////////////////////////////////////////////
-// struct log_store
-
 entry::list store::acquire(index_t begin_idx) const
 {
     assert(begin_idx > 0);
@@ -113,28 +110,37 @@ void store::restore(index_t last_idx, term_t last_term)
 {
     assert(last_idx > 0);
     assert(last_term > 0);
-    assert(entries.find(last_idx) != entries.cend());
 
-    truncate(last_index() - entries.size() + 1);
+    if (! entries.empty()) {
+        index_t idx = entries.begin()->first;
+        truncate(idx);
+    }
+
     snapshot.last_index = last_idx;
     snapshot.last_term = last_term;
     offset = last_idx;
 }
 
-void store::take_snapshot(index_t new_last_index)
+void store::take_snapshot(index_t new_last_index, size_t trailing)
 {
-    assert(entries.find(new_last_index) != entries.cend());
-
     term_t new_last_term = term(new_last_index);
     assert(new_last_term != 0);
 
     snapshot.last_index = new_last_index;
     snapshot.last_term = new_last_term;
 
-    offset = new_last_index - 1;
+    // If log has not at least N entries preceeding the given last index, then there's nothing to remove
+    if (new_last_index <= trailing || entries.find(new_last_index - trailing) == entries.cend()) {
+        return;
+    }
 
-    entry_map::const_iterator it = entries.find(new_last_index);
+    // Find an iterator to the element following (new_last_index - trailing)
+    entry_map::iterator it = entries.upper_bound(new_last_index - trailing);
+    // Delete everything from the beginning to it (not including it)
     entries.erase(entries.begin(), it);
+
+    // Adjust the offset since the first element in entries has changed
+    offset = (! entries.empty()) ? entries.begin()->first - 1 : new_last_index;
 }
 
 term_t store::term(index_t idx) const
@@ -142,24 +148,39 @@ term_t store::term(index_t idx) const
     assert(idx > 0);
     assert(offset <= snapshot.last_index);
 
+    if ((idx < offset + 1 && idx != snapshot.last_index) || idx > last_index()) {
+        return 0;
+    }
+
     if (idx == snapshot.last_index) {
         assert(snapshot.last_term != 0);
-        assert(entries.find(idx) != entries.cend());
-        assert(entries.find(idx)->second->term == snapshot.last_term);
+
+        entry_map::const_iterator it = entries.find(idx);
+        if (it != entries.cend()) {
+            assert(it->second->term == snapshot.last_term);
+        }
         return snapshot.last_term;
     }
 
     entry_map::const_iterator it = entries.find(idx);
-    if (it == entries.cend()) {
-        return 0;
+    if (it != entries.cend()) {
+        return it->second->term;
     }
-
-    return it->second->term;
+    return 0;
 }
 
 void store::truncate(index_t begin_idx)
 {
+    //entry_map::iterator it = entries.find(begin_idx);
+    //entries.erase(it, entries.end());
+    if (entries.empty()) {
+        return;
+    }
+
+    assert(begin_idx > snapshot.last_index);
+
     entry_map::iterator it = entries.find(begin_idx);
+    assert(it != entries.cend());
     entries.erase(it, entries.end());
 }
 

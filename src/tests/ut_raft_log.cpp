@@ -402,7 +402,45 @@ TEST_F(raft_log, take_snapshot)
     EXPECT_TRUE(log.snapshot.last_term == 0) << "Last snapshot term: " << log.snapshot.last_term;
     EXPECT_TRUE(log.offset == 0) << "Offset: " << log.offset;
 
-    log.take_snapshot(2);
+    log.take_snapshot(2, 5);
+    EXPECT_TRUE(log.entries.size() == 3) << "Entries size in log: " << log.entries.size();
+    EXPECT_TRUE(log.last_index() == 3) << "Last log index: " << log.last_index();
+    EXPECT_TRUE(log.snapshot.last_index == 2) << "Last snapshot index: " << log.snapshot.last_index;
+    EXPECT_TRUE(log.snapshot.last_term == 1) << "Last snapshot term: " << log.snapshot.last_term;
+    EXPECT_TRUE(log.offset == 0) << "Offset: " << log.offset;
+
+    log.take_snapshot(2, 0);
+    EXPECT_TRUE(log.entries.size() == 1) << "Entries size in log: " << log.entries.size();
+    EXPECT_TRUE(log.last_index() == 3) << "Last log index: " << log.last_index();
+    EXPECT_TRUE(log.snapshot.last_index == 2) << "Last snapshot index: " << log.snapshot.last_index;
+    EXPECT_TRUE(log.snapshot.last_term == 1) << "Last snapshot term: " << log.snapshot.last_term;
+    EXPECT_TRUE(log.offset == 2) << "Offset: " << log.offset;
+}
+
+TEST_F(raft_log, take_snapshot_trailing)
+{
+    namespace raft = ::wstux::raft;
+    using raft_log = raft::details::log::store;
+
+    raft_log log;
+    log.load(0, 0, 1);
+    for (size_t i = 0; i < 3; ++i) {
+        log.append_change(1, raft::cluster_config());
+    }
+    EXPECT_TRUE(log.entries.size() == 3) << "Entries size in log: " << log.entries.size();
+    EXPECT_TRUE(log.last_index() == 3) << "Last log index: " << log.last_index();
+    EXPECT_TRUE(log.snapshot.last_index == 0) << "Last snapshot index: " << log.snapshot.last_index;
+    EXPECT_TRUE(log.snapshot.last_term == 0) << "Last snapshot term: " << log.snapshot.last_term;
+    EXPECT_TRUE(log.offset == 0) << "Offset: " << log.offset;
+
+    log.take_snapshot(2, 3);
+    EXPECT_TRUE(log.entries.size() == 3) << "Entries size in log: " << log.entries.size();
+    EXPECT_TRUE(log.last_index() == 3) << "Last log index: " << log.last_index();
+    EXPECT_TRUE(log.snapshot.last_index == 2) << "Last snapshot index: " << log.snapshot.last_index;
+    EXPECT_TRUE(log.snapshot.last_term == 1) << "Last snapshot term: " << log.snapshot.last_term;
+    EXPECT_TRUE(log.offset == 0) << "Offset: " << log.offset;
+
+    log.take_snapshot(2, 1);
     EXPECT_TRUE(log.entries.size() == 2) << "Entries size in log: " << log.entries.size();
     EXPECT_TRUE(log.last_index() == 3) << "Last log index: " << log.last_index();
     EXPECT_TRUE(log.snapshot.last_index == 2) << "Last snapshot index: " << log.snapshot.last_index;

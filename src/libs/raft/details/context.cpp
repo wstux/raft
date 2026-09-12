@@ -102,12 +102,14 @@ context::context(server_id_t id, const io::ptr p_io, const fsm::ptr p_fsm, loggi
     , p_fsm(p_fsm)
     , term(0)
     , schd(alloc)
-    , snapshot_threshold(1024)
     , heartbeat_interval_ms(100)
     , rand_engine(std::chrono::system_clock::now().time_since_epoch().count() * id)
     , election_distribution(250, 500)
     , raft_logger(std::move(p_handler))
-{}
+{
+    state.snapshot.threshold = 512;
+    state.snapshot.trailing = 1024;
+}
 
 std::ostream& operator<<(std::ostream& os, const context& ctx)
 {
@@ -194,7 +196,8 @@ bool init(context& ctx)
     ctx.election_distribution = std::uniform_int_distribution<size_t>(cfg.vote_timeout_min_ms, cfg.vote_timeout_max_ms);
     ctx.heartbeat_interval_ms = cfg.heartbeat_interval_ms;
 
-    ctx.snapshot_threshold = cfg.snapshot_threshold;
+    ctx.state.snapshot.threshold = cfg.snapshot_threshold;
+    ctx.state.snapshot.trailing = cfg.snapshot_trailing;
 
     ctx.raft_logger.is_heartbeat_channel_enabled = cfg.is_heartbeat_log_ch_enabled;
     ctx.raft_logger.is_timeout_channel_enabled = cfg.is_timeout_log_ch_enabled;
