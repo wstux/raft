@@ -418,7 +418,7 @@ void update_commit_index(context& ctx, const index_t index)
                                      [index](const peer& p) -> bool { return p.is_voter && (p.match_index >= index); });
 
     // Check if the cluster configuration quorum is reached
-    if (votes > peers::quorum_for_election(ctx)) {
+    if (votes > utils::quorum_for_election(ctx)) {
         ctx.state.commit_index = index;
         RAFT_LOG_TRACE(ctx, "Entries replication reached quorum. Commit index has been updated to %u.", ctx.state.commit_index);
     }

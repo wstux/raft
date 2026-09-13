@@ -96,7 +96,7 @@ static void check_contact_quorum(benchmark::State& state)
     namespace raft = ::wstux::raft;
 
     for (auto _ : state) {
-        bool is_check = raft::details::peers::check_contact_quorum(*g_p_ctx);
+        bool is_check = raft::details::utils::check_contact_quorum(*g_p_ctx);
         benchmark::DoNotOptimize(is_check);
     }
 }

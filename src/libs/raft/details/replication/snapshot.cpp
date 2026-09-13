@@ -132,10 +132,11 @@ bool restore(context& ctx, raft::snapshot& snapshot)
     }
 
     //entries::apply_configuration(ctx, std::move(snapshot.conf));
-    peers::update(ctx, snapshot.conf);
+    peers::update(ctx, std::move(snapshot.conf));
     ctx.state.configuration_committed_index = snapshot.conf_index;
     ctx.state.configuration_uncommitted_index = 0;
 
+    ctx.state.cluster_cfg = snapshot.conf;
     ctx.state.snapshot.cluster_cfg = snapshot.conf;
 
     ctx.state.commit_index = snapshot.index;

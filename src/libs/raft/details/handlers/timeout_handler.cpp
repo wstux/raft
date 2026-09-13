@@ -78,7 +78,7 @@ void election_timeout_task(context& ctx)
     if (ctx.role.is_leader()) {
         // Raft Paper, Section 6 (Leader lease): "A leader steps down if it does
         // not receive heartbeat responses from a majority of the cluster nodes."
-        if (! peers::check_contact_quorum(ctx)) {
+        if (! utils::check_contact_quorum(ctx)) {
             role::become_follower(ctx);
         }
     } else if (ctx.role.is_candidate()) {

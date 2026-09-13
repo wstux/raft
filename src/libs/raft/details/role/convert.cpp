@@ -59,7 +59,7 @@ void become_candidate(context& ctx)
     ctx.role.candidate.votes_granted = 0;
     ctx.role.candidate.is_prevote = true;
 
-    if (peers::voting_members_count(ctx) == 1) {
+    if (utils::voting_members_count(ctx) == 1) {
         become_leader(ctx);
     } else {
         election_start(ctx);
@@ -75,7 +75,7 @@ void become_leader(context& ctx)
     ctx.role.become_leader();
     ctx.role.leader_id = ctx.id;
 
-    const size_t voters_count = peers::voting_members_count(ctx);
+    const size_t voters_count = utils::voting_members_count(ctx);
     if (voters_count == 0 && (ctx.state.last_stored > ctx.state.commit_index)) {
         ctx.state.commit_index = ctx.state.last_stored;
         // do replication

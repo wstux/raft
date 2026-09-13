@@ -75,6 +75,8 @@ struct context final
         index_t configuration_committed_index = 0;
         index_t configuration_uncommitted_index = 0;
 
+        cluster_config cluster_cfg;
+
         struct {
             size_t threshold;
             size_t trailing;
@@ -105,6 +107,18 @@ std::ostream& operator<<(std::ostream& os, const context& ctx);
 
 namespace peers {
 
+void emplace(context& ctx, const server_config& cfg);
+
+void erase(context& ctx, server_id_t id);
+
+peer::ptr find(context& ctx, server_id_t id);
+
+void update(context& ctx, cluster_config cluster_cfg);
+
+} // namespace peers
+
+namespace utils {
+
 /**
  *  \brief  Checks if the leader maintains active contact with a majority (quorum)
  *      of nodes.
@@ -123,19 +137,9 @@ namespace peers {
  */
 bool check_contact_quorum(context& ctx);
 
-peer::ptr find(context& ctx, server_id_t id);
-
-size_t quorum_for_election(context& ctx);
-
-void update(context& ctx, const cluster_config& cluster_cfg);
-
-size_t voting_members_count(context& ctx);
-
-} // namespace peers
-
-namespace utils {
-
 bool init(context& ctx, cluster_config cluster_cfg);
+
+bool is_in_cluster(const context& ctx, server_id_t id);
 
 bool is_installing_snapshot(const context& ctx);
 
@@ -143,11 +147,13 @@ bool is_installing_snapshot(const context& ctx);
 
 bool is_valid_cluster(const server_id_t id, const cluster_config& cluster_cfg, bool check_self = true);
 
-cluster_config make_cluster_config(const context& ctx);
-
 bool load(context& ctx);
 
+size_t quorum_for_election(const context& ctx);
+
 void reconfigure(context& ctx, const config& cfg, const cluster_config& cluster_cfg);
+
+size_t voting_members_count(const context& ctx);
 
 } // namespace utils
 

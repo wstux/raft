@@ -143,8 +143,7 @@ void handle_request(context& ctx, server_id_t src_id, const std::string& address
 {
     RAFT_VOTE_LOG_DEBUG(ctx, "Handle %s. Request from server %llu to server %llu(%s), current term %u",
         (msg.is_prevote ? "prevote" : "vote"), src_id, ctx.id, ctx.role.str(), ctx.term);
-    peer::ptr p_src = peers::find(ctx, src_id);
-    if (! p_src) {
+    if (! utils::is_in_cluster(ctx, src_id)) {
         RAFT_VOTE_LOG_DEBUG(ctx, "Got vote message from removed server %llu", src_id);
         return;
     }
@@ -210,8 +209,7 @@ void handle_response(context& ctx, server_id_t src_id, const std::string& /*addr
 
     assert(ctx.role.is_candidate());
 
-    peer::ptr p_src_peer = peers::find(ctx, src_id);
-    if (! p_src_peer) {
+    if (! utils::is_in_cluster(ctx, src_id)) {
         RAFT_VOTE_LOG_DEBUG(ctx, "Got vote response message from removed server %llu", src_id);
         return;
     }
@@ -326,9 +324,9 @@ void request(context& ctx)
 
     // Raft Paper, Figure 2 (RequestVote RPC): Broadcasting argument parameters
     // to all nodes. Passed arguments: term, candidateId, lastLogIndex, lastLogTerm.
-    for (const peer& p : ctx.peers) {
-        if (p.is_voter) {
-            utils::send_vote_request(ctx, p.id, p.address, term, is_prevote, log_index, log_term);
+    for (const server_config& cfg : ctx.state.cluster_cfg.servers) {
+        if (cfg.is_voter && ctx.id != cfg.id) {
+            utils::send_vote_request(ctx, cfg.id, cfg.address, term, is_prevote, log_index, log_term);
         }
     }
 }
