@@ -194,7 +194,7 @@ void request(context& ctx)
 
     assert(ctx.role.is_leader());
 
-    for (peer::list::value_type& p : ctx.peers) {
+    for (peer::list::value_type& p : ctx.role.leader.peers) {
         request(ctx, p);
     }
 }

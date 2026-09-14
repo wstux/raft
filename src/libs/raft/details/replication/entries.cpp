@@ -76,7 +76,7 @@ bool commmit_command(context& ctx, const index_t index, const entry::ptr& p_entr
 
 bool is_consistent_log(context& ctx, index_t prev_log_index, term_t prev_log_term)
 {
-    if (prev_log_index == 0 || ctx.log.entries.empty()) {
+    if (prev_log_index == 0) {
         return true;
     }
 
@@ -207,12 +207,12 @@ bool append(context& ctx, term_t term, index_t leader_commit, index_t prev_log_i
     assert(p_async_ctx.get() == nullptr);
 
     if (! is_consistent_log(ctx, prev_log_index, prev_log_term)) {
+        RAFT_LOG_WARN(ctx, "Server %llu(%s) has non consistent log.", ctx.id, ctx.role.str());
         return false;
     }
 
     // Delete conflicting entries.
     const size_t begin = resolve_conflicts(ctx, prev_log_index, entries);
-
     if (begin == std::numeric_limits<size_t>::max()) {
         RAFT_LOG_WARN(ctx, "Server %llu(%s) failed to resolve conflicts.", ctx.id, ctx.role.str());
         return false;
@@ -414,8 +414,8 @@ void update_commit_index(context& ctx, const index_t index)
     }
 
     // Count votes: 1 (the leader itself) + the number of peers whose match_index >= index
-    size_t votes = 1 + std::count_if(ctx.peers.begin(), ctx.peers.end(),
-                                     [index](const peer& p) -> bool { return p.is_voter && (p.match_index >= index); });
+    size_t votes = 1 + std::count_if(ctx.role.leader.peers.begin(), ctx.role.leader.peers.end(),
+        [index](const peer& p) -> bool { return p.is_voter && (p.match_index >= index); });
 
     // Check if the cluster configuration quorum is reached
     if (votes > utils::quorum_for_election(ctx)) {

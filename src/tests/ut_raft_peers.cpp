@@ -103,9 +103,9 @@ TEST_F(raft_peers, update)
     for (size_t i = 0; i < 5; ++i) {
         cluster_cfg.servers.emplace_back(i + 1, std::to_string(i + 1), true);
     }
-    EXPECT_TRUE(ctx.peers.size() == 2) << ctx.peers.size();
+    EXPECT_TRUE(ctx.role.leader.peers.size() == 2) << ctx.role.leader.peers.size();
     details::peers::update(ctx, cluster_cfg);
-    EXPECT_TRUE(ctx.peers.size() == 4) << ctx.peers.size();
+    EXPECT_TRUE(ctx.role.leader.peers.size() == 4) << ctx.role.leader.peers.size();
 }
 
 TEST_F(raft_peers, voting_members_count)
@@ -127,7 +127,7 @@ TEST_F(raft_peers, voting_members_count)
 TEST_F(raft_peers, check_contact_quorum)
 {
     details::context& ctx = init(5);
-    for (details::peer& p : ctx.peers) {
+    for (details::peer& p : ctx.role.leader.peers) {
         p.mark_recent_recv();
     }
 

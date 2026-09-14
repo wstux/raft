@@ -96,7 +96,7 @@ bool append(context& ctx, const server_config& cfg)
     RAFT_LOG_TRACE(ctx, "Server %llu(%s) is adding new peer with id %llu.", ctx.id, ctx.role.str(), cfg.id);
     peers::emplace(ctx, cfg);
 
-    assert(ctx.state.cluster_cfg.servers.size() == (ctx.peers.size() + 1));
+    assert(ctx.state.cluster_cfg.servers.size() == (ctx.role.leader.peers.size() + 1));
     return change_configuration(ctx, ctx.state.cluster_cfg);
 }
 
@@ -143,7 +143,7 @@ bool remove(context& ctx, const server_id_t id)
     RAFT_LOG_TRACE(ctx, "Server %llu(%s) is removing existing peer with id %llu.", ctx.id, ctx.role.str(), id);
     peers::erase(ctx, id);
 
-    assert(ctx.state.cluster_cfg.servers.size() == (ctx.peers.size() + 1));
+    assert(ctx.state.cluster_cfg.servers.size() == (ctx.role.leader.peers.size() + 1));
     return change_configuration(ctx, ctx.state.cluster_cfg);
 }
 

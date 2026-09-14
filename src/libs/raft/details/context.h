@@ -89,8 +89,6 @@ struct context final
 
     term_t term;
 
-    peer::list peers;
-
     scheduler schd;
 
     size_t heartbeat_interval_ms;

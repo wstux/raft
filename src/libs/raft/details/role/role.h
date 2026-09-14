@@ -30,7 +30,7 @@
 //#include <string>
 
 #include "raft/io.h"
-//#include "raft/details/connection/peer.h"
+#include "raft/details/connection/peer.h"
 
 namespace wstux {
 namespace raft {
@@ -67,16 +67,17 @@ struct state final
     {
         clear();
         role = role_type::leader;
-        //::new (static_cast<void*>(&leader.peers)) peer::list();
+        ::new (static_cast<void*>(&leader.peers)) peer::list();
     }
 
     inline void clear()
     {
         /*if (is_follower()) {
             follower.leader_address.~basic_string();
-        } else if (is_leader()) {
+        } else */
+        if (is_leader()) {
             leader.peers.~vector();
-        }*/
+        }
     }
 
     inline bool is_follower() const { return role == role_type::follower; }
@@ -115,7 +116,7 @@ struct state final
             bool is_prevote;
         } candidate;
         struct {
-            //peer::list peers;
+            peer::list peers;
         } leader;
     };
 

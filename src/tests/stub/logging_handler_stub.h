@@ -49,7 +49,7 @@ namespace tests {
 
 struct logging_handler_file : public logging_handler
 {
-    static constexpr bool is_enable_logging = false;
+    static constexpr bool is_enable_logging = true;
 
     struct logger_data final
     {

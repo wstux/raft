@@ -98,10 +98,10 @@ TEST_F(raft_membership, append)
     ASSERT_TRUE(cluster_cfg.servers.size() == 3);
     cluster_cfg.servers.emplace_back(5, std::to_string(5), true);
 
-    ASSERT_TRUE(ctx.peers.size() == 2);
+    ASSERT_TRUE(ctx.role.leader.peers.size() == 2);
     ASSERT_TRUE(details::replication::membership::append(ctx, raft::server_config({5, std::to_string(5), true})));
     ASSERT_TRUE(cluster_cfg.servers == ctx.state.cluster_cfg.servers);
-    ASSERT_TRUE(ctx.peers.size() == 3);
+    ASSERT_TRUE(ctx.role.leader.peers.size() == 3);
     ASSERT_TRUE(details::peers::find(ctx, 2) != nullptr);
     ASSERT_TRUE(details::peers::find(ctx, 3) != nullptr);
     ASSERT_TRUE(details::peers::find(ctx, 5) != nullptr);
@@ -139,9 +139,9 @@ TEST_F(raft_membership, remove)
     details::role::become_leader(ctx);
     ASSERT_TRUE(ctx.role.is_leader());
 
-    ASSERT_TRUE(ctx.peers.size() == 2);
+    ASSERT_TRUE(ctx.role.leader.peers.size() == 2);
     ASSERT_TRUE(details::replication::membership::remove(ctx, 2));
-    ASSERT_TRUE(ctx.peers.size() == 1);
+    ASSERT_TRUE(ctx.role.leader.peers.size() == 1);
     ASSERT_TRUE(details::peers::find(ctx, 3) != nullptr);
 }
 
@@ -232,10 +232,10 @@ TEST_F(raft_membership, update_daungrade_to_follover)
     p_entry->type = raft::entry_type::change;
     p_entry->buffer = details::serialize(cfg);
 
-    ASSERT_TRUE(ctx.peers.size() == 2);
+    ASSERT_TRUE(ctx.role.leader.peers.size() == 2);
     ASSERT_TRUE(details::replication::membership::update(ctx, p_entry));
     ASSERT_TRUE(ctx.role.is_follower());
-    ASSERT_TRUE(ctx.peers.size() == 3);
+    ASSERT_TRUE(ctx.role.leader.peers.size() == 3);
     ASSERT_TRUE(details::utils::is_in_cluster(ctx, 2));
     ASSERT_TRUE(details::utils::is_in_cluster(ctx, 3));
     ASSERT_TRUE(details::utils::is_in_cluster(ctx, 4));
