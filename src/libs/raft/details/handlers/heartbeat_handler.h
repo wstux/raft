@@ -26,26 +26,11 @@
 #define _LIBS_RAFT_HANDLERS_HEARTBEAT_HANDLER_H_
 
 #include "raft/details/context.h"
-#include "raft/details/connection/messages.h"
 
 namespace wstux {
 namespace raft {
 namespace details {
 namespace heartbeat {
-
-/**
- *  \brief  Processes an incoming health check response from a follower.
- *  \param  ctx - current server state context.
- *  \param  src_id - id of the node that sent the response.
- *
- *  \details    Raft Paper, Section 5.2 "Leader election": "Leaders send periodic
- *      heartbeats (AppendEntries RPCs that carry no log entries) to all followers
- *      in order to maintain their authority."
- *
- *      This method updates the last activity timestamp for the node, confirming
- *      that the follower is alive and reachable.
- */
-void handle_request(context& ctx, server_id_t src_id);
 
 /**
  *  \brief  Initiates health checks (heartbeats) to all followers.

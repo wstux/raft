@@ -57,6 +57,16 @@ TestTarget(ut_raft_replication_membership
         googletest
 )
 
+TestTarget(ut_raft_replication_snapshot
+    SOURCES
+        ut_raft_replication_snapshot.cpp
+    LIBRARIES
+        raft
+        raft_stub
+    DEPENDS
+        googletest
+)
+
 TestTarget(ut_raft_role
     SOURCES
         ut_raft_role.cpp
@@ -145,6 +155,27 @@ TestTarget(ut_raft_server_membership
 TestTarget(ut_raft_server_membership_async
     SOURCES
         ut_raft_server_membership.cpp
+    COMPILE_DEFINITIONS USE_ASYNC_IO
+    LIBRARIES
+        raft
+        raft_stub
+    DEPENDS
+        googletest
+)
+
+TestTarget(ut_raft_server_snapshot
+    SOURCES
+        ut_raft_server_snapshot.cpp
+    LIBRARIES
+        raft
+        raft_stub
+    DEPENDS
+        googletest
+)
+
+TestTarget(ut_raft_server_snapshot_async
+    SOURCES
+        ut_raft_server_snapshot.cpp
     COMPILE_DEFINITIONS USE_ASYNC_IO
     LIBRARIES
         raft

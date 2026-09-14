@@ -64,12 +64,12 @@ TEST_F(raft_server, failed_init)
 {
     m_p_io->is_init = false;
 
-    EXPECT_FALSE(m_p_srv->init());
+    EXPECT_FALSE(m_p_srv->init(m_p_io->cluster_cfg));
 }
 
 TEST_F(raft_server, double_start)
 {
-    EXPECT_TRUE(m_p_srv->init());
+    EXPECT_TRUE(m_p_srv->init(m_p_io->cluster_cfg));
     EXPECT_TRUE(m_p_srv->start());
     EXPECT_FALSE(m_p_srv->start());
 }
@@ -81,7 +81,7 @@ TEST_F(raft_server, start_without_init)
 
 TEST_F(raft_server, reconfigure)
 {
-    EXPECT_TRUE(m_p_srv->init());
+    EXPECT_TRUE(m_p_srv->init(m_p_io->cluster_cfg));
     EXPECT_TRUE(m_p_srv->start());
 
     EXPECT_TRUE(m_p_srv->reconfigure());
@@ -89,7 +89,7 @@ TEST_F(raft_server, reconfigure)
 
 TEST_F(raft_server, reconfigure_invalid_configuration)
 {
-    EXPECT_TRUE(m_p_srv->init());
+    EXPECT_TRUE(m_p_srv->init(m_p_io->cluster_cfg));
     EXPECT_TRUE(m_p_srv->start());
 
     m_p_io->cfg.heartbeat_interval_ms = 0;
@@ -103,7 +103,7 @@ TEST_F(raft_server, stop_without_start)
 
 TEST_F(raft_server, handle_invalid_message)
 {
-    EXPECT_TRUE(m_p_srv->init());
+    EXPECT_TRUE(m_p_srv->init(m_p_io->cluster_cfg));
     EXPECT_TRUE(m_p_srv->start());
 
     raft::buffer_type buffer;

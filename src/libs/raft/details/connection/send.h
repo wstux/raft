@@ -63,6 +63,20 @@ template<> struct message_filler<message_type::append_entries_response>
     }
 };
 
+template<> struct message_filler<message_type::snapshot_request>
+{
+    static void fill(message& msg, raft::snapshot&& sh)
+    {
+        msg.snapshot_req.last_index = sh.index;
+        msg.snapshot_req.last_term = sh.term;
+
+        msg.snapshot_req.conf = std::move(sh.conf);
+        msg.snapshot_req.conf_index = sh.conf_index;
+
+        msg.snapshot_req.buffer.swap(sh.buffer);
+    }
+};
+
 template<> struct message_filler<message_type::vote_request>
 {
     static void fill(message& msg, bool is_prevote, index_t last_log_index, term_t last_log_term)
@@ -105,49 +119,31 @@ inline void send_async(context& ctx, server_id_t dst_id, std::string address, TA
     });
 }
 
-inline void send_append_entries_request(context& ctx, const peer& p, const term_t term, const index_t log_index,
-                                        const term_t log_term, const index_t commit, entry::list&& entries)
+inline void send_append_entries_request(context& ctx, server_id_t dst_id, std::string addr, term_t term,
+                                        index_t log_index, term_t log_term, index_t commit, entry::list&& entries)
 {
-    send_async<message_type::append_entries_request>(ctx, p.id, p.address, term, ctx.id, log_index, log_term, commit, std::move(entries));
+    send_async<message_type::append_entries_request>(ctx, dst_id, std::move(addr), term, ctx.id, log_index, log_term, commit, std::move(entries));
 }
 
-inline void send_append_entries_request(context& ctx, server_id_t dst_id, const term_t term, const index_t log_index,
-                                        const term_t log_term, const index_t commit, entry::list&& entries)
+inline void send_append_entries_response(context& ctx, server_id_t dst_id, std::string addr, term_t term, bool accept, index_t last_log_index)
 {
-    const peer::ptr p_peer = peers::find(ctx, dst_id);
-    if (p_peer != nullptr) {
-        send_append_entries_request(ctx, *p_peer, term, log_index, log_term, commit, std::move(entries));
-    } else {
-        RAFT_LOG_WARN(ctx, "Server %llu does not exists", dst_id);
-    }
+    send_async<message_type::append_entries_response>(ctx, dst_id, std::move(addr), term, ctx.id, accept, last_log_index);
 }
 
-inline void send_append_entries_response(context& ctx, const peer& p, const term_t term,
-                                         const bool accept, const index_t last_log_index)
+inline void send_snapshot_request(context& ctx, server_id_t dst_id, std::string addr, term_t term, raft::snapshot&& sh)
 {
-    send_async<message_type::append_entries_response>(ctx, p.id, p.address, term, ctx.id, accept, last_log_index);
+    send_async<message_type::snapshot_request>(ctx, dst_id, std::move(addr), term, ctx.id, std::move(sh));
 }
 
-inline void send_append_entries_response(context& ctx, server_id_t dst_id, const term_t term,
-                                         const bool accept, const index_t last_log_index)
+inline void send_vote_request(context& ctx, server_id_t dst_id, std::string addr, term_t term, bool is_prevote,
+                              index_t last_log_index, term_t last_log_term)
 {
-    const peer::ptr p_peer = peers::find(ctx, dst_id);
-    if (p_peer != nullptr) {
-        send_append_entries_response(ctx, *p_peer, term, accept, last_log_index);
-    } else {
-        RAFT_LOG_WARN(ctx, "Server %llu does not exists", dst_id);
-    }
+    send_async<message_type::vote_request>(ctx, dst_id, std::move(addr), term, ctx.id, is_prevote, last_log_index, last_log_term);
 }
 
-inline void send_vote_request(context& ctx, const peer& p, const term_t term, const bool is_prevote,
-                              const index_t last_log_index, const term_t last_log_term)
+inline void send_vote_response(context& ctx, server_id_t dst_id, std::string addr, term_t term, bool is_prevote, bool accept)
 {
-    send_async<message_type::vote_request>(ctx, p.id, p.address, term, ctx.id, is_prevote, last_log_index, last_log_term);
-}
-
-inline void send_vote_response(context& ctx, const peer& p, const term_t term, const bool is_prevote, const bool accept)
-{
-    send_async<message_type::vote_response>(ctx, p.id, p.address, term, ctx.id, is_prevote, accept);
+    send_async<message_type::vote_response>(ctx, dst_id, std::move(addr), term, ctx.id, is_prevote, accept);
 }
 
 } // namespace utils

@@ -203,13 +203,15 @@ public:
         : m_cluster_cfg(cluster_cfg)
         , m_is_changed_cluster_cfg(false)
         , m_p_factory(p_factory)
-        , m_term(0)
+        , m_term(1)
         , m_voted_for(gk_invalid_id)
         , m_snapshot_index(0)
         , m_snapshot_term(0)
         , m_start_index(1)
     {
         m_cfg.scheduler_threads_count = 2;
+        m_cfg.snapshot_threshold = 5;
+        m_cfg.snapshot_trailing = 2;
 #if defined(USE_ASYNC_IO)
         m_cfg.is_async_io = true;
 #endif
@@ -239,13 +241,11 @@ public:
         return true;
     }
 
-    virtual cluster_config bootstrap() const noexcept override final { return m_cluster_cfg; }
-
     virtual config configuration() const noexcept override final { return m_cfg; };
 
     virtual void deinit() noexcept override final {}
 
-    virtual snapshot::ptr get_snapshot() const noexcept override final { return m_p_snapshot; }
+    virtual std::optional<snapshot> get_snapshot() const noexcept override final { return m_p_snapshot; }
 
     virtual bool init(server_id_t id) noexcept override final
     {
@@ -294,9 +294,9 @@ public:
         p_client->send(msg);
     }
 
-    virtual bool set_snapshot(snapshot::ptr p_sh) noexcept override final
+    virtual bool set_snapshot(const snapshot& sh) noexcept override final
     {
-        m_p_snapshot = p_sh;
+        m_p_snapshot = sh;
         return true;
     }
 
@@ -340,7 +340,7 @@ public:
 
     index_t m_start_index;
 
-    snapshot::ptr m_p_snapshot = nullptr;
+    std::optional<snapshot> m_p_snapshot;
 
     bool m_is_append = true;
     bool m_is_truncate = true;

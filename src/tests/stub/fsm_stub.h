@@ -37,14 +37,10 @@ public:
     using ptr = std::shared_ptr<fsm_stub>;
 
 public:
-    explicit fsm_stub(bool result = true)
-        : m_result(result)
-    {}
-
     virtual ~fsm_stub() {}
     virtual bool apply(const raft::buffer_type& buf) override { return change(buf); }
-    virtual bool snapshot(raft::buffer_type& buf) override { buf = m_buffer; return m_result; }
     virtual bool restore(const raft::buffer_type& buf) override { return change(buf); }
+    virtual bool take_snapshot(raft::buffer_type& buf) override { buf = m_buffer; return is_result; }
 
     template<typename T>
     const T* get() const
@@ -68,10 +64,13 @@ public:
         return *p_value;
     }
 
+public:
+    bool is_result = true;
+
 private:
     bool change(const raft::buffer_type& buf)
     {
-        if (! m_result) {
+        if (! is_result) {
             return false;
         }
         m_buffer = buf;
@@ -79,7 +78,6 @@ private:
     }
 
 private:
-    const bool m_result;
     raft::buffer_type m_buffer;
 };
 

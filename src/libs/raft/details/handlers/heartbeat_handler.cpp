@@ -22,9 +22,6 @@
  * THE SOFTWARE.
  */
 
-#include <cassert>
-#include <algorithm>
-
 #include "raft/details/handlers/heartbeat_handler.h"
 #include "raft/details/handlers/append_entries_handler.h"
 
@@ -32,14 +29,6 @@ namespace wstux {
 namespace raft {
 namespace details {
 namespace heartbeat {
-
-void handle_request(context& ctx, server_id_t src_id)
-{
-    peer::ptr p_src_peer = peers::find(ctx, src_id);
-    if (p_src_peer) {
-        p_src_peer->mark_recent_recv();
-    }
-}
 
 void request(context& ctx)
 {

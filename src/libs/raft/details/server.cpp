@@ -31,7 +31,7 @@
 #include "raft/details/connection/messages.h"
 #include "raft/details/connection/serialization.h"
 #include "raft/details/handlers/append_entries_handler.h"
-#include "raft/details/handlers/heartbeat_handler.h"
+#include "raft/details/handlers/snapshot_handler.h"
 #include "raft/details/handlers/timeout_handler.h"
 #include "raft/details/handlers/vote_handler.h"
 #include "raft/details/replication/membership.h"
@@ -44,20 +44,21 @@ namespace {
 
 void handle_message(details::context& ctx, const details::message& msg)
 {
-    details::heartbeat::handle_request(ctx, msg.src_id);
-
     switch(msg.type) {
     case details::message_type::append_entries_request:
-        details::append_entries::handle_request(ctx, msg.term, msg.src_id, msg.append_entries_req);
+        details::append_entries::handle_request(ctx, msg.src_id, msg.address, msg.term, msg.append_entries_req);
         break;
     case details::message_type::append_entries_response:
-        details::append_entries::handle_response(ctx, msg.term, msg.src_id, msg.append_entries_resp);
+        details::append_entries::handle_response(ctx, msg.src_id, msg.address, msg.term, msg.append_entries_resp);
+        break;
+    case details::message_type::snapshot_request:
+        details::snapshot::handle_request(ctx, msg.src_id, msg.address, msg.term, msg.snapshot_req);
         break;
     case details::message_type::vote_request:
-        details::vote::handle_request(ctx, msg.term, msg.src_id, msg.vote_req);
+        details::vote::handle_request(ctx, msg.src_id, msg.address, msg.term, msg.vote_req);
         break;
     case details::message_type::vote_response:
-        details::vote::handle_response(ctx, msg.term, msg.src_id, msg.vote_resp);
+        details::vote::handle_response(ctx, msg.src_id, msg.address, msg.term, msg.vote_resp);
         break;
     default:
         RAFT_LOG_WARN(ctx, "Unsupported message type %d", msg.type);
@@ -108,9 +109,9 @@ void server::deinit()
     m_p_ctx->p_io->deinit();
 }
 
-bool server::init()
+bool server::init(const cluster_config& cluster_cfg)
 {
-    const bool is_inited = details::utils::init(*m_p_ctx);
+    const bool is_inited = details::utils::init(*m_p_ctx, cluster_cfg);
     if (! is_inited) {
         RAFT_LOG_ERROR((*m_p_ctx), "Filed to init raft server.");
         return false;
@@ -190,7 +191,7 @@ bool server::reconfigure()
         return false;
     }
 
-    cluster_config cluster_cfg = m_p_ctx->p_io->bootstrap();
+    /*cluster_config cluster_cfg = m_p_ctx->p_io->bootstrap();
     std::sort(cluster_cfg.servers.begin(), cluster_cfg.servers.end(),
         [](const server_config& l, const server_config& r) -> bool { return l.id < r.id; });
 
@@ -204,7 +205,7 @@ bool server::reconfigure()
         [p_ctx = m_p_ctx.get(), cfg = std::move(cfg), cluster_cfg = std::move(cluster_cfg)]() -> void {
             details::utils::reconfigure(*p_ctx, cfg, cluster_cfg);
         };
-    m_p_ctx->schd.execute_strand(std::move(handler));
+    m_p_ctx->schd.execute_strand(std::move(handler));*/
     return true;
 }
 

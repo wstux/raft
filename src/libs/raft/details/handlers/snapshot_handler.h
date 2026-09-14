@@ -38,8 +38,9 @@ namespace snapshot {
 /**
  *  \brief  Processes an incoming snapshot installation request from the leader.
  *  \param  ctx - current server state context.
- *  \param  term - term (epoch) of the leader that sent the snapshot.
  *  \param  src_id - identifier of the leader.
+ *  \param  address - address of the leader.
+ *  \param  term - term (epoch) of the leader that sent the snapshot.
  *  \param  msg - message containing snapshot metadata and body payload.
  *
  *  \details    Implements the receiver logic according to Section 7 of the
@@ -55,12 +56,12 @@ namespace snapshot {
  *      5. Reset state machine using snapshot contents.
  *
  */
-void handle_request(context& ctx, term_t term, server_id_t src_id, const snapshot_message& msg);
+void handle_request(context& ctx, server_id_t src_id, const std::string& address, term_t term, const snapshot_message& msg);
 
 /**
  *  \brief  Initiates sending a snapshot to a specific follower.
  *  \param  ctx - current server state context.
- *  \param  p_peer - target follower to which the snapshot is being sent.
+ *  \param  peer - target follower to which the snapshot is being sent.
  *
  *  \details    Raft Paper, Section 7 "Log compaction": "An entry is discarded
  *      from the log once it is committed and written to a snapshot... If a
@@ -72,7 +73,7 @@ void handle_request(context& ctx, term_t term, server_id_t src_id, const snapsho
  *      that the log entries required for replication via AppendEntries RPC have
  *      already been discarded (compacted) from the leader's log.
  */
-void request(context& ctx, const peer& p);
+void request(context& ctx, peer& p);
 
 } // namespace snapshot
 } // namespace details

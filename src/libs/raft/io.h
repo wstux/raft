@@ -29,6 +29,7 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -61,11 +62,13 @@ struct config final
 
     size_t scheduler_threads_count = 4;
 
-    size_t snapshot_threshold = 1024;
+    size_t snapshot_threshold = 512;
+    size_t snapshot_trailing = 1024; // The number of records to leave in the log after a snapshot is created
 
     bool is_async_io = false;
 
     bool is_heartbeat_log_ch_enabled = true;
+    bool is_snapshot_log_ch_enabled = true;
     bool is_timeout_log_ch_enabled = true;
     bool is_vote_log_ch_enabled = true;
 };
@@ -112,8 +115,6 @@ struct entry final
 
 struct snapshot final
 {
-    using ptr = std::shared_ptr<snapshot>;
-
     index_t index; //!< Index of last entry included in the snapshot.
     term_t term;   //!< Term of last entry included in the snapshot.
 
@@ -133,9 +134,9 @@ public:
 
     virtual bool apply(const buffer_type& buf) = 0;
 
-    virtual bool snapshot(buffer_type& buf) = 0;
-
     virtual bool restore(const buffer_type& buf) = 0;
+
+    virtual bool take_snapshot(buffer_type& buf) = 0;
 };
 
 class io
@@ -148,13 +149,11 @@ public:
 
     virtual bool append(const entry::list& entries) noexcept = 0;
 
-    virtual cluster_config bootstrap() const noexcept = 0;
-
     virtual config configuration() const noexcept = 0;
 
     virtual void deinit() noexcept = 0;
 
-    virtual snapshot::ptr get_snapshot() const noexcept = 0;
+    virtual std::optional<snapshot> get_snapshot() const noexcept = 0;
 
     virtual bool init(server_id_t id) noexcept = 0;
 
@@ -172,7 +171,7 @@ public:
 
     virtual void send(server_id_t id, std::string_view address, const buffer_type& msg) noexcept = 0;
 
-    virtual bool set_snapshot(snapshot::ptr p_snapshot) noexcept = 0;
+    virtual bool set_snapshot(const snapshot& sh) noexcept = 0;
 
     virtual void set_term(term_t term) noexcept = 0;
 

@@ -83,6 +83,18 @@ struct peer final
         return false;
     }
 
+    void update_state()
+    {
+        if (match_index >= shapshot.index) {
+            assert(shapshot.index > 0);
+            next_index = std::max(match_index + 1, shapshot.index);
+            shapshot.index = 0;
+        } else {
+            next_index = match_index + 1;
+        }
+        shapshot.is_in_process = false;
+    }
+
     const server_id_t id;
     std::string address;
     bool is_voter;
@@ -91,6 +103,11 @@ struct peer final
     index_t match_index;
 
     bool recent_recv;
+
+    struct {
+        index_t index = 0;
+        bool is_in_process = false;
+    } shapshot;
 };
 
 } // namespace details

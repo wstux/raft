@@ -74,7 +74,7 @@ TEST_F(raft_context, init)
 {
     details::context& ctx = init(1);
 
-    EXPECT_TRUE(details::utils::init(ctx));
+    EXPECT_TRUE(details::utils::init(ctx, m_p_io->cluster_cfg));
 }
 
 TEST_F(raft_context, init_failed)
@@ -82,7 +82,7 @@ TEST_F(raft_context, init_failed)
     details::context& ctx = init(1);
 
     m_p_io->is_init = false;
-    EXPECT_FALSE(details::utils::init(ctx));
+    EXPECT_FALSE(details::utils::init(ctx, m_p_io->cluster_cfg));
 }
 
 TEST_F(raft_context, init_invalid_config)
@@ -90,21 +90,21 @@ TEST_F(raft_context, init_invalid_config)
     details::context& ctx = init(1);
 
     m_p_io->cfg.heartbeat_interval_ms = 0;
-    EXPECT_FALSE(details::utils::init(ctx));
+    EXPECT_FALSE(details::utils::init(ctx, m_p_io->cluster_cfg));
 }
 
 TEST_F(raft_context, load)
 {
     details::context& ctx = init(1);
 
-    EXPECT_TRUE(details::utils::init(ctx));
+    EXPECT_TRUE(details::utils::init(ctx, m_p_io->cluster_cfg));
     EXPECT_TRUE(details::utils::load(ctx));
 }
 
 TEST_F(raft_context, load_failed)
 {
     details::context& ctx = init(1);
-    EXPECT_TRUE(details::utils::init(ctx));
+    EXPECT_TRUE(details::utils::init(ctx, m_p_io->cluster_cfg));
 
     ctx.peers.emplace_back(raft::server_config(2, "2", true));
     EXPECT_FALSE(details::utils::load(ctx));
@@ -115,7 +115,7 @@ TEST_F(raft_context, load_failed_duplicated_peer)
     details::context& ctx = init(3);
 
     m_p_io->cluster_cfg.servers.emplace_back(2, "2", true);
-    EXPECT_TRUE(details::utils::init(ctx));
+    EXPECT_FALSE(details::utils::init(ctx, m_p_io->cluster_cfg));
     EXPECT_FALSE(details::utils::load(ctx));
 }
 

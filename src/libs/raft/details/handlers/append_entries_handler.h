@@ -25,6 +25,8 @@
 #ifndef _LIBS_RAFT_HANDLERS_APPEND_ENTRIES_HANDLER_H_
 #define _LIBS_RAFT_HANDLERS_APPEND_ENTRIES_HANDLER_H_
 
+#include <string>
+
 #include "raft/io.h"
 #include "raft/details/context.h"
 #include "raft/details/connection/messages.h"
@@ -38,8 +40,9 @@ namespace append_entries {
 /**
  *  \brief  Handler for incoming AppendEntries RPC from the leader (Follower/Candidate side).
  *  \param  ctx - current server state context.
- *  \param  term - term of the leader that sent the message.
  *  \param  src_id - identifier of the leader.
+ *  \param  address - address of the leader.
+ *  \param  term - term of the leader that sent the message.
  *  \param  msg - message.
  *
  *  \details    Raft Paper, Section 5.1, 5.2, 5.3: Implements the following logic:
@@ -47,19 +50,20 @@ namespace append_entries {
  *      2. Reverting candidate state upon discovering a legitimate leader (5.2).
  *      3. Log consistency checks and writing new data (5.3).
  */
-void handle_request(context& ctx, term_t term, server_id_t src_id, const append_entries_message& msg);
+void handle_request(context& ctx, server_id_t src_id, const std::string& address, term_t term, const append_entries_message& msg);
 
 /**
  *  \brief  Handler for AppendEntries RPC responses (Leader side).
  *  \param  ctx - current server state context.
- *  \param  term - term of the remote node that sent the response.
  *  \param  src_id - identifier of the remote node (follower).
+ *  \param  address - address of the remote node (follower).
+ *  \param  term - term of the remote node that sent the response.
  *  \param  msg - message.
  *
  *  \details    Processes replication results: either advances tracking indices
  *  (matchIndex, nextIndex), or rolls them back in case of log inconsistency.
  */
-void handle_response(context& ctx, term_t term, server_id_t src_id, const append_entries_response_message& msg);
+void handle_response(context& ctx, server_id_t src_id, const std::string& address, term_t term, const append_entries_response_message& msg);
 
 /**
  *  \brief  Sends a broadcast AppendEntries request to all peers.
@@ -80,7 +84,7 @@ void request(context& ctx);
  *      an incremental log or if the node is hopelessly lagging and requires a
  *      state snapshot (Snapshot).
  */
-void request(context& ctx, const peer& p);
+void request(context& ctx, peer& p);
 
 } // namespace append_entries
 } // namespace details

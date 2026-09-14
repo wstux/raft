@@ -42,7 +42,8 @@ namespace tests = raft::tests;
 class raft_membership : public ::testing::Test
 {
 public:
-    virtual void SetUp() override{
+    virtual void SetUp() override
+    {
         m_p_io = std::make_shared<tests::empty_io>();
         m_p_fsm = std::make_shared<tests::fsm_stub>();
 
@@ -55,7 +56,7 @@ public:
         m_p_io->cluster_cfg.servers.emplace_back(2, std::to_string(2), true);
         m_p_io->cluster_cfg.servers.emplace_back(3, std::to_string(3), true);
 
-        details::utils::init(*m_p_ctx);
+        details::utils::init(*m_p_ctx, m_p_io->cluster_cfg);
         details::utils::load(*m_p_ctx);
         details::role::become_follower(*m_p_ctx);
     }

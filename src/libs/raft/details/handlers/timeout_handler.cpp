@@ -78,7 +78,7 @@ void election_timeout_task(context& ctx)
     if (ctx.role.is_leader()) {
         // Raft Paper, Section 6 (Leader lease): "A leader steps down if it does
         // not receive heartbeat responses from a majority of the cluster nodes."
-        if (! peers::check_contact_quorum(ctx)) {
+        if (! utils::check_contact_quorum(ctx)) {
             role::become_follower(ctx);
         }
     } else if (ctx.role.is_candidate()) {
@@ -88,7 +88,11 @@ void election_timeout_task(context& ctx)
         role::election_start(ctx);
     } else if (ctx.role.is_follower()) {
         if (ctx.role.is_voter) {
-            if (ctx.state.tasks_in_process == 0) {
+            if (utils::is_installing_snapshot(ctx)) {
+                RAFT_TO_LOG_DEBUG(ctx, "Server %llu(%s) is installing snapshot. Reject convert to candidate.", ctx.id, ctx.role.str());
+            } else if (ctx.state.tasks_in_process != 0) {
+                RAFT_TO_LOG_DEBUG(ctx, "Server %llu(%s) has append tasks. Reject convert to candidate.", ctx.id, ctx.role.str());
+            } else {
                 // Raft Paper, Section 5.2 (Leader election): "To begin an election,
                 // a follower increments its current term and transitions to candidate state."
                 role::become_candidate(ctx);

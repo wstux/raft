@@ -39,7 +39,7 @@ bool election_results(context& ctx)
 {
     assert(ctx.role.is_candidate());
 
-    const size_t quorum_size = peers::quorum_for_election(ctx) + 1;
+    const size_t quorum_size = utils::quorum_for_election(ctx) + 1;
     const size_t votes = ctx.role.candidate.votes_granted;
 
     return ctx.role.is_candidate() && (votes >= quorum_size);
@@ -69,7 +69,7 @@ void initiate_election(context& ctx)
         return;
     }
 
-    if (peers::quorum_for_election(ctx) == 0) {
+    if (utils::quorum_for_election(ctx) == 0) {
         role::become_candidate(ctx);
     }
 }

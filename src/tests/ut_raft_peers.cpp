@@ -61,7 +61,7 @@ public:
             m_p_io->cluster_cfg.servers.emplace_back(i + 1, std::to_string(i + 1), (i == 0) ? is_voter : true);
         }
 
-        details::utils::init(*m_p_ctx);
+        details::utils::init(*m_p_ctx, m_p_io->cluster_cfg);
         details::utils::load(*m_p_ctx);
         return *m_p_ctx;
     }
@@ -87,7 +87,7 @@ TEST_F(raft_peers, quorum_for_election)
 {
     details::context& ctx = init(2);
 
-    EXPECT_TRUE(details::peers::quorum_for_election(ctx) == 1) << details::peers::quorum_for_election(ctx);
+    EXPECT_TRUE(details::utils::quorum_for_election(ctx) == 1) << details::utils::quorum_for_election(ctx);
 }
 
 TEST_F(raft_peers, update)
@@ -114,9 +114,9 @@ TEST_F(raft_peers, voting_members_count)
         voters_count += is_voter ? 1 : 0;
         cluster_cfg.servers.emplace_back(i + 1, std::to_string(i + 1), is_voter);
     }
-    EXPECT_TRUE(details::peers::voting_members_count(ctx) == 3) << details::peers::voting_members_count(ctx);
+    EXPECT_TRUE(details::utils::voting_members_count(ctx) == 3) << details::utils::voting_members_count(ctx);
     details::peers::update(ctx, cluster_cfg);
-    EXPECT_TRUE(details::peers::voting_members_count(ctx) == voters_count) << details::peers::voting_members_count(ctx);
+    EXPECT_TRUE(details::utils::voting_members_count(ctx) == voters_count) << details::utils::voting_members_count(ctx);
 }
 
 TEST_F(raft_peers, check_contact_quorum)
@@ -129,7 +129,7 @@ TEST_F(raft_peers, check_contact_quorum)
         p.mark_recent_recv();
     }
 
-    EXPECT_TRUE(details::peers::check_contact_quorum(ctx));
+    EXPECT_TRUE(details::utils::check_contact_quorum(ctx));
 }
 
 TEST_F(raft_peers, failed_check_contact_quorum)
@@ -140,7 +140,7 @@ TEST_F(raft_peers, failed_check_contact_quorum)
     details::role::become_leader(ctx);
     details::peers::find(ctx, 2)->mark_recent_recv();
 
-    EXPECT_FALSE(details::peers::check_contact_quorum(ctx));
+    EXPECT_FALSE(details::utils::check_contact_quorum(ctx));
 }
 
 int main(int argc, char** argv)

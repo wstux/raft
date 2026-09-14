@@ -53,7 +53,7 @@ constexpr size_t gk_cluster_size = 7;
     tests::empty_io* p_raw_io = p_io.get();
     std::function<bool()> is_stop_fn = [p_raw_io]()->bool { return p_raw_io->is_stop; };
     details::context::ptr p_ctx = std::make_unique<details::context>(1, p_io, p_fsm, raft::logging_handler::ptr(), is_stop_fn);
-    if (! raft::details::utils::init(*p_ctx)) {
+    if (! raft::details::utils::init(*p_ctx, p_io->cluster_cfg)) {
         return nullptr;
     }
     p_ctx->election_task = p_ctx->schd.make_task(std::bind(&raft::details::timeout::election_timeout_task, std::ref(*p_ctx)));
@@ -96,7 +96,7 @@ static void check_contact_quorum(benchmark::State& state)
     namespace raft = ::wstux::raft;
 
     for (auto _ : state) {
-        bool is_check = raft::details::peers::check_contact_quorum(*g_p_ctx);
+        bool is_check = raft::details::utils::check_contact_quorum(*g_p_ctx);
         benchmark::DoNotOptimize(is_check);
     }
 }

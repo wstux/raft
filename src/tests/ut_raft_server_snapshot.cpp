@@ -38,13 +38,13 @@ namespace raft = wstux::raft;
 namespace tests = raft::tests;
 
 template <typename T>
-class raft_election : public ::testing::Test
+class raft_snapshot : public ::testing::Test
 {
 public:
     virtual void SetUp() override
     {
         m_p_network = std::make_shared<tests::network_stub>(T::type);
-        tests::network_stub::enable_file_logging("raft_election", ::testing::UnitTest::GetInstance()->current_test_info());
+        tests::network_stub::enable_file_logging("raft_snapshot", ::testing::UnitTest::GetInstance()->current_test_info());
     }
 
     virtual void TearDown() override { m_p_network->stop(); }
@@ -70,93 +70,59 @@ struct random_multi_thread
 
 typedef ::testing::Types</*single_thread,*/ multi_thread, random_multi_thread> threaded_types;
 
-TYPED_TEST_SUITE(raft_election, threaded_types);
+TYPED_TEST_SUITE(raft_snapshot, threaded_types);
 
 } // <anonymous> namespace
 
-TYPED_TEST(raft_election, one_server)
+TYPED_TEST(raft_snapshot, take_snapshot)
 {
     using namespace std::chrono_literals;
+    using server_ptr = tests::network_stub::server_ptr;
 
     tests::network_stub::ptr p_network = this->m_p_network;
-    p_network->create_cluster({{1, true}});
-    std::shared_ptr<raft::server> p_srv = p_network->get_server(1);
+    p_network->create_cluster({{1, true}, {2, true}, {3, true}});
+    EXPECT_TRUE(p_network->leaders_count() == 0);
+
+    p_network->start();
+
+    p_network->wait_leader();
+    EXPECT_TRUE(p_network->leaders_count() == 1) << p_network->leaders_count();
+
+    server_ptr p_leader = p_network->get_leader();
+    server_ptr p_srv = p_network->create_server(4, true);
+
+    raft::cluster_config cfg  = p_network->get_io(p_leader->id())->m_cluster_cfg;
+    ASSERT_TRUE(cfg.servers.size() == 3) << cfg.servers.size();
+
+    const raft::index_t idx = p_leader->last_applied_index() + 5;
+    size_t value = 1234567;
+    p_leader->apply(value);
+    p_leader->apply(value);
+    p_leader->apply(value);
+    p_leader->apply(value);
+    p_leader->apply(++value);
+
+    p_network->wait_for_update(idx);
+    EXPECT_TRUE(p_leader->last_applied_index() == 6) << p_leader->last_applied_index();
+
+    p_leader->add(p_srv->id(), std::to_string(p_srv->id()), true);
+
+    std::this_thread::sleep_for(500ms);
     EXPECT_FALSE(p_srv->is_leader());
 
-    p_srv->init(p_network->get_io(1)->m_cluster_cfg);
-    p_srv->start();
-
-    p_network->wait_leader();
-    EXPECT_TRUE(p_srv->is_leader());
-}
-
-TYPED_TEST(raft_election, election_leader)
-{
-    using namespace std::chrono_literals;
-
-    tests::network_stub::ptr p_network = this->m_p_network;
-    p_network->create_cluster({{1, true}, {2, true}, {3, true}});
-    EXPECT_TRUE(p_network->leaders_count() == 0);
-
-    p_network->start();
-
-    p_network->wait_leader();
-    EXPECT_TRUE(p_network->leaders_count() == 1) << p_network->leaders_count();
-}
-
-TYPED_TEST(raft_election, not_voted_servers)
-{
-    using namespace std::chrono_literals;
-
-    tests::network_stub::ptr p_network = this->m_p_network;
-    p_network->create_cluster({{1, true}, {2, false}, {3, false}});
-    EXPECT_TRUE(p_network->leaders_count() == 0);
-
-    p_network->start();
-
-    p_network->wait_leader();
-    EXPECT_TRUE(p_network->leaders_count() == 1) << p_network->leaders_count();
-
-    std::shared_ptr<raft::server> p_leader_srv = p_network->get_server(1);
-    EXPECT_TRUE(p_leader_srv->is_leader());
-}
-
-TYPED_TEST(raft_election, election_leader_long_work)
-{
-    using namespace std::chrono_literals;
-
-    tests::network_stub::ptr p_network = this->m_p_network;
-    p_network->create_cluster({{1, true}, {2, true}, {3, true}});
-    EXPECT_TRUE(p_network->leaders_count() == 0);
-
-    p_network->start();
-    for (size_t i = 0; i < 3; ++i) {
-        std::this_thread::sleep_for(1500ms);
-        EXPECT_TRUE(p_network->leaders_count() == 1) << p_network->leaders_count();
+    for (size_t i = 1; i < 5; ++i) {
+        cfg = p_network->get_io(i)->m_cluster_cfg;
+        ASSERT_TRUE(cfg.servers.size() == 4) << "Server " << i << " has " << cfg.servers.size() << " peers";
     }
-}
 
-TYPED_TEST(raft_election, reelection_leader)
-{
-    using namespace std::chrono_literals;
+    p_leader->apply(++value);
+    p_network->wait_for_update(idx);
+    EXPECT_TRUE(p_leader->last_applied_index() == 8) << p_leader->last_applied_index();
 
-    tests::network_stub::ptr p_network = this->m_p_network;
-    p_network->create_cluster({{1, true}, {2, true}, {3, true}});
-    EXPECT_TRUE(p_network->leaders_count() == 0);
-
-    p_network->start();
-
-    p_network->wait_leader();
-    EXPECT_TRUE(p_network->leaders_count() == 1) << p_network->leaders_count();
-
-    std::shared_ptr<raft::server> p_leader = p_network->get_leader();
-    ASSERT_TRUE(p_leader);
-
-    p_leader->stop();
-    p_network->remove_leader();
-
-    p_network->wait_leader();
-    EXPECT_TRUE(p_network->leaders_count() == 1) << p_network->leaders_count();
+    for (size_t i = 1; i < 5; ++i) {
+        ASSERT_TRUE(p_network->get_fsm(i)->get_value<size_t>(0) == value)
+            << "Server " << i << " has fsm value " << p_network->get_fsm(i)->get_value<size_t>(0) << " instead of " << value;
+    }
 }
 
 int main(int argc, char** argv)

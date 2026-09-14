@@ -80,7 +80,7 @@ public:
         io_stub::ptr p_io = std::make_shared<io_stub>(cluster_cfg, p_factory);
         server_ptr p_srv = create_server_impl(id, p_io);
 
-        p_srv->init();
+        p_srv->init(p_io->m_cluster_cfg);
         if (is_start) {
             p_srv->start();
         }
@@ -136,7 +136,7 @@ public:
     void init()
     {
         for (const std::map<server_id_t, server_ptr>::value_type& s : m_servers) {
-            s.second->init();
+            s.second->init(get_io(s.first)->m_cluster_cfg);
         }
     }
 
