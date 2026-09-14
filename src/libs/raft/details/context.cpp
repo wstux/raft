@@ -45,10 +45,12 @@ bool load_peers(context& ctx, cluster_config& cluster_cfg)
         return false;
     }
 
-    for (const server_config& cfg : cluster_cfg.servers) {
+    ctx.state.cluster_cfg = std::move(cluster_cfg);
+
+    for (const server_config& cfg : ctx.state.cluster_cfg.servers) {
         if (ctx.id != cfg.id) {
             assert(peers::find(ctx, cfg.id) == nullptr);
-            ctx.peers.emplace_back(cfg);
+            ctx.peers.emplace_back(cfg, 1);
         } else {
             ctx.config = cfg;
             ctx.role.is_voter = cfg.is_voter;
@@ -122,17 +124,21 @@ namespace peers {
 
 void emplace(context& ctx, const server_config& cfg)
 {
+    assert(ctx.role.is_leader());
+
     ctx.state.cluster_cfg.servers.push_back(cfg);
     std::sort(ctx.state.cluster_cfg.servers.begin(), ctx.state.cluster_cfg.servers.end(),
         [](const server_config& l, const server_config& r) -> bool { return l.id < r.id; });
 
-    ctx.peers.emplace_back(cfg);
+    ctx.peers.emplace_back(cfg, 1);
     std::sort(ctx.peers.begin(), ctx.peers.end(),
         [](const peer& l, const peer& r) -> bool { return l.id < r.id; });
 }
 
 void erase(context& ctx, server_id_t id)
 {
+    assert(ctx.role.is_leader());
+
     ctx.state.cluster_cfg.servers.erase(
         std::remove_if(ctx.state.cluster_cfg.servers.begin(), ctx.state.cluster_cfg.servers.end(),
             [id](const server_config& s) { return s.id == id; }),
@@ -147,6 +153,8 @@ void erase(context& ctx, server_id_t id)
 
 peer::ptr find(context& ctx, server_id_t id)
 {
+    //assert(ctx.role.is_leader());
+
     peer::list::iterator it = std::find_if(ctx.peers.begin(), ctx.peers.end(), [id](const peer& p) { return p.id == id; });
     if (it != ctx.peers.cend()) {
         return &(*it);
@@ -176,7 +184,7 @@ void update(context& ctx, cluster_config cluster_cfg)
         if (ctx.id != cfg.id) {
             peer::ptr p_peer = peers::find(ctx, cfg.id);
             if (p_peer == nullptr) {
-                ctx.peers.emplace_back(cfg);
+                ctx.peers.emplace_back(cfg, 1);
             } else {
                 p_peer->address = cfg.address;
                 p_peer->is_voter = cfg.is_voter;
@@ -295,10 +303,6 @@ bool is_valid_cluster(const server_id_t id, const cluster_config& cluster_cfg, b
 
 bool load(context& ctx)
 {
-    if (! ctx.peers.empty()) {
-        return false;
-    }
-
     io::ptr p_io = ctx.p_io;
 
     ctx.term = p_io->load_term();

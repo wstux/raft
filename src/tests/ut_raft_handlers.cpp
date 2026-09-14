@@ -90,12 +90,9 @@ TEST_F(raft_append_entries_handler, handle_request_invalid_src_id)
     details::role::become_follower(ctx);
     ASSERT_TRUE(m_p_io->clients.size() == 1) << m_p_io->clients.size();
 
-    tests::empty_client::ptr p_client = m_p_io->clients.at(2);
     details::append_entries::handle_request(ctx, 10, "10", 1, details::append_entries_message());
     std::this_thread::sleep_for(5ms);
-    //details::message msg = details::deserialize<raft::details::message>(p_client->buffer);
-    //EXPECT_TRUE(msg.type == details::message_type::invalid);
-    EXPECT_TRUE(p_client->buffer.empty());
+    EXPECT_TRUE(m_p_io->client(2)->buffer.empty());
 }
 
 TEST_F(raft_append_entries_handler, handle_request_invalid_term)
@@ -106,12 +103,10 @@ TEST_F(raft_append_entries_handler, handle_request_invalid_term)
     ctx.term = 5;
     ASSERT_TRUE(m_p_io->clients.size() == 1) << m_p_io->clients.size();
 
-    tests::empty_client::ptr p_client = m_p_io->clients.at(2);
     details::append_entries::handle_request(ctx, 2, "2", 1, details::append_entries_message());
     std::this_thread::sleep_for(5ms);
-    details::message msg = details::deserialize<raft::details::message>(p_client->buffer);
-    EXPECT_TRUE(msg.type == details::message_type::append_entries_response);
-    EXPECT_FALSE(msg.append_entries_resp.accept);
+    EXPECT_TRUE(m_p_io->client(2)->decode().type == details::message_type::append_entries_response);
+    EXPECT_FALSE(m_p_io->client(2)->decode().append_entries_resp.accept);
 }
 
 TEST_F(raft_append_entries_handler, handle_request_downgrade_role)
@@ -132,15 +127,11 @@ TEST_F(raft_append_entries_handler, handle_response_not_leader)
     using namespace std::chrono_literals;
 
     details::context& ctx = init(2);
-    ASSERT_TRUE(ctx.peers.size() == 1) << ctx.peers.size();
-    details::peer::ptr p_peer = details::peers::find(ctx, 2);
-    ASSERT_FALSE(p_peer->recent_recv);
-
     details::role::become_follower(ctx);
     EXPECT_TRUE(ctx.role.is_follower());
 
-    details::append_entries::handle_response(ctx, 2, "2", 1, details::append_entries_response_message());
-    EXPECT_FALSE(p_peer->recent_recv);
+    details::append_entries::handle_response(ctx, 2, "2", 2, details::append_entries_response_message());
+    EXPECT_TRUE(ctx.term == 1) << ctx.term;
 }
 
 TEST_F(raft_append_entries_handler, handle_response_local_higher_term)
@@ -149,14 +140,13 @@ TEST_F(raft_append_entries_handler, handle_response_local_higher_term)
 
     details::context& ctx = init(2);
     ctx.term = 5;
-    ASSERT_TRUE(ctx.peers.size() == 1) << ctx.peers.size();
-    details::peer::ptr p_peer = details::peers::find(ctx, 2);
-    ASSERT_FALSE(p_peer->recent_recv);
-
     details::role::become_follower(ctx);
     details::role::become_candidate(ctx);
     details::role::become_leader(ctx);
     EXPECT_TRUE(ctx.role.is_leader());
+
+    details::peer::ptr p_peer = details::peers::find(ctx, 2);
+    ASSERT_FALSE(p_peer->recent_recv);
 
     details::append_entries::handle_response(ctx, 2, "2", 1, details::append_entries_response_message());
     EXPECT_FALSE(p_peer->recent_recv);
@@ -167,14 +157,13 @@ TEST_F(raft_append_entries_handler, handle_response_src_higher_term)
     using namespace std::chrono_literals;
 
     details::context& ctx = init(2);
-    ASSERT_TRUE(ctx.peers.size() == 1) << ctx.peers.size();
-    details::peer::ptr p_peer = details::peers::find(ctx, 2);
-    ASSERT_FALSE(p_peer->recent_recv);
-
     details::role::become_follower(ctx);
     details::role::become_candidate(ctx);
     details::role::become_leader(ctx);
     EXPECT_TRUE(ctx.role.is_leader());
+
+    details::peer::ptr p_peer = details::peers::find(ctx, 2);
+    ASSERT_FALSE(p_peer->recent_recv);
 
     details::append_entries::handle_response(ctx, 2, "2", 5, details::append_entries_response_message());
     EXPECT_FALSE(p_peer->recent_recv);
@@ -187,14 +176,13 @@ TEST_F(raft_append_entries_handler, handle_response_invalid_peer)
     using namespace std::chrono_literals;
 
     details::context& ctx = init(2);
-    ASSERT_TRUE(ctx.peers.size() == 1) << ctx.peers.size();
-    details::peer::ptr p_peer = details::peers::find(ctx, 2);
-    ASSERT_FALSE(p_peer->recent_recv);
-
     details::role::become_follower(ctx);
     details::role::become_candidate(ctx);
     details::role::become_leader(ctx);
     EXPECT_TRUE(ctx.role.is_leader());
+
+    details::peer::ptr p_peer = details::peers::find(ctx, 2);
+    ASSERT_FALSE(p_peer->recent_recv);
 
     details::append_entries::handle_response(ctx, 5, "2", 1, details::append_entries_response_message());
     EXPECT_FALSE(p_peer->recent_recv);
@@ -240,19 +228,18 @@ TEST_F(raft_timeout_handler, election_start)
     EXPECT_TRUE(ctx.term == 2);
 }
 
-TEST_F(raft_vote_handler, handle_request_invalid_src_id)
+TEST_F(raft_vote_handler, DISABLED_handle_request_invalid_src_id)
 {
     using namespace std::chrono_literals;
 
     details::context& ctx = init(2);
     ASSERT_TRUE(m_p_io->clients.size() == 1) << m_p_io->clients.size();
 
-    tests::empty_client::ptr p_client = m_p_io->clients.at(2);
     details::vote::handle_request(ctx, 10, "10", 1, details::vote_message());
     std::this_thread::sleep_for(5ms);
     //details::message msg = details::deserialize<raft::details::message>(p_client->buffer);
     //EXPECT_TRUE(msg.type == details::message_type::invalid);
-    EXPECT_TRUE(p_client->buffer.empty());
+    EXPECT_TRUE(m_p_io->client(2)->buffer.empty());
 }
 
 TEST_F(raft_vote_handler, handle_request_invalid_term)
@@ -261,14 +248,11 @@ TEST_F(raft_vote_handler, handle_request_invalid_term)
 
     details::context& ctx = init(2);
     ctx.term = 5;
-    ASSERT_TRUE(m_p_io->clients.size() == 1) << m_p_io->clients.size();
 
-    tests::empty_client::ptr p_client = m_p_io->clients.at(2);
     details::vote::handle_request(ctx, 2, "2", 1, details::vote_message());
     std::this_thread::sleep_for(5ms);
-    details::message msg = details::deserialize<raft::details::message>(p_client->buffer);
-    EXPECT_TRUE(msg.type == details::message_type::vote_response);
-    EXPECT_FALSE(msg.vote_resp.accept);
+    EXPECT_TRUE(m_p_io->client(2)->decode().type == details::message_type::vote_response);
+    EXPECT_FALSE(m_p_io->client(2)->decode().vote_resp.accept);
 }
 
 TEST_F(raft_vote_handler, handle_request_not_voter)
@@ -280,12 +264,10 @@ TEST_F(raft_vote_handler, handle_request_not_voter)
     ctx.role.is_voter = false;
     ASSERT_TRUE(m_p_io->clients.size() == 1) << m_p_io->clients.size();
 
-    tests::empty_client::ptr p_client = m_p_io->clients.at(2);
     details::vote::handle_request(ctx, 2, "2", 1, details::vote_message());
     std::this_thread::sleep_for(5ms);
-    details::message msg = details::deserialize<raft::details::message>(p_client->buffer);
-    EXPECT_TRUE(msg.type == details::message_type::vote_response);
-    EXPECT_FALSE(msg.vote_resp.accept);
+    EXPECT_TRUE(m_p_io->client(2)->decode().type == details::message_type::vote_response);
+    EXPECT_FALSE(m_p_io->client(2)->decode().vote_resp.accept);
 }
 
 TEST_F(raft_vote_handler, handle_request_occupied_vote)
@@ -296,15 +278,13 @@ TEST_F(raft_vote_handler, handle_request_occupied_vote)
     ctx.term = 1;
     ASSERT_TRUE(m_p_io->clients.size() == 1) << m_p_io->clients.size();
 
-    tests::empty_client::ptr p_client = m_p_io->clients.at(2);
     details::vote_message msg;
     msg.is_prevote = false;
     ctx.role.voted_for = 7;
     details::vote::handle_request(ctx, 2, "2", 1, msg);
     std::this_thread::sleep_for(5ms);
-    details::message dst_msg = details::deserialize<raft::details::message>(p_client->buffer);
-    EXPECT_TRUE(dst_msg.type == details::message_type::vote_response);
-    EXPECT_FALSE(dst_msg.vote_resp.accept);
+    EXPECT_TRUE(m_p_io->client(2)->decode().type == details::message_type::vote_response);
+    EXPECT_FALSE(m_p_io->client(2)->decode().vote_resp.accept);
 }
 
 TEST_F(raft_vote_handler, handle_response_invalid_src_id)

@@ -63,6 +63,11 @@ public:
 
         details::utils::init(*m_p_ctx, m_p_io->cluster_cfg);
         details::utils::load(*m_p_ctx);
+
+        details::role::become_follower(*m_p_ctx);
+        details::role::become_candidate(*m_p_ctx);
+        details::role::become_leader(*m_p_ctx);
+
         return *m_p_ctx;
     }
 
@@ -122,9 +127,6 @@ TEST_F(raft_peers, voting_members_count)
 TEST_F(raft_peers, check_contact_quorum)
 {
     details::context& ctx = init(5);
-    details::role::become_follower(ctx);
-    details::role::become_candidate(ctx);
-    details::role::become_leader(ctx);
     for (details::peer& p : ctx.peers) {
         p.mark_recent_recv();
     }
@@ -135,9 +137,6 @@ TEST_F(raft_peers, check_contact_quorum)
 TEST_F(raft_peers, failed_check_contact_quorum)
 {
     details::context& ctx = init(5);
-    details::role::become_follower(ctx);
-    details::role::become_candidate(ctx);
-    details::role::become_leader(ctx);
     details::peers::find(ctx, 2)->mark_recent_recv();
 
     EXPECT_FALSE(details::utils::check_contact_quorum(ctx));

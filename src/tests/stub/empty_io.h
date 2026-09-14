@@ -48,6 +48,8 @@ public:
 
     static empty_client::ptr make() { return std::make_shared<empty_client>(); }
 
+    details::message decode() const { return details::deserialize<details::message>(buffer); }
+
 public:
     buffer_type buffer;
 };
@@ -144,6 +146,8 @@ public:
     }
 
     virtual server_id_t voted_for() const noexcept override final { return gk_invalid_id; }
+
+    empty_client::ptr client(server_id_t id) const { return clients.at(id); }
 
 public:
     config cfg;
