@@ -27,6 +27,7 @@
 #include "raft/details/logger.h"
 #include "raft/details/connection/serialization.h"
 #include "raft/details/replication/entries.h"
+#include "raft/details/replication/membership.h"
 #include "raft/details/replication/snapshot.h"
 
 namespace wstux {
@@ -132,7 +133,7 @@ bool restore(context& ctx, raft::snapshot& snapshot)
     }
 
     //entries::apply_configuration(ctx, std::move(snapshot.conf));
-    peers::update(ctx, std::move(snapshot.conf));
+    membership::server::update(ctx, std::move(snapshot.conf));
     ctx.state.configuration_committed_index = snapshot.conf_index;
     ctx.state.configuration_uncommitted_index = 0;
 

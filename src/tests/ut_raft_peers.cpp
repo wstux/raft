@@ -28,6 +28,7 @@
 #include <gtest/gtest.h>
 
 #include "raft/details/context.h"
+#include "raft/details/replication/membership.h"
 #include "raft/details/role/convert.h"
 
 #include "stub/empty_io.h"
@@ -104,7 +105,7 @@ TEST_F(raft_peers, update)
         cluster_cfg.servers.emplace_back(i + 1, std::to_string(i + 1), true);
     }
     EXPECT_TRUE(ctx.role.leader.peers.size() == 2) << ctx.role.leader.peers.size();
-    details::peers::update(ctx, cluster_cfg);
+    details::replication::membership::server::update(ctx, cluster_cfg);
     EXPECT_TRUE(ctx.role.leader.peers.size() == 4) << ctx.role.leader.peers.size();
 }
 
@@ -120,7 +121,7 @@ TEST_F(raft_peers, voting_members_count)
         cluster_cfg.servers.emplace_back(i + 1, std::to_string(i + 1), is_voter);
     }
     EXPECT_TRUE(details::utils::voting_members_count(ctx) == 3) << details::utils::voting_members_count(ctx);
-    details::peers::update(ctx, cluster_cfg);
+    details::replication::membership::server::update(ctx, cluster_cfg);
     EXPECT_TRUE(details::utils::voting_members_count(ctx) == voters_count) << details::utils::voting_members_count(ctx);
 }
 

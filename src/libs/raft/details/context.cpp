@@ -119,35 +119,6 @@ std::ostream& operator<<(std::ostream& os, const context& ctx)
 
 namespace peers {
 
-void emplace(context& ctx, const server_config& cfg)
-{
-    assert(ctx.role.is_leader());
-
-    ctx.state.cluster_cfg.servers.push_back(cfg);
-    std::sort(ctx.state.cluster_cfg.servers.begin(), ctx.state.cluster_cfg.servers.end(),
-        [](const server_config& l, const server_config& r) -> bool { return l.id < r.id; });
-
-    ctx.role.leader.peers.emplace_back(cfg, 1);
-    std::sort(ctx.role.leader.peers.begin(), ctx.role.leader.peers.end(),
-        [](const peer& l, const peer& r) -> bool { return l.id < r.id; });
-}
-
-void erase(context& ctx, server_id_t id)
-{
-    assert(ctx.role.is_leader());
-
-    ctx.state.cluster_cfg.servers.erase(
-        std::remove_if(ctx.state.cluster_cfg.servers.begin(), ctx.state.cluster_cfg.servers.end(),
-            [id](const server_config& s) { return s.id == id; }),
-        ctx.state.cluster_cfg.servers.end()
-    );
-    ctx.role.leader.peers.erase(
-        std::remove_if(ctx.role.leader.peers.begin(), ctx.role.leader.peers.end(),
-            [id](const peer& p) { return p.id == id; }),
-        ctx.role.leader.peers.end()
-    );
-}
-
 peer::ptr find(context& ctx, server_id_t id)
 {
     assert(ctx.role.is_leader());
@@ -158,47 +129,6 @@ peer::ptr find(context& ctx, server_id_t id)
         return &(*it);
     }
     return peer::ptr();
-}
-void update(context& ctx, cluster_config cluster_cfg)
-{
-    //assert(ctx.role.is_follower());
-
-    ctx.state.cluster_cfg = std::move(cluster_cfg);
-
-    if (! ctx.role.is_leader()) {
-        return;
-    }
-
-    ctx.role.leader.peers.reserve(std::max(ctx.role.leader.peers.capacity(), ctx.state.cluster_cfg.servers.size()));
-
-    std::vector<server_config>::const_iterator srv_it = ctx.state.cluster_cfg.servers.cbegin();
-    ctx.role.leader.peers.erase(
-        std::remove_if(ctx.role.leader.peers.begin(), ctx.role.leader.peers.end(),
-            [&srv_it, &ctx](const peer& p) {
-                srv_it = std::find_if(srv_it, ctx.state.cluster_cfg.servers.cend(),
-                    [&p](const server_config& s) { return s.id >= p.id; });
-                return (srv_it == ctx.state.cluster_cfg.servers.end() || srv_it->id != p.id);
-            }
-        ),
-        ctx.role.leader.peers.end()
-    );
-
-    for (const server_config& cfg : ctx.state.cluster_cfg.servers) {
-        if (ctx.id != cfg.id) {
-            peer::ptr p_peer = peers::find(ctx, cfg.id);
-            if (p_peer == nullptr) {
-                ctx.role.leader.peers.emplace_back(cfg, ctx.log.last_index() + 1);
-            } else {
-                p_peer->address = cfg.address;
-                p_peer->is_voter = cfg.is_voter;
-            }
-        } else {
-            ctx.config = cfg;
-            ctx.role.is_voter = cfg.is_voter;
-        }
-    }
-    std::sort(ctx.role.leader.peers.begin(), ctx.role.leader.peers.end(),
-        [](const peer& l, const peer& r) -> bool { return l.id < r.id; });
 }
 
 } // namespace peers
@@ -353,7 +283,7 @@ size_t quorum_for_election(const context& ctx)
 }
 
 /// \todo Fix reconfigure process.
-void reconfigure(context& ctx, const config& cfg, const cluster_config& cluster_cfg)
+void reconfigure(context& ctx, const config& cfg, const cluster_config& /*cluster_cfg*/)
 {
     ctx.election_distribution = std::uniform_int_distribution<size_t>(cfg.vote_timeout_min_ms, cfg.vote_timeout_max_ms);
 
@@ -364,7 +294,7 @@ void reconfigure(context& ctx, const config& cfg, const cluster_config& cluster_
     ctx.raft_logger.is_timeout_channel_enabled = cfg.is_timeout_log_ch_enabled;
     ctx.raft_logger.is_vote_channel_enabled = cfg.is_vote_log_ch_enabled;
 
-    details::peers::update(ctx, cluster_cfg);
+    //details::peers::update(ctx, cluster_cfg);
 }
 
 size_t voting_members_count(const context& ctx)

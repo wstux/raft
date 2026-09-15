@@ -42,6 +42,15 @@ bool remove(context& ctx, const server_id_t id);
 
 bool update(context& ctx, const entry::ptr& p_entry);
 
+namespace server {
+
+void emplace(context& ctx, const server_config& cfg);
+
+void erase(context& ctx, server_id_t id);
+
+void update(context& ctx, cluster_config cluster_cfg);
+
+} // namespace server
 } // namespace membership
 } // namespace replication
 } // namespace details

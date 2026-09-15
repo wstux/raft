@@ -27,6 +27,7 @@
 #include <gtest/gtest.h>
 
 #include "raft/details/context.h"
+#include "raft/details/replication/membership.h"
 #include "raft/details/role/convert.h"
 
 #include "stub/empty_io.h"
@@ -111,7 +112,7 @@ TEST_F(raft_context, DISABLED_load_failed)
     details::role::become_candidate(ctx);
     EXPECT_TRUE(ctx.role.is_leader());
 
-    details::peers::emplace(ctx, raft::server_config(2, "2", true));
+    details::replication::membership::server::emplace(ctx, raft::server_config(2, "2", true));
     EXPECT_FALSE(details::utils::load(ctx));
 }
 

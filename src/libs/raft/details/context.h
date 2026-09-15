@@ -105,13 +105,7 @@ std::ostream& operator<<(std::ostream& os, const context& ctx);
 
 namespace peers {
 
-void emplace(context& ctx, const server_config& cfg);
-
-void erase(context& ctx, server_id_t id);
-
 peer::ptr find(context& ctx, server_id_t id);
-
-void update(context& ctx, cluster_config cluster_cfg);
 
 } // namespace peers
 
