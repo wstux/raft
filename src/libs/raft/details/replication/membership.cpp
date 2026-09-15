@@ -84,7 +84,7 @@ bool append(context& ctx, const server_config& cfg)
         return false;
     }
 
-    if (peers::find(ctx, cfg.id) != nullptr) {
+    if (utils::is_in_cluster(ctx, cfg.id)) {
         RAFT_LOG_TRACE(ctx, "Adding new member to cluster. Server %llu already exists in cluster with leader %llu(%s).",
             cfg.id, ctx.id, ctx.role.str());
         return false;
@@ -134,7 +134,7 @@ bool remove(context& ctx, const server_id_t id)
         return false;
     }
 
-    if (! peers::find(ctx, id)) {
+    if (! utils::is_in_cluster(ctx, id)) {
         RAFT_LOG_TRACE(ctx, "Removing member from cluster. Server %llu already is not exist in cluster with leader %llu(%s).",
             id, ctx.id, ctx.role.str());
         return false;
@@ -229,7 +229,7 @@ void update(context& ctx, cluster_config cluster_cfg)
 
     for (const server_config& cfg : ctx.state.cluster_cfg.servers) {
         if (ctx.id != cfg.id) {
-            peer::ptr p_peer = peers::find(ctx, cfg.id);
+            peer::ptr p_peer = utils::find_peer(ctx, cfg.id);
             if (p_peer == nullptr) {
                 ctx.role.leader.peers.emplace_back(cfg, ctx.log.last_index() + 1);
             } else {
@@ -237,7 +237,6 @@ void update(context& ctx, cluster_config cluster_cfg)
                 p_peer->is_voter = cfg.is_voter;
             }
         } else {
-            ctx.config = cfg;
             ctx.role.is_voter = cfg.is_voter;
         }
     }

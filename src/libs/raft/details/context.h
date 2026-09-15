@@ -27,7 +27,6 @@
 
 #include <atomic>
 #include <functional>
-#include <iostream>
 #include <memory>
 #include <mutex>
 #include <random>
@@ -58,8 +57,6 @@ struct context final
     allocator_type alloc;
 
     bool is_async_io;
-
-    server_config config;
 
     io::ptr p_io;
     fsm::ptr p_fsm;
@@ -101,14 +98,6 @@ struct context final
     logger raft_logger;
 };
 
-std::ostream& operator<<(std::ostream& os, const context& ctx);
-
-namespace peers {
-
-peer::ptr find(context& ctx, server_id_t id);
-
-} // namespace peers
-
 namespace utils {
 
 /**
@@ -128,6 +117,10 @@ namespace utils {
  *      prevent a split-brain scenario.
  */
 bool check_contact_quorum(context& ctx);
+
+peer::ptr find_peer(context& ctx, server_id_t id);
+
+server_config* find_server_config(context& ctx, server_id_t id);
 
 bool init(context& ctx, cluster_config cluster_cfg);
 

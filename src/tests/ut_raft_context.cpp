@@ -22,6 +22,7 @@
  * THE SOFTWARE.
  */
 
+#include <iostream>
 #include <sstream>
 
 #include <gtest/gtest.h>
@@ -69,6 +70,12 @@ protected:
     tests::fsm_stub::ptr m_p_fsm;
     details::context::ptr m_p_ctx;
 };
+
+std::ostream& operator<<(std::ostream& os, const details::context& ctx)
+{
+    os << ctx.id << "(" << ctx.role.str() << ")";
+    return os;
+}
 
 } // <anonymous> namespace
 

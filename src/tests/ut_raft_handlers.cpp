@@ -23,10 +23,12 @@
  */
 
 #include <chrono>
+#include <iostream>
 #include <thread>
 
 #include <gtest/gtest.h>
 
+#include "raft/details/context.h"
 #include "raft/details/connection/serialization.h"
 #include "raft/details/handlers/append_entries_handler.h"
 #include "raft/details/handlers/timeout_handler.h"
@@ -81,6 +83,20 @@ using raft_timeout_handler = raft_handler;
 using raft_vote_handler = raft_handler;
 
 } // <anonymous> namespace
+
+namespace wstux {
+namespace raft {
+namespace details {
+
+std::ostream& operator<<(std::ostream& os, const context& ctx)
+{
+    os << ctx.id << "(" << ctx.role.str() << ")";
+    return os;
+}
+
+} // namespace details
+} // namespace raft
+} // namespace wstux
 
 TEST_F(raft_append_entries_handler, handle_request_invalid_src_id)
 {
@@ -145,7 +161,7 @@ TEST_F(raft_append_entries_handler, handle_response_local_higher_term)
     details::role::become_leader(ctx);
     EXPECT_TRUE(ctx.role.is_leader());
 
-    details::peer::ptr p_peer = details::peers::find(ctx, 2);
+    details::peer::ptr p_peer = details::utils::find_peer(ctx, 2);
     ASSERT_FALSE(p_peer->recent_recv);
 
     details::append_entries::handle_response(ctx, 2, "2", 1, details::append_entries_response_message());
@@ -162,7 +178,7 @@ TEST_F(raft_append_entries_handler, handle_response_src_higher_term)
     details::role::become_leader(ctx);
     EXPECT_TRUE(ctx.role.is_leader());
 
-    details::peer::ptr p_peer = details::peers::find(ctx, 2);
+    details::peer::ptr p_peer = details::utils::find_peer(ctx, 2);
     ASSERT_FALSE(p_peer->recent_recv);
 
     details::append_entries::handle_response(ctx, 2, "2", 5, details::append_entries_response_message());
@@ -181,7 +197,7 @@ TEST_F(raft_append_entries_handler, handle_response_invalid_peer)
     details::role::become_leader(ctx);
     EXPECT_TRUE(ctx.role.is_leader());
 
-    details::peer::ptr p_peer = details::peers::find(ctx, 2);
+    details::peer::ptr p_peer = details::utils::find_peer(ctx, 2);
     ASSERT_FALSE(p_peer->recent_recv);
 
     details::append_entries::handle_response(ctx, 5, "2", 1, details::append_entries_response_message());

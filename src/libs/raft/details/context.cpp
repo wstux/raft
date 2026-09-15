@@ -47,11 +47,8 @@ bool load_peers(context& ctx, cluster_config& cluster_cfg)
 
     ctx.state.cluster_cfg = std::move(cluster_cfg);
 
-    for (const server_config& cfg : ctx.state.cluster_cfg.servers) {
-        if (ctx.id == cfg.id) {
-            ctx.config = cfg;
-            ctx.role.is_voter = cfg.is_voter;
-        }
+    if (const server_config* p_cfg = utils::find_server_config(ctx, ctx.id)) {
+        ctx.role.is_voter = p_cfg->is_voter;
     }
     return true;
 }
@@ -97,7 +94,6 @@ context::context(server_id_t id, const io::ptr p_io, const fsm::ptr p_fsm, loggi
     , is_stop_fn(is_stop)
     , alloc(alloc)
     , is_async_io(false)
-    , config(gk_invalid_id, "", false)
     , p_io(p_io)
     , p_fsm(p_fsm)
     , term(0)
@@ -110,28 +106,6 @@ context::context(server_id_t id, const io::ptr p_io, const fsm::ptr p_fsm, loggi
     state.snapshot.threshold = 512;
     state.snapshot.trailing = 1024;
 }
-
-std::ostream& operator<<(std::ostream& os, const context& ctx)
-{
-    os << ctx.id << "(" << ctx.role.str() << ")";
-    return os;
-}
-
-namespace peers {
-
-peer::ptr find(context& ctx, server_id_t id)
-{
-    assert(ctx.role.is_leader());
-
-    peer::list::iterator it = std::find_if(ctx.role.leader.peers.begin(), ctx.role.leader.peers.end(),
-        [id](const peer& p) { return p.id == id; });
-    if (it != ctx.role.leader.peers.cend()) {
-        return &(*it);
-    }
-    return peer::ptr();
-}
-
-} // namespace peers
 
 namespace utils {
 
@@ -148,6 +122,29 @@ bool check_contact_quorum(context& ctx)
     }
     const size_t quorum_for_election_size = (voting_count / 2);
     return contacts > quorum_for_election_size;
+}
+
+peer::ptr find_peer(context& ctx, server_id_t id)
+{
+    assert(ctx.role.is_leader());
+
+    peer::list::iterator it = std::find_if(ctx.role.leader.peers.begin(), ctx.role.leader.peers.end(),
+        [id](const peer& p) { return p.id == id; });
+    if (it != ctx.role.leader.peers.cend()) {
+        return &(*it);
+    }
+    return peer::ptr();
+}
+
+server_config* find_server_config(context& ctx, server_id_t id)
+{
+    std::vector<server_config>::iterator it =
+        std::find_if(ctx.state.cluster_cfg.servers.begin(), ctx.state.cluster_cfg.servers.end(),
+            [id](const server_config& cfg) { return cfg.id == id; });
+    if (it != ctx.state.cluster_cfg.servers.cend()) {
+        return &(*it);
+    }
+    return nullptr;
 }
 
 bool init(context& ctx, cluster_config cluster_cfg)
@@ -305,7 +302,6 @@ size_t voting_members_count(const context& ctx)
 }
 
 } // namespace utils
-
 } // namespace details
 } // namespace raft
 } // namespace wstux

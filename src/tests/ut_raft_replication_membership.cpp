@@ -102,9 +102,9 @@ TEST_F(raft_membership, append)
     ASSERT_TRUE(details::replication::membership::append(ctx, raft::server_config({5, std::to_string(5), true})));
     ASSERT_TRUE(cluster_cfg.servers == ctx.state.cluster_cfg.servers);
     ASSERT_TRUE(ctx.role.leader.peers.size() == 3);
-    ASSERT_TRUE(details::peers::find(ctx, 2) != nullptr);
-    ASSERT_TRUE(details::peers::find(ctx, 3) != nullptr);
-    ASSERT_TRUE(details::peers::find(ctx, 5) != nullptr);
+    ASSERT_TRUE(details::utils::is_in_cluster(ctx, 2));
+    ASSERT_TRUE(details::utils::is_in_cluster(ctx, 3));
+    ASSERT_TRUE(details::utils::is_in_cluster(ctx, 5));
 }
 
 TEST_F(raft_membership, append_existing_member)
@@ -142,7 +142,7 @@ TEST_F(raft_membership, remove)
     ASSERT_TRUE(ctx.role.leader.peers.size() == 2);
     ASSERT_TRUE(details::replication::membership::remove(ctx, 2));
     ASSERT_TRUE(ctx.role.leader.peers.size() == 1);
-    ASSERT_TRUE(details::peers::find(ctx, 3) != nullptr);
+    ASSERT_TRUE(details::utils::is_in_cluster(ctx, 3));
 }
 
 TEST_F(raft_membership, remove_not_existing_member)

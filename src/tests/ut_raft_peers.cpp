@@ -84,9 +84,9 @@ TEST_F(raft_peers, find)
 {
     details::context& ctx = init(2);
 
-    EXPECT_FALSE(details::peers::find(ctx, 1));
-    EXPECT_TRUE(details::peers::find(ctx, 2));
-    EXPECT_FALSE(details::peers::find(ctx, 3));
+    EXPECT_FALSE(details::utils::find_peer(ctx, 1));
+    EXPECT_TRUE(details::utils::find_peer(ctx, 2));
+    EXPECT_FALSE(details::utils::find_peer(ctx, 3));
 }
 
 TEST_F(raft_peers, quorum_for_election)
@@ -138,7 +138,7 @@ TEST_F(raft_peers, check_contact_quorum)
 TEST_F(raft_peers, failed_check_contact_quorum)
 {
     details::context& ctx = init(5);
-    details::peers::find(ctx, 2)->mark_recent_recv();
+    details::utils::find_peer(ctx, 2)->mark_recent_recv();
 
     EXPECT_FALSE(details::utils::check_contact_quorum(ctx));
 }
