@@ -94,7 +94,13 @@ bool append(context& ctx, const server_config& cfg)
     assert(ctx.log.last_index() >= ctx.state.configuration_committed_index);
 
     RAFT_LOG_TRACE(ctx, "Server %llu(%s) is adding new peer with id %llu.", ctx.id, ctx.role.str(), cfg.id);
-    server::emplace(ctx, cfg);
+    assert(ctx.role.is_leader());
+    ctx.state.cluster_cfg.servers.push_back(cfg);
+    std::sort(ctx.state.cluster_cfg.servers.begin(), ctx.state.cluster_cfg.servers.end(),
+        [](const server_config& l, const server_config& r) -> bool { return l.id < r.id; });
+
+    ctx.role.leader.peers.emplace_back(cfg, 1);
+    std::sort(ctx.role.leader.peers.begin(), ctx.role.leader.peers.end(), [](const peer& l, const peer& r) -> bool { return l.id < r.id; });
 
     assert(ctx.state.cluster_cfg.servers.size() == (ctx.role.leader.peers.size() + 1));
     return change_configuration(ctx, ctx.state.cluster_cfg);
@@ -141,7 +147,16 @@ bool remove(context& ctx, const server_id_t id)
     }
 
     RAFT_LOG_TRACE(ctx, "Server %llu(%s) is removing existing peer with id %llu.", ctx.id, ctx.role.str(), id);
-    server::erase(ctx, id);
+    assert(ctx.role.is_leader());
+    ctx.state.cluster_cfg.servers.erase(
+        std::remove_if(ctx.state.cluster_cfg.servers.begin(), ctx.state.cluster_cfg.servers.end(),
+            [id](const server_config& s) { return s.id == id; }),
+        ctx.state.cluster_cfg.servers.end()
+    );
+    ctx.role.leader.peers.erase(
+        std::remove_if(ctx.role.leader.peers.begin(), ctx.role.leader.peers.end(), [id](const peer& p) { return p.id == id; }),
+        ctx.role.leader.peers.end()
+    );
 
     assert(ctx.state.cluster_cfg.servers.size() == (ctx.role.leader.peers.size() + 1));
     return change_configuration(ctx, ctx.state.cluster_cfg);
@@ -149,6 +164,8 @@ bool remove(context& ctx, const server_id_t id)
 
 bool update(context& ctx, const entry::ptr& p_entry)
 {
+    assert(! ctx.role.is_leader());
+
     if (p_entry->type != entry_type::change) {
         return false;
     }
@@ -161,51 +178,25 @@ bool update(context& ctx, const entry::ptr& p_entry)
         return false;
     }
 
-    server::update(ctx, std::move(cluster_cfg));
-
     std::vector<server_config>::const_iterator it =
         std::find_if(ctx.state.cluster_cfg.servers.cbegin(), ctx.state.cluster_cfg.servers.cend(),
             [&ctx](const server_config& cfg) -> bool { return cfg.id == ctx.id; });
     if (it == ctx.state.cluster_cfg.servers.cend()) {
-        if (! ctx.role.is_follower()) {
+        return false;
+        /*if (! ctx.role.is_follower()) {
             role::become_follower(ctx);
-        }
+        }*/
     }
+
+    //server::update(ctx, cluster_cfg);
+    ctx.state.cluster_cfg = std::move(cluster_cfg);
+
     return true;
 }
 
-namespace server {
+/*namespace server {
 
-void emplace(context& ctx, const server_config& cfg)
-{
-    assert(ctx.role.is_leader());
-
-    ctx.state.cluster_cfg.servers.push_back(cfg);
-    std::sort(ctx.state.cluster_cfg.servers.begin(), ctx.state.cluster_cfg.servers.end(),
-        [](const server_config& l, const server_config& r) -> bool { return l.id < r.id; });
-
-    ctx.role.leader.peers.emplace_back(cfg, 1);
-    std::sort(ctx.role.leader.peers.begin(), ctx.role.leader.peers.end(),
-        [](const peer& l, const peer& r) -> bool { return l.id < r.id; });
-}
-
-void erase(context& ctx, server_id_t id)
-{
-    assert(ctx.role.is_leader());
-
-    ctx.state.cluster_cfg.servers.erase(
-        std::remove_if(ctx.state.cluster_cfg.servers.begin(), ctx.state.cluster_cfg.servers.end(),
-            [id](const server_config& s) { return s.id == id; }),
-        ctx.state.cluster_cfg.servers.end()
-    );
-    ctx.role.leader.peers.erase(
-        std::remove_if(ctx.role.leader.peers.begin(), ctx.role.leader.peers.end(),
-            [id](const peer& p) { return p.id == id; }),
-        ctx.role.leader.peers.end()
-    );
-}
-
-void update(context& ctx, cluster_config cluster_cfg)
+void update(context& ctx, cluster_config& cluster_cfg)
 {
     ctx.state.cluster_cfg = std::move(cluster_cfg);
 
@@ -244,7 +235,7 @@ void update(context& ctx, cluster_config cluster_cfg)
         [](const peer& l, const peer& r) -> bool { return l.id < r.id; });
 }
 
-} // namespace configuration
+}*/ // namespace server
 } // namespace membership
 } // namespace replication
 } // namespace details

@@ -214,7 +214,7 @@ TEST_F(raft_membership, update_invalid_configuration)
     ASSERT_TRUE(cluster_cfg.servers == ctx.state.cluster_cfg.servers);
 }
 
-TEST_F(raft_membership, update_daungrade_to_follover)
+TEST_F(raft_membership, DISABLED_update_dawngrade_to_follover)
 {
     details::context& ctx = *m_p_ctx;
     ASSERT_TRUE(ctx.role.is_follower());

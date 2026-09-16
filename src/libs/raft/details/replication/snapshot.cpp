@@ -27,7 +27,6 @@
 #include "raft/details/logger.h"
 #include "raft/details/connection/serialization.h"
 #include "raft/details/replication/entries.h"
-#include "raft/details/replication/membership.h"
 #include "raft/details/replication/snapshot.h"
 
 namespace wstux {
@@ -127,13 +126,13 @@ bool install_callback(context& ctx, bool accept, raft::snapshot& snapshot)
 
 bool restore(context& ctx, raft::snapshot& snapshot)
 {
+    assert(! ctx.role.is_leader());
+
     if (! ctx.p_fsm->restore(snapshot.buffer)) {
         RAFT_LOG_ERROR(ctx, "Server %llu(%s) failed to restore fsm state from snapshot %u.", ctx.id, ctx.role.str(), snapshot.index);
         return false;
     }
 
-    //entries::apply_configuration(ctx, std::move(snapshot.conf));
-    membership::server::update(ctx, std::move(snapshot.conf));
     ctx.state.configuration_committed_index = snapshot.conf_index;
     ctx.state.configuration_uncommitted_index = 0;
 
