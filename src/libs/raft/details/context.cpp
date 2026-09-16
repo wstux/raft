@@ -45,14 +45,10 @@ bool load_peers(context& ctx, cluster_config& cluster_cfg)
         return false;
     }
 
-    for (const server_config& cfg : cluster_cfg.servers) {
-        if (ctx.id != cfg.id) {
-            assert(peers::find(ctx, cfg.id) == nullptr);
-            ctx.peers.emplace_back(cfg);
-        } else {
-            ctx.config = cfg;
-            ctx.role.is_voter = cfg.is_voter;
-        }
+    ctx.state.cluster_cfg = std::move(cluster_cfg);
+
+    if (const server_config* p_cfg = utils::find_server_config(ctx, ctx.id)) {
+        ctx.role.is_voter = p_cfg->is_voter;
     }
     return true;
 }
@@ -98,7 +94,6 @@ context::context(server_id_t id, const io::ptr p_io, const fsm::ptr p_fsm, loggi
     , is_stop_fn(is_stop)
     , alloc(alloc)
     , is_async_io(false)
-    , config(gk_invalid_id, "", false)
     , p_io(p_io)
     , p_fsm(p_fsm)
     , term(0)
@@ -112,85 +107,6 @@ context::context(server_id_t id, const io::ptr p_io, const fsm::ptr p_fsm, loggi
     state.snapshot.trailing = 1024;
 }
 
-std::ostream& operator<<(std::ostream& os, const context& ctx)
-{
-    os << ctx.id << "(" << ctx.role.str() << ")";
-    return os;
-}
-
-namespace peers {
-
-void emplace(context& ctx, const server_config& cfg)
-{
-    ctx.state.cluster_cfg.servers.push_back(cfg);
-    std::sort(ctx.state.cluster_cfg.servers.begin(), ctx.state.cluster_cfg.servers.end(),
-        [](const server_config& l, const server_config& r) -> bool { return l.id < r.id; });
-
-    ctx.peers.emplace_back(cfg);
-    std::sort(ctx.peers.begin(), ctx.peers.end(),
-        [](const peer& l, const peer& r) -> bool { return l.id < r.id; });
-}
-
-void erase(context& ctx, server_id_t id)
-{
-    ctx.state.cluster_cfg.servers.erase(
-        std::remove_if(ctx.state.cluster_cfg.servers.begin(), ctx.state.cluster_cfg.servers.end(),
-            [id](const server_config& s) { return s.id == id; }),
-        ctx.state.cluster_cfg.servers.end()
-    );
-    ctx.peers.erase(
-        std::remove_if(ctx.peers.begin(), ctx.peers.end(),
-            [id](const peer& p) { return p.id == id; }),
-        ctx.peers.end()
-    );
-}
-
-peer::ptr find(context& ctx, server_id_t id)
-{
-    peer::list::iterator it = std::find_if(ctx.peers.begin(), ctx.peers.end(), [id](const peer& p) { return p.id == id; });
-    if (it != ctx.peers.cend()) {
-        return &(*it);
-    }
-    return peer::ptr();
-}
-
-void update(context& ctx, cluster_config cluster_cfg)
-{
-    ctx.state.cluster_cfg = std::move(cluster_cfg);
-
-    ctx.peers.reserve(std::max(ctx.peers.capacity(), ctx.state.cluster_cfg.servers.size()));
-
-    std::vector<server_config>::const_iterator srv_it = ctx.state.cluster_cfg.servers.cbegin();
-    ctx.peers.erase(
-        std::remove_if(ctx.peers.begin(), ctx.peers.end(),
-            [&srv_it, &ctx](const peer& p) {
-                srv_it = std::find_if(srv_it, ctx.state.cluster_cfg.servers.cend(),
-                    [&p](const server_config& s) { return s.id >= p.id; });
-                return (srv_it == ctx.state.cluster_cfg.servers.end() || srv_it->id != p.id);
-            }
-        ),
-        ctx.peers.end()
-    );
-
-    for (const server_config& cfg : ctx.state.cluster_cfg.servers) {
-        if (ctx.id != cfg.id) {
-            peer::ptr p_peer = peers::find(ctx, cfg.id);
-            if (p_peer == nullptr) {
-                ctx.peers.emplace_back(cfg);
-            } else {
-                p_peer->address = cfg.address;
-                p_peer->is_voter = cfg.is_voter;
-            }
-        } else {
-            ctx.config = cfg;
-            ctx.role.is_voter = cfg.is_voter;
-        }
-    }
-    std::sort(ctx.peers.begin(), ctx.peers.end(), [](const peer& l, const peer& r) -> bool { return l.id < r.id; });
-}
-
-} // namespace peers
-
 namespace utils {
 
 bool check_contact_quorum(context& ctx)
@@ -199,13 +115,36 @@ bool check_contact_quorum(context& ctx)
 
     size_t contacts = 1;
     size_t voting_count = 1;
-    for (peer& p : ctx.peers) {
+    for (peer& p : ctx.role.leader.peers) {
         const bool recent_recv = p.reset_recent_recv();
         contacts += (p.is_voter && recent_recv) ? 1 : 0;
         voting_count += (p.is_voter) ? 1 : 0;
     }
     const size_t quorum_for_election_size = (voting_count / 2);
     return contacts > quorum_for_election_size;
+}
+
+peer::ptr find_peer(context& ctx, server_id_t id)
+{
+    assert(ctx.role.is_leader());
+
+    peer::list::iterator it = std::find_if(ctx.role.leader.peers.begin(), ctx.role.leader.peers.end(),
+        [id](const peer& p) { return p.id == id; });
+    if (it != ctx.role.leader.peers.cend()) {
+        return &(*it);
+    }
+    return peer::ptr();
+}
+
+server_config* find_server_config(context& ctx, server_id_t id)
+{
+    std::vector<server_config>::iterator it =
+        std::find_if(ctx.state.cluster_cfg.servers.begin(), ctx.state.cluster_cfg.servers.end(),
+            [id](const server_config& cfg) { return cfg.id == id; });
+    if (it != ctx.state.cluster_cfg.servers.cend()) {
+        return &(*it);
+    }
+    return nullptr;
 }
 
 bool init(context& ctx, cluster_config cluster_cfg)
@@ -244,11 +183,6 @@ bool init(context& ctx, cluster_config cluster_cfg)
     ctx.raft_logger.is_snapshot_channel_enabled = cfg.is_snapshot_log_ch_enabled;
     ctx.raft_logger.is_timeout_channel_enabled = cfg.is_timeout_log_ch_enabled;
     ctx.raft_logger.is_vote_channel_enabled = cfg.is_vote_log_ch_enabled;
-
-    // Reserve memory. Statistically, the cluster has less than or equal to 32
-    // nodes. Therefore, memory is reserved for 32 nodes. If more is needed,
-    // just reallocation will occur.
-    ctx.peers.reserve(32);
 
     ctx.state.commit_index = 0;
     ctx.state.last_applied = 0;
@@ -295,10 +229,6 @@ bool is_valid_cluster(const server_id_t id, const cluster_config& cluster_cfg, b
 
 bool load(context& ctx)
 {
-    if (! ctx.peers.empty()) {
-        return false;
-    }
-
     io::ptr p_io = ctx.p_io;
 
     ctx.term = p_io->load_term();
@@ -350,7 +280,7 @@ size_t quorum_for_election(const context& ctx)
 }
 
 /// \todo Fix reconfigure process.
-void reconfigure(context& ctx, const config& cfg, const cluster_config& cluster_cfg)
+void reconfigure(context& ctx, const config& cfg, const cluster_config& /*cluster_cfg*/)
 {
     ctx.election_distribution = std::uniform_int_distribution<size_t>(cfg.vote_timeout_min_ms, cfg.vote_timeout_max_ms);
 
@@ -361,7 +291,7 @@ void reconfigure(context& ctx, const config& cfg, const cluster_config& cluster_
     ctx.raft_logger.is_timeout_channel_enabled = cfg.is_timeout_log_ch_enabled;
     ctx.raft_logger.is_vote_channel_enabled = cfg.is_vote_log_ch_enabled;
 
-    details::peers::update(ctx, cluster_cfg);
+    //details::peers::update(ctx, cluster_cfg);
 }
 
 size_t voting_members_count(const context& ctx)
@@ -372,7 +302,6 @@ size_t voting_members_count(const context& ctx)
 }
 
 } // namespace utils
-
 } // namespace details
 } // namespace raft
 } // namespace wstux

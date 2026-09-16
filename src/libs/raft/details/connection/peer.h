@@ -41,16 +41,18 @@ struct peer final
     using ptr = peer*;
     using list = std::vector<peer>;
 
-    explicit peer(const server_config& cfg)
+    peer(const server_config& cfg, index_t next_idx)
         : id(cfg.id)
         , address(cfg.address)
         , is_voter(cfg.is_voter)
-        , next_index(1)
+        , next_index(next_idx)
         , match_index(0)
         , recent_recv(false)
-    {}
+    {
+        shapshot.index = 0;
+        shapshot.is_in_process = false;
+    }
 
-    peer(const peer&) = default;
     peer(peer&&) noexcept = default;
 
     peer& operator=(peer&& other) noexcept

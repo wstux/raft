@@ -75,6 +75,19 @@ void become_leader(context& ctx)
     ctx.role.become_leader();
     ctx.role.leader_id = ctx.id;
 
+    const index_t last_index = ctx.log.last_index() + 1;
+
+    // Reserve memory. Statistically, the cluster has less than or equal to 32
+    // nodes. Therefore, memory is reserved for 32 nodes. If more is needed,
+    // just reallocation will occur.
+    ctx.role.leader.peers.reserve(32);
+    //ctx.role.leader.peers.reserve(ctx.state.cluster_cfg.servers.size());
+    for (const server_config& cfg : ctx.state.cluster_cfg.servers) {
+        if (ctx.id != cfg.id) {
+            ctx.role.leader.peers.emplace_back(cfg, last_index);
+        }
+    }
+
     const size_t voters_count = utils::voting_members_count(ctx);
     if (voters_count == 0 && (ctx.state.last_stored > ctx.state.commit_index)) {
         ctx.state.commit_index = ctx.state.last_stored;

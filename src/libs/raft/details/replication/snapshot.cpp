@@ -126,13 +126,13 @@ bool install_callback(context& ctx, bool accept, raft::snapshot& snapshot)
 
 bool restore(context& ctx, raft::snapshot& snapshot)
 {
+    assert(! ctx.role.is_leader());
+
     if (! ctx.p_fsm->restore(snapshot.buffer)) {
         RAFT_LOG_ERROR(ctx, "Server %llu(%s) failed to restore fsm state from snapshot %u.", ctx.id, ctx.role.str(), snapshot.index);
         return false;
     }
 
-    //entries::apply_configuration(ctx, std::move(snapshot.conf));
-    peers::update(ctx, std::move(snapshot.conf));
     ctx.state.configuration_committed_index = snapshot.conf_index;
     ctx.state.configuration_uncommitted_index = 0;
 

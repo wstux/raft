@@ -143,7 +143,7 @@ TYPED_TEST(raft_membership, multi_add_server)
 
         for (size_t i = 1; i < id + 1; ++i) {
             cfg = p_network->get_io(i)->m_cluster_cfg;
-            ASSERT_TRUE(cfg.servers.size() == id) << cfg.servers.size() << " != " << id;
+            ASSERT_TRUE(cfg.servers.size() == id) << "Server " << i << ": " << cfg.servers.size() << " != " << id;
         }
     }
 }

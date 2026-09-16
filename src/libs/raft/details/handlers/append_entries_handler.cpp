@@ -150,7 +150,7 @@ void handle_response(context& ctx, server_id_t src_id, const std::string& /*addr
     assert(ctx.term == term);
     assert(ctx.role.is_leader());
 
-    peer::ptr p_src_peer = peers::find(ctx, src_id);
+    peer::ptr p_src_peer = utils::find_peer(ctx, src_id);
     if (! p_src_peer) {
         RAFT_AE_LOG_DEBUG(ctx, "Got append entries response message from removed server %llu", src_id);
         return;
@@ -194,7 +194,7 @@ void request(context& ctx)
 
     assert(ctx.role.is_leader());
 
-    for (peer::list::value_type& p : ctx.peers) {
+    for (peer::list::value_type& p : ctx.role.leader.peers) {
         request(ctx, p);
     }
 }
