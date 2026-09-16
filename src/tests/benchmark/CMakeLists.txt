@@ -42,15 +42,6 @@ PerfTestTarget(perf_raft_membership_async
         googlebenchmark
 )
 
-PerfTestTarget(perf_raft_peers
-    SOURCES
-        perf_raft_peers.cpp
-    LIBRARIES
-        raft
-    DEPENDS
-        googlebenchmark
-)
-
 PerfTestTarget(perf_raft_serialization
     SOURCES
         perf_raft_serialization.cpp
