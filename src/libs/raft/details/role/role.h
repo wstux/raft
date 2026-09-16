@@ -26,6 +26,7 @@
 #define _LIBS_RAFT_ROLE_ROLE_H_
 
 #include <cstdint>
+#include <cstring>
 #include <atomic>
 //#include <string>
 
@@ -47,26 +48,32 @@ enum role_type : int32_t
 
 struct state final
 {
-    state() {}
+    state()
+        : role(role_type::undefined)
+        , follower{}
+    {
+        std::memset(&follower, 0, sizeof(leader));
+    }
+
     ~state() { clear(); }
 
     inline void become_follower()
     {
         clear();
-        role = role_type::follower;
+        role.store(role_type::follower, std::memory_order_relaxed);
         //::new (static_cast<void*>(&follower.leader_address)) std::string();
     }
 
     inline void become_candidate()
     {
         clear();
-        role = role_type::candidate;
+        role.store(role_type::candidate, std::memory_order_relaxed);
     }
 
     inline void become_leader()
     {
         clear();
-        role = role_type::leader;
+        role.store(role_type::leader, std::memory_order_relaxed);
         ::new (static_cast<void*>(&leader.peers)) peer::list();
     }
 
@@ -75,7 +82,7 @@ struct state final
         /*if (is_follower()) {
             follower.leader_address.~basic_string();
         } else */
-        if (is_leader()) {
+        if (role.load(std::memory_order_relaxed) == role_type::leader) {
             leader.peers.~vector();
         }
     }
@@ -108,9 +115,7 @@ struct state final
     std::atomic<server_id_t> leader_id = gk_invalid_id;
 
     union {
-        struct {
-            //std::string leader_address;
-        } follower;
+        struct {} follower;
         struct {
             size_t votes_granted;
             bool is_prevote;
