@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789412809021,
+  "lastUpdate": 1789565131817,
   "repoUrl": "https://github.com/wstux/raft",
   "entries": {
     "Benchmark": [
@@ -1431,6 +1431,175 @@ window.BENCHMARK_DATA = {
           {
             "name": "Serialize Message (Real Time)::Base",
             "value": 780.5310566774383,
+            "unit": "ns"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "wstux1@gmail.com",
+            "name": "wstux",
+            "username": "wstux"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "200a6e250722e3fa08278439501722034f823477",
+          "message": "* all: #10 Merge remote-tracking branch 'wstux/bugfix/peer_next_index' into master;",
+          "timestamp": "2026-09-16T16:21:06+03:00",
+          "tree_id": "c281f2b47cf7623e00f022f528864358b25e93be",
+          "url": "https://github.com/wstux/raft/commit/200a6e250722e3fa08278439501722034f823477"
+        },
+        "date": 1789565131081,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Leader Election (Real Time)::3 nodes",
+            "value": 42.02353573000096,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election (CPU Time)::3 nodes",
+            "value": 0.45059973000000014,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election (Real Time)::5 nodes",
+            "value": 41.94634984999993,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election (CPU Time)::5 nodes",
+            "value": 0.9600586799999999,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election (Real Time)::7 nodes",
+            "value": 44.19037320000001,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election (CPU Time)::7 nodes",
+            "value": 1.460300300000008,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Default (Real Time)::3 nodes",
+            "value": 642.8079903999986,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Default (CPU Time)::3 nodes",
+            "value": 0.7877049000000413,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Default (Real Time)::5 nodes",
+            "value": 570.7108303000155,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Default (CPU Time)::5 nodes",
+            "value": 1.2726369000000126,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Default (Real Time)::7 nodes",
+            "value": 613.7478025999997,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Default (CPU Time)::7 nodes",
+            "value": 1.8967825000000047,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Async (Real Time)::3 nodes",
+            "value": 41.61641401000111,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Async (CPU Time)::3 nodes",
+            "value": 0.4446623499999993,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Async (Real Time)::5 nodes",
+            "value": 42.334107019996175,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Async (CPU Time)::5 nodes",
+            "value": 0.9472894200000046,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Async (Real Time)::7 nodes",
+            "value": 42.99634066000237,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Async (CPU Time)::7 nodes",
+            "value": 1.4824296200000109,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Async Default (Real Time)::3 nodes",
+            "value": 646.6878485999928,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Async Default (CPU Time)::3 nodes",
+            "value": 0.8159117999999799,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Async Default (Real Time)::5 nodes",
+            "value": 592.8449500999989,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Async Default (CPU Time)::5 nodes",
+            "value": 1.2824480999999666,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Async Default (Real Time)::7 nodes",
+            "value": 571.4954001999956,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Async Default (CPU Time)::7 nodes",
+            "value": 1.849298399999999,
+            "unit": "ms"
+          },
+          {
+            "name": "Check Contact Quorum (Real Time)::1 threads",
+            "value": 3.9073603915812773,
+            "unit": "ns"
+          },
+          {
+            "name": "Check Contact Quorum (Real Time)::2 threads",
+            "value": 216.57902414909645,
+            "unit": "ns"
+          },
+          {
+            "name": "Check Contact Quorum (Real Time)::4 threads",
+            "value": 330.5538051907309,
+            "unit": "ns"
+          },
+          {
+            "name": "Check Contact Quorum (Real Time)::8 threads",
+            "value": 589.8899271675451,
+            "unit": "ns"
+          },
+          {
+            "name": "Serialize Message (Real Time)::Base",
+            "value": 601.6266975509234,
             "unit": "ns"
           }
         ]
