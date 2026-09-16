@@ -48,8 +48,7 @@ static void serialize_append_entries_request_message(benchmark::State& state)
 {
     namespace raft = ::wstux::raft;
 
-    raft::details::message msg;
-    msg.type = raft::details::message_type::append_entries_request;
+    raft::details::message msg(raft::details::message_type::append_entries_request);
     msg.src_id = 1;
     msg.dst_id = 2;
     msg.term = 14;
@@ -61,7 +60,7 @@ static void serialize_append_entries_request_message(benchmark::State& state)
         msg.append_entries_req.entries.emplace_back(std::make_shared<raft::entry>());
         msg.append_entries_req.entries.back()->term = 14;
         msg.append_entries_req.entries.back()->type = raft::entry_type::command;
-        const char* ptr = reinterpret_cast<const char*>(i);
+        const char* ptr = reinterpret_cast<const char*>(&i);
         msg.append_entries_req.entries.back()->buffer.assign(ptr, ptr + sizeof(size_t));
     }
 
@@ -77,8 +76,7 @@ static void serialize_append_entries_response_message(benchmark::State& state)
 {
     namespace raft = ::wstux::raft;
 
-    raft::details::message msg;
-    msg.type = raft::details::message_type::append_entries_response;
+    raft::details::message msg(raft::details::message_type::append_entries_response);
     msg.src_id = 1;
     msg.dst_id = 2;
     msg.term = 14;
@@ -97,8 +95,7 @@ static void serialize_snapshot_request_message(benchmark::State& state)
 {
     namespace raft = ::wstux::raft;
 
-    raft::details::message msg;
-    msg.type = raft::details::message_type::snapshot_request;
+    raft::details::message msg(raft::details::message_type::snapshot_request);
     msg.src_id = 1;
     msg.dst_id = 2;
     msg.term = 14;
@@ -111,7 +108,7 @@ static void serialize_snapshot_request_message(benchmark::State& state)
     msg.snapshot_req.conf_index = 5;
 
     const size_t value = 7;
-    const char* ptr = reinterpret_cast<const char*>(value);
+    const char* ptr = reinterpret_cast<const char*>(&value);
     msg.snapshot_req.buffer.assign(ptr, ptr + sizeof(size_t));
 
     for (auto _ : state) {
@@ -126,8 +123,7 @@ static void serialize_vote_request_message(benchmark::State& state)
 {
     namespace raft = ::wstux::raft;
 
-    raft::details::message msg;
-    msg.type = raft::details::message_type::vote_request;
+    raft::details::message msg(raft::details::message_type::vote_request);
     msg.src_id = 1;
     msg.dst_id = 2;
     msg.term = 14;
@@ -147,8 +143,7 @@ static void serialize_vote_response_message(benchmark::State& state)
 {
     namespace raft = ::wstux::raft;
 
-    raft::details::message msg;
-    msg.type = raft::details::message_type::vote_response;
+    raft::details::message msg(raft::details::message_type::vote_response);
     msg.src_id = 1;
     msg.dst_id = 2;
     msg.term = 14;

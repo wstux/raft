@@ -33,7 +33,7 @@ namespace log = raft::details::log;
 
 raft::buffer_type make_test_buffer(const size_t value = 64)
 {
-    const char* ptr = reinterpret_cast<const char*>(value);
+    const char* ptr = reinterpret_cast<const char*>(&value);
     return raft::buffer_type(ptr, ptr + sizeof(size_t));
 }
 
@@ -136,7 +136,7 @@ static void log_acquire(benchmark::State& state)
 static void log_get(benchmark::State& state)
 {
     log::store log;
-    log.offset = 1;
+    log.load(0, 0, 1);
     fill_log(log, 1000);
 
     for (auto _ : state) {
@@ -169,6 +169,8 @@ static void log_take_snapshot(benchmark::State& state)
         state.PauseTiming();
         log::store log;
         log.offset = 1;
+        log.snapshot.last_index = 1;
+        log.snapshot.last_term = 1;
         fill_log(log, 2000);
         state.ResumeTiming();
 
