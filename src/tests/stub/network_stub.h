@@ -247,6 +247,12 @@ public:
         m_test_name = name;
     }
 
+    static void enable_file_logging(const std::string& fixture, const std::string& test_name)
+    {
+        m_test_fixture = fixture;
+        m_test_name = test_name;
+    }
+
 private:
     server_ptr create_server_impl(server_id_t id, io_stub::ptr p_io)
     {

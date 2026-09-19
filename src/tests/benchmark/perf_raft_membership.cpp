@@ -40,6 +40,7 @@ static void add_member(benchmark::State& state)
         state.PauseTiming();
 
         tests::network_stub::ptr p_network = std::make_shared<tests::network_stub>(tests::client_type::threaded);
+        tests::network_stub::enable_file_logging("perf_membership", "add_member<" + std::to_string(N) + ">");
         std::vector<std::pair<raft::server_id_t, bool>> cluster;
         cluster.reserve(N);
         for (size_t i = 0; i < N; ++i) {
@@ -57,7 +58,7 @@ static void add_member(benchmark::State& state)
         p_network->wait_leader();
 
         raft::server::ptr p_leader = p_network->get_leader();
-        const raft::index_t idx = p_leader->last_applied_index() + 1;
+        const raft::index_t idx = 2;//p_leader->last_applied_index() + 1;
         p_network->create_server(N + 1, true);
 
         state.ResumeTiming();
@@ -81,6 +82,7 @@ static void apply_member(benchmark::State& state)
         state.PauseTiming();
 
         tests::network_stub::ptr p_network = std::make_shared<tests::network_stub>(tests::client_type::threaded);
+        tests::network_stub::enable_file_logging("perf_membership", "apply_member<" + std::to_string(N) + ">");
         std::vector<std::pair<raft::server_id_t, bool>> cluster;
         cluster.reserve(N);
         for (size_t i = 0; i < N; ++i) {
@@ -98,7 +100,7 @@ static void apply_member(benchmark::State& state)
         p_network->wait_leader();
 
         raft::server::ptr p_leader = p_network->get_leader();
-        const raft::index_t idx = p_leader->last_applied_index() + 1;
+        const raft::index_t idx = 2;//p_leader->last_applied_index() + 1;
 
         state.ResumeTiming();
         p_leader->apply<size_t>(1234567);
@@ -121,6 +123,7 @@ static void remove_member(benchmark::State& state)
         state.PauseTiming();
 
         tests::network_stub::ptr p_network = std::make_shared<tests::network_stub>(tests::client_type::threaded);
+        tests::network_stub::enable_file_logging("perf_membership", "remove_member<" + std::to_string(N) + ">");
         std::vector<std::pair<raft::server_id_t, bool>> cluster;
         cluster.reserve(N);
         for (size_t i = 0; i < N; ++i) {
@@ -138,7 +141,7 @@ static void remove_member(benchmark::State& state)
         p_network->wait_leader();
 
         raft::server::ptr p_leader = p_network->get_leader();
-        const raft::index_t idx = p_leader->last_applied_index() + 1;
+        const raft::index_t idx = 2;//p_leader->last_applied_index() + 1;
         raft::server_id_t remove_id = (p_leader->id() == N) ? 1 : (p_leader->id() + 1);
 
         state.ResumeTiming();
@@ -162,6 +165,7 @@ static void add_member_default(benchmark::State& state)
         state.PauseTiming();
 
         tests::network_stub::ptr p_network = std::make_shared<tests::network_stub>(tests::client_type::threaded);
+        tests::network_stub::enable_file_logging("perf_membership", "add_member_default<" + std::to_string(N) + ">");
         std::vector<std::pair<raft::server_id_t, bool>> cluster;
         cluster.reserve(N);
         for (size_t i = 0; i < N; ++i) {
@@ -172,7 +176,7 @@ static void add_member_default(benchmark::State& state)
         p_network->wait_leader();
 
         raft::server::ptr p_leader = p_network->get_leader();
-        const raft::index_t idx = p_leader->last_applied_index() + 1;
+        const raft::index_t idx = 2;//p_leader->last_applied_index() + 1;
         p_network->create_server(N + 1, true);
 
         state.ResumeTiming();
@@ -196,6 +200,7 @@ static void apply_member_default(benchmark::State& state)
         state.PauseTiming();
 
         tests::network_stub::ptr p_network = std::make_shared<tests::network_stub>(tests::client_type::threaded);
+        tests::network_stub::enable_file_logging("perf_membership", "apply_member_default<" + std::to_string(N) + ">");
         std::vector<std::pair<raft::server_id_t, bool>> cluster;
         cluster.reserve(N);
         for (size_t i = 0; i < N; ++i) {
@@ -206,7 +211,7 @@ static void apply_member_default(benchmark::State& state)
         p_network->wait_leader();
 
         raft::server::ptr p_leader = p_network->get_leader();
-        const raft::index_t idx = p_leader->last_applied_index() + 1;
+        const raft::index_t idx = 2;//p_leader->last_applied_index() + 1;
 
         state.ResumeTiming();
         p_leader->apply<size_t>(1234567);
@@ -229,6 +234,7 @@ static void remove_member_default(benchmark::State& state)
         state.PauseTiming();
 
         tests::network_stub::ptr p_network = std::make_shared<tests::network_stub>(tests::client_type::threaded);
+        tests::network_stub::enable_file_logging("perf_membership", "remove_member_default<" + std::to_string(N) + ">");
         std::vector<std::pair<raft::server_id_t, bool>> cluster;
         cluster.reserve(N);
         for (size_t i = 0; i < N; ++i) {
@@ -239,7 +245,7 @@ static void remove_member_default(benchmark::State& state)
         p_network->wait_leader();
 
         raft::server::ptr p_leader = p_network->get_leader();
-        const raft::index_t idx = p_leader->last_applied_index() + 1;
+        const raft::index_t idx = 2;//p_leader->last_applied_index() + 1;
         const raft::server_id_t remove_id = (p_leader->id() == N) ? 1 : (p_leader->id() + 1);
 
         state.ResumeTiming();
