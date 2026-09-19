@@ -39,6 +39,19 @@ namespace details {
 namespace append_entries {
 namespace {
 
+bool decrement(peer& p, index_t rejected_index)
+{
+    if (p.shapshot.is_in_process) {
+        if (rejected_index != p.shapshot.index) {
+            return false;
+        }
+        return true;
+    }
+
+    p.next_index = std::min(rejected_index, p.match_index + 1);
+    return true;
+}
+
 void handle_request_async(context& ctx, server_id_t src_id, std::string address, bool accept,
                           replication::entries::async::append_context::ptr p_async_ctx)
 {
@@ -162,10 +175,10 @@ void handle_response(context& ctx, server_id_t src_id, const std::string& /*addr
     // Raft Paper, Section 5.3: Rules for Servers - Leaders: "If AppendEntries
     // fails because of log inconsistency: decrement nextIndex and retry"
     if (! msg.accept) {
-        // reject changes
-        /// \todo Need to implement decrement.
-        //    decrement(ctx, p_peer, last_log_index);
-        //    request(ctx, p_peer);
+        if (decrement(*p_src_peer, msg.last_log_index)) {
+            RAFT_AE_LOG_DEBUG(ctx, "Server %llu has mismatched index. Send old entries.", src_id);
+            request(ctx, *p_src_peer);
+        }
         return;
     }
 
