@@ -1,0 +1,127 @@
+name: Full Performance benchmarks
+
+on:
+  push:
+    branches: [ master ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  deployments: write
+
+jobs:
+  full_benchmark:
+    name: Full Performance Tests
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install build tools
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential cmake
+
+    - name: Build project
+      run: make
+
+    - name: Run full google benchmarks
+      run: |
+        ./build_release/test/perf_raft_leader_election --benchmark_format=json > perf_le.json
+        ./build_release/test/perf_raft_leader_election_async --benchmark_format=json > perf_le_async.json
+        ./build_release/test/perf_raft_log --benchmark_format=json > perf_log.json
+        ./build_release/test/perf_raft_membership --benchmark_format=json > perf_memb.json
+        ./build_release/test/perf_raft_membership_async --benchmark_format=json > perf_memb_async.json
+        ./build_release/test/perf_raft_serialization --benchmark_format=json > perf_srl.json
+
+        jq -s '
+          (.[0].benchmarks | map(. + {source: ""})) +
+          (.[1].benchmarks | map(. + {source: "async"})) +
+          (.[2].benchmarks | map(. + {source: ""})) +
+          (.[3].benchmarks | map(. + {source: ""})) +
+          (.[4].benchmarks | map(. + {source: "async"})) +
+          (.[5].benchmarks | map(. + {source: ""}))
+        ' perf_le.json perf_le_async.json perf_log.json perf_memb.json perf_memb_async.json perf_srl.json > perf_raft_merged.json
+
+        jq '[ .[] |
+          (if .source == "async" then " Async" else "" end) as $suffix |
+          if .name | startswith("leader_election<") then
+            { name: ("Leader Election" + $suffix + " (Real Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .real_time, unit: .time_unit },
+            { name: ("Leader Election" + $suffix + " (CPU Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .cpu_time, unit: .time_unit }
+          elif .name | startswith("leader_election_default<") then
+            { name: ("Leader Election" + $suffix + " Default (Real Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .real_time, unit: .time_unit },
+            { name: ("Leader Election" + $suffix + " Default (CPU Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .cpu_time, unit: .time_unit }
+
+          elif .name | startswith("apply_member<") then
+            { name: ("Apply Command" + $suffix + " (Real Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .real_time, unit: .time_unit },
+            { name: ("Apply Command" + $suffix + " (CPU Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .cpu_time, unit: .time_unit }
+          elif .name | startswith("apply_member_default<") then
+            { name: ("Apply Command" + $suffix + " Default (Real Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .real_time, unit: .time_unit },
+            { name: ("Apply Command" + $suffix + " Default (CPU Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .cpu_time, unit: .time_unit }
+          elif .name | startswith("add_member<") then
+            { name: ("Add New Member" + $suffix + " (Real Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .real_time, unit: .time_unit },
+            { name: ("Add New Member" + $suffix + " (CPU Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .cpu_time, unit: .time_unit }
+          elif .name | startswith("add_member_default<") then
+            { name: ("Add New Member" + $suffix + " Default (Real Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .real_time, unit: .time_unit },
+            { name: ("Add New Member" + $suffix + " Default (CPU Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .cpu_time, unit: .time_unit }
+          elif .name | startswith("remove_member<") then
+            { name: ("Remove Existing Member" + $suffix + " (Real Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .real_time, unit: .time_unit },
+            { name: ("Remove Existing Member" + $suffix + " (CPU Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .cpu_time, unit: .time_unit }
+          elif .name | startswith("remove_member_default<") then
+            { name: ("Remove Existing Member" + $suffix + " Default (Real Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .real_time, unit: .time_unit },
+            { name: ("Remove Existing Member" + $suffix + " Default (CPU Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .cpu_time, unit: .time_unit }
+
+          elif .name | startswith("check_contact_quorum/threads:") then
+            { name: ("Check Contact Quorum (Real Time)::" + (.name | capture("threads:(?<t>\\d+)") | .t + " threads")), value: .real_time, unit: .time_unit }
+
+          elif .name | startswith("log_") then
+            if .name | startswith("log_append_") then
+              ( .name | sub("log_append_"; "") ) as $pretty_name |
+              ( { name: ("Log Append (Real Time)::" + $pretty_name), value: .real_time, unit: .time_unit } )
+            elif .name | startswith("log_append") then
+              ( .name | sub("log_append"; "append") ) as $pretty_name |
+              ( { name: ("Log Append (Real Time)::" + $pretty_name), value: .real_time, unit: .time_unit } )
+            elif .name | startswith("log_get_entry") then
+              ( .name | sub("log_"; "") ) as $pretty_name |
+              ( { name: ("Log Get Entry (Real Time)::" + $pretty_name), value: .real_time, unit: .time_unit } )
+            elif .name | startswith("log_acquire") then
+              ( .name | sub("log_"; "") ) as $pretty_name |
+              ( { name: ("Log Acquire (Real Time)::" + $pretty_name), value: .real_time, unit: .time_unit } )
+            elif .name | startswith("log_get") then
+              ( .name | sub("log_get"; "getters") ) as $pretty_name |
+              ( { name: ("Log Getters (Real Time)::" + $pretty_name), value: .real_time, unit: .time_unit } )
+            elif .name | startswith("log_truncate") then
+              ( .name | sub("log_"; "") ) as $pretty_name |
+              ( { name: ("Log Truncate (Real Time)::" + $pretty_name), value: .real_time, unit: .time_unit } )
+            elif .name | startswith("log_take_snapshot") then
+              ( .name | sub("log_"; "") ) as $pretty_name |
+              ( { name: ("Log Take Snapshot (Real Time)::" + $pretty_name), value: .real_time, unit: .time_unit } )
+            elif .name | startswith("log_load_restore") then
+              ( .name | sub("log_"; "") ) as $pretty_name |
+              ( { name: ("Log Load Restore (Real Time)::" + $pretty_name), value: .real_time, unit: .time_unit } )
+            else
+              empty
+            end
+
+          elif .name | startswith("serialize_") then
+            ( .name | sub("serialize_"; "") ) as $pretty_name |
+            ( { name: ("Serialize Message (Real Time)::" + $pretty_name), value: .real_time, unit: .time_unit } )
+
+          else
+            empty
+          end
+        ]' perf_raft_merged.json > perf_raft_common.json
+
+    - name: Disable commit-msg hooks for bot
+      run: rm -rf .git/hooks
+
+    - name: Store and plot results
+      uses: benchmark-action/github-action-benchmark@v1
+      with:
+        tool: 'customSmallerIsBetter'
+        output-file-path: perf_raft_common.json
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        auto-push: ${{ github.event_name == 'push' }} # Update history charts only on push to master
+        comment-on-alert: true                        # Post a performance change report in the PR comments
+        fail-on-alert: false                          # Do not fail verification if performance drops
