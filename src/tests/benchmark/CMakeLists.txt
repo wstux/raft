@@ -21,6 +21,15 @@ PerfTestTarget(perf_raft_leader_election_async
         googlebenchmark
 )
 
+PerfTestTarget(perf_raft_log
+    SOURCES
+        perf_raft_log.cpp
+    LIBRARIES
+        raft
+    DEPENDS
+        googlebenchmark
+)
+
 PerfTestTarget(perf_raft_membership
     SOURCES
         perf_raft_membership.cpp
@@ -38,15 +47,6 @@ PerfTestTarget(perf_raft_membership_async
     LIBRARIES
         raft
         raft_stub
-    DEPENDS
-        googlebenchmark
-)
-
-PerfTestTarget(perf_raft_peers
-    SOURCES
-        perf_raft_peers.cpp
-    LIBRARIES
-        raft
     DEPENDS
         googlebenchmark
 )

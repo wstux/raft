@@ -1,19 +1,17 @@
-name: Performance benchmarks
+name: Full Performance benchmarks
 
 on:
   push:
     branches: [ master ]
-  pull_request:
-    branches: [ master ]
+  workflow_dispatch:
 
 permissions:
   contents: write
   deployments: write
-  pull-requests: write
 
 jobs:
-  benchmark:
-    name: PR Performance Tests
+  full_benchmark:
+    name: Full Performance Tests
     runs-on: ubuntu-latest
 
     steps:
@@ -28,19 +26,23 @@ jobs:
     - name: Build project
       run: make
 
-    - name: Run google benchmarks
+    - name: Run full google benchmarks
       run: |
         ./build_release/test/perf_raft_leader_election --benchmark_format=json > perf_le.json
         ./build_release/test/perf_raft_leader_election_async --benchmark_format=json > perf_le_async.json
         ./build_release/test/perf_raft_log --benchmark_format=json > perf_log.json
+        ./build_release/test/perf_raft_membership --benchmark_format=json > perf_memb.json
+        ./build_release/test/perf_raft_membership_async --benchmark_format=json > perf_memb_async.json
         ./build_release/test/perf_raft_serialization --benchmark_format=json > perf_srl.json
 
         jq -s '
           (.[0].benchmarks | map(. + {source: ""})) +
           (.[1].benchmarks | map(. + {source: "async"})) +
           (.[2].benchmarks | map(. + {source: ""})) +
-          (.[3].benchmarks | map(. + {source: ""}))
-        ' perf_le.json perf_le_async.json perf_log.json perf_srl.json > perf_raft_merged.json
+          (.[3].benchmarks | map(. + {source: ""})) +
+          (.[4].benchmarks | map(. + {source: "async"})) +
+          (.[5].benchmarks | map(. + {source: ""}))
+        ' perf_le.json perf_le_async.json perf_log.json perf_memb.json perf_memb_async.json perf_srl.json > perf_raft_merged.json
 
         jq '[ .[] |
           (if .source == "async" then " Async" else "" end) as $suffix |
@@ -51,13 +53,18 @@ jobs:
             { name: ("Leader Election" + $suffix + " Default (Real Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .real_time, unit: .time_unit },
             { name: ("Leader Election" + $suffix + " Default (CPU Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .cpu_time, unit: .time_unit }
 
+          elif .name | startswith("apply_member<") then
+            { name: ("Apply Command" + $suffix + " (Real Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .real_time, unit: .time_unit },
+            { name: ("Apply Command" + $suffix + " (CPU Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .cpu_time, unit: .time_unit }
+          elif .name | startswith("apply_member_default<") then
+            { name: ("Apply Command" + $suffix + " Default (Real Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .real_time, unit: .time_unit },
+            { name: ("Apply Command" + $suffix + " Default (CPU Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .cpu_time, unit: .time_unit }
           elif .name | startswith("add_member<") then
             { name: ("Add New Member" + $suffix + " (Real Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .real_time, unit: .time_unit },
             { name: ("Add New Member" + $suffix + " (CPU Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .cpu_time, unit: .time_unit }
           elif .name | startswith("add_member_default<") then
             { name: ("Add New Member" + $suffix + " Default (Real Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .real_time, unit: .time_unit },
             { name: ("Add New Member" + $suffix + " Default (CPU Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .cpu_time, unit: .time_unit }
-
           elif .name | startswith("remove_member<") then
             { name: ("Remove Existing Member" + $suffix + " (Real Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .real_time, unit: .time_unit },
             { name: ("Remove Existing Member" + $suffix + " (CPU Time)::" + (.name | capture("<(?<v>\\d+)>") | .v + " nodes")), value: .cpu_time, unit: .time_unit }
