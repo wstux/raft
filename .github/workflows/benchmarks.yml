@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   benchmark:
-    name: Performance
+    name: PR Performance Tests
     runs-on: ubuntu-latest
 
     steps:
@@ -32,6 +32,7 @@ jobs:
       run: |
         ./build_release/test/perf_raft_leader_election --benchmark_format=json > perf_le.json
         ./build_release/test/perf_raft_leader_election_async --benchmark_format=json > perf_le_async.json
+        ./build_release/test/perf_raft_log --benchmark_format=json > perf_log.json
         ./build_release/test/perf_raft_serialization --benchmark_format=json > perf_srl.json
 
         jq -s '
@@ -39,7 +40,7 @@ jobs:
           (.[1].benchmarks | map(. + {source: "async"})) +
           (.[2].benchmarks | map(. + {source: ""})) +
           (.[3].benchmarks | map(. + {source: ""}))
-        ' perf_le.json perf_le_async.json perf_srl.json > perf_raft_merged.json
+        ' perf_le.json perf_le_async.json perf_log.json perf_srl.json > perf_raft_merged.json
 
         jq '[ .[] |
           (if .source == "async" then " Async" else "" end) as $suffix |
@@ -66,6 +67,35 @@ jobs:
 
           elif .name | startswith("check_contact_quorum/threads:") then
             { name: ("Check Contact Quorum (Real Time)::" + (.name | capture("threads:(?<t>\\d+)") | .t + " threads")), value: .real_time, unit: .time_unit }
+
+          elif .name | startswith("log_") then
+            if .name | startswith("log_append_") then
+              ( .name | sub("log_append_"; "") ) as $pretty_name |
+              ( { name: ("Log Append (Real Time)::" + $pretty_name), value: .real_time, unit: .time_unit } )
+            elif .name | startswith("log_append") then
+              ( .name | sub("log_append"; "append") ) as $pretty_name |
+              ( { name: ("Log Append (Real Time)::" + $pretty_name), value: .real_time, unit: .time_unit } )
+            elif .name | startswith("log_get_entry") then
+              ( .name | sub("log_"; "") ) as $pretty_name |
+              ( { name: ("Log Get Entry (Real Time)::" + $pretty_name), value: .real_time, unit: .time_unit } )
+            elif .name | startswith("log_acquire") then
+              ( .name | sub("log_"; "") ) as $pretty_name |
+              ( { name: ("Log Acquire (Real Time)::" + $pretty_name), value: .real_time, unit: .time_unit } )
+            elif .name | startswith("log_get") then
+              ( .name | sub("log_get"; "getters") ) as $pretty_name |
+              ( { name: ("Log Getters (Real Time)::" + $pretty_name), value: .real_time, unit: .time_unit } )
+            elif .name | startswith("log_truncate") then
+              ( .name | sub("log_"; "") ) as $pretty_name |
+              ( { name: ("Log Truncate (Real Time)::" + $pretty_name), value: .real_time, unit: .time_unit } )
+            elif .name | startswith("log_take_snapshot") then
+              ( .name | sub("log_"; "") ) as $pretty_name |
+              ( { name: ("Log Take Snapshot (Real Time)::" + $pretty_name), value: .real_time, unit: .time_unit } )
+            elif .name | startswith("log_load_restore") then
+              ( .name | sub("log_"; "") ) as $pretty_name |
+              ( { name: ("Log Load Restore (Real Time)::" + $pretty_name), value: .real_time, unit: .time_unit } )
+            else
+              empty
+            end
 
           elif .name | startswith("serialize_") then
             ( .name | sub("serialize_"; "") ) as $pretty_name |
