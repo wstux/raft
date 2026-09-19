@@ -32,16 +32,14 @@ jobs:
       run: |
         ./build_release/test/perf_raft_leader_election --benchmark_format=json > perf_le.json
         ./build_release/test/perf_raft_leader_election_async --benchmark_format=json > perf_le_async.json
-        ./build_release/test/perf_raft_peers --benchmark_format=json > perf_peers.json
         ./build_release/test/perf_raft_serialization --benchmark_format=json > perf_srl.json
 
-        #jq -s '[.[].benchmarks] | flatten' perf_le.json perf_peers.json perf_srl.json > perf_raft_merged.json
         jq -s '
           (.[0].benchmarks | map(. + {source: ""})) +
           (.[1].benchmarks | map(. + {source: "async"})) +
           (.[2].benchmarks | map(. + {source: ""})) +
           (.[3].benchmarks | map(. + {source: ""}))
-        ' perf_le.json perf_le_async.json perf_peers.json perf_srl.json > perf_raft_merged.json
+        ' perf_le.json perf_le_async.json perf_srl.json > perf_raft_merged.json
 
         jq '[ .[] |
           (if .source == "async" then " Async" else "" end) as $suffix |
@@ -69,13 +67,10 @@ jobs:
           elif .name | startswith("check_contact_quorum/threads:") then
             { name: ("Check Contact Quorum (Real Time)::" + (.name | capture("threads:(?<t>\\d+)") | .t + " threads")), value: .real_time, unit: .time_unit }
 
-          elif .name | startswith("request_to_list/threads:") then
-            { name: ("Request to List (Real Time)::" + (.name | capture("threads:(?<t>\\d+)") | .t + " threads")), value: .real_time, unit: .time_unit }
-          elif .name | startswith("request_lock_list/threads:") then
-            { name: ("Request Lock List (Real Time)::" + (.name | capture("threads:(?<t>\\d+)") | .t + " threads")), value: .real_time, unit: .time_unit }
+          elif .name | startswith("serialize_") then
+            ( .name | sub("serialize_"; "") ) as $pretty_name |
+            ( { name: ("Serialize Message (Real Time)::" + $pretty_name), value: .real_time, unit: .time_unit } )
 
-          elif .name == "serialize_message" then
-            { name: "Serialize Message (Real Time)::Base", value: .real_time, unit: .time_unit }
           else
             empty
           end
