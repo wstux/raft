@@ -63,11 +63,11 @@ struct store final
     void truncate(index_t begin_idx);
 
     entry_map entries;
-    index_t offset;
+    index_t offset = 0;
     struct
     {
-        index_t last_index;
-        term_t last_term;
+        index_t last_index = 0;
+        term_t last_term = 0;
     } snapshot;
 };
 
