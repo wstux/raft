@@ -46,7 +46,7 @@ public:
 TEST_F(raft_log, acquire_empty_log)
 {
     namespace raft = ::wstux::raft;
-    using raft_log = raft::details::log::store;
+    using raft_log = raft::details::log_store;
 
     raft_log log;
     log.offset = 1;
@@ -71,7 +71,7 @@ TEST_F(raft_log, acquire_empty_log)
 TEST_F(raft_log, acquire)
 {
     namespace raft = ::wstux::raft;
-    using raft_log = raft::details::log::store;
+    using raft_log = raft::details::log_store;
 
     raft_log log;
     log.load(0, 0, 1);
@@ -110,7 +110,7 @@ TEST_F(raft_log, acquire)
 TEST_F(raft_log, append)
 {
     namespace raft = ::wstux::raft;
-    using raft_log = raft::details::log::store;
+    using raft_log = raft::details::log_store;
 
     raft_log log;
     log.offset = 1;
@@ -146,7 +146,7 @@ TEST_F(raft_log, append)
 TEST_F(raft_log, append_change)
 {
     namespace raft = ::wstux::raft;
-    using raft_log = raft::details::log::store;
+    using raft_log = raft::details::log_store;
 
     raft_log log;
     log.offset = 1;
@@ -177,7 +177,7 @@ TEST_F(raft_log, append_change)
 TEST_F(raft_log, append_command)
 {
     namespace raft = ::wstux::raft;
-    using raft_log = raft::details::log::store;
+    using raft_log = raft::details::log_store;
 
     raft_log log;
     log.offset = 1;
@@ -207,7 +207,7 @@ TEST_F(raft_log, append_command)
 TEST_F(raft_log, get_entry_with_valid_index)
 {
     namespace raft = ::wstux::raft;
-    using raft_log = raft::details::log::store;
+    using raft_log = raft::details::log_store;
 
     raft_log log;
     log.offset = 1;
@@ -234,7 +234,7 @@ TEST_F(raft_log, get_entry_with_valid_index)
 TEST_F(raft_log, get_entry_with_invalid_index)
 {
     namespace raft = ::wstux::raft;
-    using raft_log = raft::details::log::store;
+    using raft_log = raft::details::log_store;
 
     raft_log log;
     log.offset = 1;
@@ -262,7 +262,7 @@ TEST_F(raft_log, get_entry_with_invalid_index)
 TEST_F(raft_log, last_index)
 {
     namespace raft = ::wstux::raft;
-    using raft_log = raft::details::log::store;
+    using raft_log = raft::details::log_store;
 
     raft_log log;
     log.offset = 1;
@@ -294,7 +294,7 @@ TEST_F(raft_log, last_index)
 TEST_F(raft_log, last_term)
 {
     namespace raft = ::wstux::raft;
-    using raft_log = raft::details::log::store;
+    using raft_log = raft::details::log_store;
 
     raft_log log;
     log.offset = 1;
@@ -322,7 +322,7 @@ TEST_F(raft_log, last_term)
 TEST_F(raft_log, load)
 {
     namespace raft = ::wstux::raft;
-    using raft_log = raft::details::log::store;
+    using raft_log = raft::details::log_store;
 
     raft_log log;
     log.load(2, 3, 3);
@@ -346,7 +346,7 @@ TEST_F(raft_log, load)
 TEST_F(raft_log, restore)
 {
     namespace raft = ::wstux::raft;
-    using raft_log = raft::details::log::store;
+    using raft_log = raft::details::log_store;
 
     raft_log log;
     log.load(0, 0, 1);
@@ -382,7 +382,7 @@ TEST_F(raft_log, restore)
 TEST_F(raft_log, take_snapshot)
 {
     namespace raft = ::wstux::raft;
-    using raft_log = raft::details::log::store;
+    using raft_log = raft::details::log_store;
 
     raft_log log;
     log.load(0, 0, 1);
@@ -413,7 +413,7 @@ TEST_F(raft_log, take_snapshot)
 TEST_F(raft_log, take_snapshot_trailing)
 {
     namespace raft = ::wstux::raft;
-    using raft_log = raft::details::log::store;
+    using raft_log = raft::details::log_store;
 
     raft_log log;
     log.load(0, 0, 1);
@@ -454,7 +454,7 @@ TEST_F(raft_log, take_snapshot_trailing)
 TEST_F(raft_log, term)
 {
     namespace raft = ::wstux::raft;
-    using raft_log = raft::details::log::store;
+    using raft_log = raft::details::log_store;
 
     raft_log log;
     log.offset = 2;
@@ -483,7 +483,7 @@ TEST_F(raft_log, term)
 TEST_F(raft_log, truncate)
 {
     namespace raft = ::wstux::raft;
-    using raft_log = raft::details::log::store;
+    using raft_log = raft::details::log_store;
 
     raft_log log;
     log.load(0, 0, 1);

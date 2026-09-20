@@ -62,7 +62,7 @@ struct context final
     fsm::ptr p_fsm;
 
     role::state role;
-    log::store log;
+    log_store log;
 
     struct {
         index_t commit_index = 0;

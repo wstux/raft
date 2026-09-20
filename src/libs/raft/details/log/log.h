@@ -32,9 +32,8 @@
 namespace wstux {
 namespace raft {
 namespace details {
-namespace log {
 
-struct store final
+struct log_store final
 {
     using entry_buffer = boost::circular_buffer<entry::ptr>;
 
@@ -71,7 +70,6 @@ struct store final
     } snapshot;
 };
 
-} // namespace log
 } // namespace details
 } // namespace raft
 } // namespace wstux
