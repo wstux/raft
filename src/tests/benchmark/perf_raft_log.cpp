@@ -29,7 +29,7 @@
 namespace {
 
 namespace raft = ::wstux::raft;
-namespace log = raft::details::log;
+namespace details = raft::details;
 
 raft::buffer_type make_test_buffer(const size_t value = 64)
 {
@@ -37,7 +37,7 @@ raft::buffer_type make_test_buffer(const size_t value = 64)
     return raft::buffer_type(ptr, ptr + sizeof(size_t));
 }
 
-void fill_log(log::store& l, size_t count)
+void fill_log(details::log_store& l, size_t count)
 {
     raft::cluster_config cfg;
     cfg.servers.emplace_back(raft::server_config(1, "127.0.0.1:8001", true));
@@ -58,7 +58,7 @@ static void log_append_command(benchmark::State& state)
 {
     for (auto _ : state) {
         state.PauseTiming();
-        log::store log;
+        details::log_store log;
         log.offset = 1;
         raft::buffer_type buf = make_test_buffer();
         state.ResumeTiming();
@@ -74,7 +74,7 @@ static void log_append_change(benchmark::State& state)
 {
     for (auto _ : state) {
         state.PauseTiming();
-        log::store log;
+        details::log_store log;
         log.offset = 1;
 
         raft::cluster_config cfg;
@@ -90,12 +90,9 @@ static void log_append_change(benchmark::State& state)
 
 static void log_append(benchmark::State& state)
 {
-    log::store log;
-    log.offset = 1;
-
     for (auto _ : state) {
         state.PauseTiming();
-        log::store log;
+        details::log_store log;
         log.offset = 1;
 
         raft::entry::ptr p_entry = std::make_shared<raft::entry>();
@@ -110,7 +107,7 @@ static void log_append(benchmark::State& state)
 
 static void log_get_entry(benchmark::State& state)
 {
-    log::store log;
+    details::log_store log;
     log.offset = 1;
     fill_log(log, state.range(0));
     raft::index_t target_idx = state.range(0) / 2;
@@ -123,7 +120,7 @@ static void log_get_entry(benchmark::State& state)
 
 static void log_acquire(benchmark::State& state)
 {
-    log::store log;
+    details::log_store log;
     log.offset = 1;
     fill_log(log, 10000);
 
@@ -135,7 +132,7 @@ static void log_acquire(benchmark::State& state)
 
 static void log_get(benchmark::State& state)
 {
-    log::store log;
+    details::log_store log;
     log.load(0, 0, 1);
     fill_log(log, 1000);
 
@@ -153,7 +150,7 @@ static void log_truncate(benchmark::State& state)
 {
     for (auto _ : state) {
         state.PauseTiming();
-        log::store log;
+        details::log_store log;
         log.offset = 1;
         fill_log(log, state.range(0));
         raft::index_t index = state.range(0) / 2;
@@ -167,7 +164,7 @@ static void log_take_snapshot(benchmark::State& state)
 {
     for (auto _ : state) {
         state.PauseTiming();
-        log::store log;
+        details::log_store log;
         log.offset = 1;
         log.snapshot.last_index = 1;
         log.snapshot.last_term = 1;
@@ -181,7 +178,7 @@ static void log_take_snapshot(benchmark::State& state)
 static void log_load_restore(benchmark::State& state)
 {
     for (auto _ : state) {
-        log::store log;
+        details::log_store log;
         log.load(500, 2, 501);
         log.restore(1000, 3);
     }

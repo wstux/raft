@@ -25,18 +25,17 @@
 #ifndef _LIBS_RAFT_LOG_LOG_H_
 #define _LIBS_RAFT_LOG_LOG_H_
 
-#include <map>
+#include <boost/circular_buffer.hpp>
 
 #include "raft/io.h"
 
 namespace wstux {
 namespace raft {
 namespace details {
-namespace log {
 
-struct store final
+struct log_store final
 {
-    using entry_map = std::map<index_t, entry::ptr>;
+    using entry_buffer = boost::circular_buffer<entry::ptr>;
 
     entry::list acquire(index_t begin_idx) const;
 
@@ -62,16 +61,15 @@ struct store final
 
     void truncate(index_t begin_idx);
 
-    entry_map entries;
-    index_t offset;
+    entry_buffer entries;
+    index_t offset = 0;
     struct
     {
-        index_t last_index;
-        term_t last_term;
+        index_t last_index = 0;
+        term_t last_term = 0;
     } snapshot;
 };
 
-} // namespace log
 } // namespace details
 } // namespace raft
 } // namespace wstux

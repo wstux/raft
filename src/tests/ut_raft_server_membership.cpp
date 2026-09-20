@@ -109,6 +109,42 @@ TYPED_TEST(raft_membership, add_server)
     }
 }
 
+/// \todo Fix defect
+TYPED_TEST(raft_membership, DISABLED_add_server_single)
+{
+    using namespace std::chrono_literals;
+    using server_ptr = tests::network_stub::server_ptr;
+    using io_ptr = tests::io_stub::ptr;
+
+    tests::network_stub::ptr p_network = this->m_p_network;
+    p_network->create_cluster({{1, true}});
+    EXPECT_TRUE(p_network->leaders_count() == 0);
+
+    p_network->start();
+
+    p_network->wait_leader();
+    EXPECT_TRUE(p_network->leaders_count() == 1) << p_network->leaders_count();
+
+    server_ptr p_leader = p_network->get_leader();
+    io_ptr p_io = p_network->get_io(p_leader->id());
+    server_ptr p_srv = p_network->create_server(2, true);
+
+    raft::cluster_config cfg = p_io->m_cluster_cfg;
+    ASSERT_TRUE(cfg.servers.size() == 1) << cfg.servers.size();
+
+    const raft::index_t idx = p_leader->last_applied_index() + 1;
+    p_leader->add(p_srv->id(), std::to_string(p_srv->id()), true);
+
+    p_network->wait_for_update(idx);
+    EXPECT_TRUE(p_leader->is_leader());
+    EXPECT_FALSE(p_srv->is_leader());
+
+    for (size_t i = 1; i < 3; ++i) {
+        cfg = p_network->get_io(i)->m_cluster_cfg;
+        ASSERT_TRUE(cfg.servers.size() == 2) << cfg.servers.size();
+    }
+}
+
 TYPED_TEST(raft_membership, multi_add_server)
 {
     using namespace std::chrono_literals;
@@ -128,6 +164,46 @@ TYPED_TEST(raft_membership, multi_add_server)
     io_ptr p_io = p_network->get_io(p_leader->id());
 
     for (size_t id = 4; id < 7; ++id) {
+        ASSERT_TRUE(p_leader->is_leader());
+        const raft::index_t idx = p_leader->last_applied_index() + 1;
+        server_ptr p_srv = p_network->create_server(id, true);
+
+        raft::cluster_config cfg = p_io->m_cluster_cfg;
+        const size_t servers_count = id - 1;
+        ASSERT_TRUE(cfg.servers.size() == servers_count) << cfg.servers.size() << " != " << servers_count;
+
+        p_leader->add(p_srv->id(), std::to_string(p_srv->id()), true);
+
+        p_network->wait_for_update(idx);
+        EXPECT_FALSE(p_srv->is_leader());
+
+        for (size_t i = 1; i < id + 1; ++i) {
+            cfg = p_network->get_io(i)->m_cluster_cfg;
+            ASSERT_TRUE(cfg.servers.size() == id) << "Server " << i << ": " << cfg.servers.size() << " != " << id;
+        }
+    }
+}
+
+/// \todo Fix defect
+TYPED_TEST(raft_membership, DISABLED_multi_add_server_single)
+{
+    using namespace std::chrono_literals;
+    using server_ptr = tests::network_stub::server_ptr;
+    using io_ptr = tests::io_stub::ptr;
+
+    tests::network_stub::ptr p_network = this->m_p_network;
+    p_network->create_cluster({{1, true}});
+    EXPECT_TRUE(p_network->leaders_count() == 0);
+
+    p_network->start();
+
+    p_network->wait_leader();
+    EXPECT_TRUE(p_network->leaders_count() == 1) << p_network->leaders_count();
+
+    server_ptr p_leader = p_network->get_leader();
+    io_ptr p_io = p_network->get_io(p_leader->id());
+
+    for (size_t id = 2; id < 7; ++id) {
         ASSERT_TRUE(p_leader->is_leader());
         const raft::index_t idx = p_leader->last_applied_index() + 1;
         server_ptr p_srv = p_network->create_server(id, true);

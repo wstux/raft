@@ -46,7 +46,7 @@ public:
 TEST_F(raft_log, acquire_empty_log)
 {
     namespace raft = ::wstux::raft;
-    using raft_log = raft::details::log::store;
+    using raft_log = raft::details::log_store;
 
     raft_log log;
     log.offset = 1;
@@ -71,18 +71,16 @@ TEST_F(raft_log, acquire_empty_log)
 TEST_F(raft_log, acquire)
 {
     namespace raft = ::wstux::raft;
-    using raft_log = raft::details::log::store;
+    using raft_log = raft::details::log_store;
 
     raft_log log;
-    log.offset = 1;
-    log.snapshot.last_index = 0;
-    log.snapshot.last_term = 0;
+    log.load(0, 0, 1);
 
     for (size_t i = 1; i < 11; ++i) {
         raft::entry::ptr p_entry = std::make_shared<raft::entry>();
         p_entry->term = 0;
         p_entry->type = (i % 2 == 0) ? raft::entry_type::change : raft::entry_type::command;
-        log.entries.emplace(i, p_entry);
+        log.append(p_entry);
     }
 
     EXPECT_TRUE(log.entries.size() == 10) << "Entries size in log: " << log.entries.size();
@@ -112,7 +110,7 @@ TEST_F(raft_log, acquire)
 TEST_F(raft_log, append)
 {
     namespace raft = ::wstux::raft;
-    using raft_log = raft::details::log::store;
+    using raft_log = raft::details::log_store;
 
     raft_log log;
     log.offset = 1;
@@ -131,8 +129,9 @@ TEST_F(raft_log, append)
     EXPECT_TRUE(log.entries.size() == 3) << "Entries size in log: " << log.entries.size();
 
     for (raft::index_t i = 2; i < 5; ++i) {
-        raft_log::entry_map::iterator it = log.entries.find(i);
-        EXPECT_TRUE(it != log.entries.end()) << "Entry with index " << i << " has not been found";
+        raft::entry::ptr p_entry = log.get_entry(i);
+        //raft_log::entry_map::iterator it = log.entries.find(i);
+        EXPECT_TRUE(p_entry.get() != nullptr) << "Entry with index " << i << " has not been found";
     }
 }
 
@@ -147,7 +146,7 @@ TEST_F(raft_log, append)
 TEST_F(raft_log, append_change)
 {
     namespace raft = ::wstux::raft;
-    using raft_log = raft::details::log::store;
+    using raft_log = raft::details::log_store;
 
     raft_log log;
     log.offset = 1;
@@ -160,11 +159,8 @@ TEST_F(raft_log, append_change)
 
     EXPECT_TRUE(log.entries.size() == 1) << "Entries size in log: " << log.entries.size();
 
-    raft_log::entry_map::iterator it = log.entries.find(2);
-    ASSERT_TRUE(it != log.entries.end()) << "Entry has not been found";
-
-    raft::entry::ptr p_entry = it->second;
-    ASSERT_TRUE(p_entry.get() != nullptr) << "Entry is null";
+    raft::entry::ptr p_entry = log.get_entry(2);
+    ASSERT_TRUE(p_entry.get() != nullptr) << "Entry has not been found";
 
     EXPECT_TRUE(p_entry->term == 11) << "Entry term is " << p_entry->term;
     EXPECT_TRUE(p_entry->type == raft::entry_type::change) << "Entry is not have change type";
@@ -181,7 +177,7 @@ TEST_F(raft_log, append_change)
 TEST_F(raft_log, append_command)
 {
     namespace raft = ::wstux::raft;
-    using raft_log = raft::details::log::store;
+    using raft_log = raft::details::log_store;
 
     raft_log log;
     log.offset = 1;
@@ -194,11 +190,8 @@ TEST_F(raft_log, append_command)
 
     EXPECT_TRUE(log.entries.size() == 1) << "Entries size in log: " << log.entries.size();
 
-    raft_log::entry_map::iterator it = log.entries.find(2);
-    ASSERT_TRUE(it != log.entries.end()) << "Entry has not been found";
-
-    raft::entry::ptr p_entry = it->second;
-    ASSERT_TRUE(p_entry.get() != nullptr) << "Entry is null";
+    raft::entry::ptr p_entry = log.get_entry(2);
+    ASSERT_TRUE(p_entry.get() != nullptr) << "Entry has not been found";
 
     EXPECT_TRUE(p_entry->term == 11) << "Entry term is " << p_entry->term;
     EXPECT_TRUE(p_entry->type == raft::entry_type::command) << "Entry is not have command type";
@@ -214,7 +207,7 @@ TEST_F(raft_log, append_command)
 TEST_F(raft_log, get_entry_with_valid_index)
 {
     namespace raft = ::wstux::raft;
-    using raft_log = raft::details::log::store;
+    using raft_log = raft::details::log_store;
 
     raft_log log;
     log.offset = 1;
@@ -241,7 +234,7 @@ TEST_F(raft_log, get_entry_with_valid_index)
 TEST_F(raft_log, get_entry_with_invalid_index)
 {
     namespace raft = ::wstux::raft;
-    using raft_log = raft::details::log::store;
+    using raft_log = raft::details::log_store;
 
     raft_log log;
     log.offset = 1;
@@ -269,7 +262,7 @@ TEST_F(raft_log, get_entry_with_invalid_index)
 TEST_F(raft_log, last_index)
 {
     namespace raft = ::wstux::raft;
-    using raft_log = raft::details::log::store;
+    using raft_log = raft::details::log_store;
 
     raft_log log;
     log.offset = 1;
@@ -301,7 +294,7 @@ TEST_F(raft_log, last_index)
 TEST_F(raft_log, last_term)
 {
     namespace raft = ::wstux::raft;
-    using raft_log = raft::details::log::store;
+    using raft_log = raft::details::log_store;
 
     raft_log log;
     log.offset = 1;
@@ -311,7 +304,7 @@ TEST_F(raft_log, last_term)
     raft::entry::ptr p_entry = std::make_shared<raft::entry>();
     p_entry->term = 1;
     p_entry->type = raft::entry_type::change;
-    log.entries.emplace(2, p_entry);
+    log.append(p_entry);
 
     ASSERT_TRUE(log.last_term() == 1) << "Last term is " << log.last_term();
 
@@ -329,7 +322,7 @@ TEST_F(raft_log, last_term)
 TEST_F(raft_log, load)
 {
     namespace raft = ::wstux::raft;
-    using raft_log = raft::details::log::store;
+    using raft_log = raft::details::log_store;
 
     raft_log log;
     log.load(2, 3, 3);
@@ -353,7 +346,7 @@ TEST_F(raft_log, load)
 TEST_F(raft_log, restore)
 {
     namespace raft = ::wstux::raft;
-    using raft_log = raft::details::log::store;
+    using raft_log = raft::details::log_store;
 
     raft_log log;
     log.load(0, 0, 1);
@@ -389,7 +382,7 @@ TEST_F(raft_log, restore)
 TEST_F(raft_log, take_snapshot)
 {
     namespace raft = ::wstux::raft;
-    using raft_log = raft::details::log::store;
+    using raft_log = raft::details::log_store;
 
     raft_log log;
     log.load(0, 0, 1);
@@ -420,7 +413,7 @@ TEST_F(raft_log, take_snapshot)
 TEST_F(raft_log, take_snapshot_trailing)
 {
     namespace raft = ::wstux::raft;
-    using raft_log = raft::details::log::store;
+    using raft_log = raft::details::log_store;
 
     raft_log log;
     log.load(0, 0, 1);
@@ -461,17 +454,17 @@ TEST_F(raft_log, take_snapshot_trailing)
 TEST_F(raft_log, term)
 {
     namespace raft = ::wstux::raft;
-    using raft_log = raft::details::log::store;
+    using raft_log = raft::details::log_store;
 
     raft_log log;
-    log.offset = 1;
+    log.offset = 2;
     log.snapshot.last_index = 2;
     log.snapshot.last_term = 2;
-    for (size_t i = 1; i < 5; ++i) {
+    for (size_t i = 3; i < 5; ++i) {
         raft::entry::ptr p_entry = std::make_shared<raft::entry>();
         p_entry->term = i;
         p_entry->type = raft::entry_type::change;
-        log.entries.emplace(i, p_entry);
+        log.append(p_entry);
     }
 
     EXPECT_TRUE(log.term(log.snapshot.last_index) == log.snapshot.last_term) << log.term(log.snapshot.last_index);
@@ -490,7 +483,7 @@ TEST_F(raft_log, term)
 TEST_F(raft_log, truncate)
 {
     namespace raft = ::wstux::raft;
-    using raft_log = raft::details::log::store;
+    using raft_log = raft::details::log_store;
 
     raft_log log;
     log.load(0, 0, 1);
