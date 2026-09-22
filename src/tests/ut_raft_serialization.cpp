@@ -116,8 +116,7 @@ TEST(raft_serialization, vote_request)
 {
     namespace raft = ::wstux::raft;
 
-    raft::details::message msg;
-    msg.type = raft::details::message_type::vote_request;
+    raft::details::message msg(raft::details::message_type::vote_request);
     msg.src_id = 1;
     msg.dst_id = 2;
     msg.term = 1;
@@ -132,8 +131,7 @@ TEST(raft_serialization, vote_response)
 {
     namespace raft = ::wstux::raft;
 
-    raft::details::message msg;
-    msg.type = raft::details::message_type::vote_response;
+    raft::details::message msg(raft::details::message_type::vote_response);
     msg.src_id = 1;
     msg.dst_id = 2;
     msg.term = 1;
