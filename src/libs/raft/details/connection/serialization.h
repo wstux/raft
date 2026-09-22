@@ -37,13 +37,6 @@
 namespace wstux {
 namespace raft {
 namespace details {
-
-enum serialize_version : uint32_t
-{
-    sv_1 = 20260921,
-    current = sv_1
-};
-
 namespace v1 {
 
 template<typename T>
@@ -143,27 +136,6 @@ inline void write<message_version>(const message_version& version, char*& p_buff
 {
     static_assert(sizeof(uint32_t) == sizeof(message_version));
     static_assert(std::is_same<uint32_t, std::underlying_type_t<message_version>>::value);
-
-    const uint32_t raw_version = static_cast<uint32_t>(version);
-    write<uint32_t>(raw_version, p_buffer);
-}
-
-template<>
-inline void read<serialize_version>(serialize_version& version, const char*& p_buffer)
-{
-    static_assert(sizeof(uint32_t) == sizeof(serialize_version));
-    static_assert(std::is_same<uint32_t, std::underlying_type_t<serialize_version>>::value);
-
-    uint32_t raw_version;
-    read<uint32_t>(raw_version, p_buffer);
-    version = static_cast<serialize_version>(raw_version);
-}
-
-template<>
-inline void write<serialize_version>(const serialize_version& version, char*& p_buffer)
-{
-    static_assert(sizeof(uint32_t) == sizeof(serialize_version));
-    static_assert(std::is_same<uint32_t, std::underlying_type_t<serialize_version>>::value);
 
     const uint32_t raw_version = static_cast<uint32_t>(version);
     write<uint32_t>(raw_version, p_buffer);
@@ -507,10 +479,9 @@ inline void serialize(const T& data, buffer_type& buffer)
 {
     assert(buffer.empty());
 
-    const size_t full_size = size<T>(data) + size<serialize_version>(serialize_version::sv_1);
+    const size_t full_size = size<T>(data);
     buffer.resize(full_size);
     buffer_type::value_type* p_buffer = buffer.data();
-    write<serialize_version>(serialize_version::sv_1, p_buffer);
     write<T>(data, p_buffer);
 }
 
@@ -519,10 +490,9 @@ inline void serialize<message>(const message& msg, buffer_type& buffer)
 {
     assert(buffer.empty());
 
-    const size_t full_size = size<message>(msg) + size<uint32_t>(message::version) + size<serialize_version>(serialize_version::sv_1);
+    const size_t full_size = size<message>(msg);
     buffer.resize(full_size);
     buffer_type::value_type* p_buffer = buffer.data();
-    write<serialize_version>(serialize_version::sv_1, p_buffer);
 
     write<message_type>(msg.type, p_buffer);
     write<message>(msg, p_buffer);
@@ -534,10 +504,6 @@ template<typename T, typename TBuffer>
 inline T deserialize(const TBuffer& buffer)
 {
     const typename TBuffer::value_type* p_buffer = buffer.data();
-    const serialize_version v = v1::deserialize<serialize_version>(p_buffer);
-    if (v != serialize_version::sv_1) {
-        assert(false && "Invalid deserialize version");
-    }
     return v1::deserialize<T>(p_buffer);
 }
 
@@ -545,10 +511,6 @@ template<typename T, typename TBuffer>
 inline void deserialize(const TBuffer& buffer, T& data)
 {
     const typename TBuffer::value_type* p_buffer = buffer.data();
-    const serialize_version v = v1::deserialize<serialize_version>(p_buffer);
-    if (v != serialize_version::sv_1) {
-        assert(false && "Invalid deserialize version");
-    }
     v1::deserialize<T>(data, p_buffer);
 }
 
@@ -556,11 +518,7 @@ template<typename T>
 inline buffer_type serialize(const T& data)
 {
     buffer_type buffer;
-    if (serialize_version::current == serialize_version::sv_1) {
-        v1::serialize<T>(data, buffer);
-    } else {
-        assert(false && "Invalid serialize version");
-    }
+    v1::serialize<T>(data, buffer);
     return buffer;
 }
 
