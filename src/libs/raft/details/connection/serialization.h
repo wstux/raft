@@ -457,12 +457,6 @@ inline T deserialize(const char*& p_buffer)
     return value;
 }
 
-template<typename T>
-inline void deserialize(T& data, const char*& p_buffer)
-{
-    read<T>(data, p_buffer);
-}
-
 template<>
 inline message deserialize<message>(const char*& p_buffer)
 {
@@ -474,6 +468,23 @@ inline message deserialize<message>(const char*& p_buffer)
     return msg;
 }
 
+template<typename T, typename TBuffer>
+inline T deserialize(const TBuffer& buffer)
+{
+    const char* p_buffer = buffer.data();
+    T value = deserialize<T>(p_buffer);
+    assert(p_buffer == (buffer.data() + buffer.size()));
+    return value;
+}
+
+template<typename T, typename TBuffer>
+inline void deserialize(T& data, const TBuffer& buffer)
+{
+    const char* p_buffer = buffer.data();
+    read<T>(data, p_buffer);
+    assert(p_buffer == (buffer.data() + buffer.size()));
+}
+
 template<typename T>
 inline void serialize(const T& data, buffer_type& buffer)
 {
@@ -483,6 +494,8 @@ inline void serialize(const T& data, buffer_type& buffer)
     buffer.resize(full_size);
     buffer_type::value_type* p_buffer = buffer.data();
     write<T>(data, p_buffer);
+
+    assert(p_buffer == (buffer.data() + buffer.size()));
 }
 
 template<>
@@ -496,6 +509,7 @@ inline void serialize<message>(const message& msg, buffer_type& buffer)
 
     write<message_type>(msg.type, p_buffer);
     write<message>(msg, p_buffer);
+    assert(p_buffer == (buffer.data() + buffer.size()));
 }
 
 } // namespace v1
@@ -503,15 +517,13 @@ inline void serialize<message>(const message& msg, buffer_type& buffer)
 template<typename T, typename TBuffer>
 inline T deserialize(const TBuffer& buffer)
 {
-    const typename TBuffer::value_type* p_buffer = buffer.data();
-    return v1::deserialize<T>(p_buffer);
+    return v1::deserialize<T, TBuffer>(buffer);
 }
 
 template<typename T, typename TBuffer>
 inline void deserialize(const TBuffer& buffer, T& data)
 {
-    const typename TBuffer::value_type* p_buffer = buffer.data();
-    v1::deserialize<T>(data, p_buffer);
+    v1::deserialize<T, TBuffer>(data, buffer);
 }
 
 template<typename T>
