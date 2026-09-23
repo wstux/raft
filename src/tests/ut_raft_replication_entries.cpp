@@ -53,7 +53,8 @@ public:
 
         m_p_io->cluster_cfg.servers.emplace_back(1, std::to_string(1), true);
 
-        details::utils::init(*m_p_ctx, m_p_io->cluster_cfg);
+        details::utils::bootstrap(*m_p_ctx, m_p_io->cluster_cfg);
+        details::utils::init(*m_p_ctx);
         details::utils::load(*m_p_ctx);
         details::role::become_follower(*m_p_ctx);
     }

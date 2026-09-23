@@ -60,7 +60,8 @@ public:
             m_p_io->cluster_cfg.servers.emplace_back(i + 1, std::to_string(i + 1), (i == 0) ? is_voter : true);
         }
 
-        details::utils::init(*m_p_ctx, m_p_io->cluster_cfg);
+        details::utils::bootstrap(*m_p_ctx, m_p_io->cluster_cfg);
+        details::utils::init(*m_p_ctx);
         m_p_ctx->election_task = m_p_ctx->schd.make_task(std::bind(&details::timeout::election_timeout_task, std::ref(*m_p_ctx)));
         m_p_ctx->heartbeat_task = m_p_ctx->schd.make_task(std::bind(&details::timeout::heartbeat_timeout_task, std::ref(*m_p_ctx)));
 
@@ -79,18 +80,18 @@ protected:
 
 } // <anonymous> namespace
 
-TEST_F(raft_role_election, initiate_election)
+TEST_F(raft_role_election, initiate_self_election)
 {
     details::context& ctx = init(1);
 
     details::role::become_follower(ctx);
     ASSERT_TRUE(ctx.role.is_follower());
 
-    details::role::initiate_election(ctx);
+    details::role::initiate_self_election(ctx);
     ASSERT_TRUE(ctx.role.is_leader());
 }
 
-TEST_F(raft_role_election, initiate_election_non_voter)
+TEST_F(raft_role_election, initiate_self_election_non_voter)
 {
     details::context& ctx = init(1, false);
 
@@ -98,18 +99,18 @@ TEST_F(raft_role_election, initiate_election_non_voter)
     ASSERT_TRUE(ctx.role.is_follower());
     ASSERT_FALSE(ctx.role.is_voter);
 
-    details::role::initiate_election(ctx);
+    details::role::initiate_self_election(ctx);
     ASSERT_TRUE(ctx.role.is_follower()) << ctx.role.str();
 }
 
-TEST_F(raft_role_election, initiate_election_cluster)
+TEST_F(raft_role_election, initiate_self_election_cluster)
 {
     details::context& ctx = init(3);
 
     details::role::become_follower(ctx);
     ASSERT_TRUE(ctx.role.is_follower());
 
-    details::role::initiate_election(ctx);
+    details::role::initiate_self_election(ctx);
     ASSERT_TRUE(ctx.role.is_follower());
 }
 
