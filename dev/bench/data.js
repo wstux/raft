@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1790188822423,
+  "lastUpdate": 1790189498406,
   "repoUrl": "https://github.com/wstux/raft",
   "entries": {
     "Benchmark": [
@@ -4388,6 +4388,610 @@ window.BENCHMARK_DATA = {
           {
             "name": "Serialize Message (Real Time)::vote_response_message",
             "value": 26.167632657496924,
+            "unit": "ns"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "wstux1@gmail.com",
+            "name": "wstux",
+            "username": "wstux"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "bc5d5702b6de6cc4baf51621d0142459fc930593",
+          "message": "* all: #14 Merge remote-tracking branch 'wstux/feature/serialize_optimize' into master;",
+          "timestamp": "2026-09-23T21:34:31+03:00",
+          "tree_id": "ddfd27c477ee09cc8de04e975d0095edfaad16fc",
+          "url": "https://github.com/wstux/raft/commit/bc5d5702b6de6cc4baf51621d0142459fc930593"
+        },
+        "date": 1790189497220,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Leader Election (Real Time)::3 nodes",
+            "value": 41.85845030999588,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election (CPU Time)::3 nodes",
+            "value": 0.39490278999999895,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election (Real Time)::5 nodes",
+            "value": 42.23331066000299,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election (CPU Time)::5 nodes",
+            "value": 0.8624912699999976,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election (Real Time)::7 nodes",
+            "value": 42.755061929996145,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election (CPU Time)::7 nodes",
+            "value": 1.484322159999996,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Default (Real Time)::3 nodes",
+            "value": 608.6130434000324,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Default (CPU Time)::3 nodes",
+            "value": 0.9056357999999708,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Default (Real Time)::5 nodes",
+            "value": 619.1885647000106,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Default (CPU Time)::5 nodes",
+            "value": 1.4089601000000007,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Default (Real Time)::7 nodes",
+            "value": 573.9579696000135,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Default (CPU Time)::7 nodes",
+            "value": 2.045153799999966,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Async (Real Time)::3 nodes",
+            "value": 41.44244096000022,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Async (CPU Time)::3 nodes",
+            "value": 0.38561178000000135,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Async (Real Time)::5 nodes",
+            "value": 41.985105170002726,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Async (CPU Time)::5 nodes",
+            "value": 0.8358839499999974,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Async (Real Time)::7 nodes",
+            "value": 42.947604119999596,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Async (CPU Time)::7 nodes",
+            "value": 1.473752519999995,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Async Default (Real Time)::3 nodes",
+            "value": 691.3066847000096,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Async Default (CPU Time)::3 nodes",
+            "value": 0.9932970999999791,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Async Default (Real Time)::5 nodes",
+            "value": 595.0971420999963,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Async Default (CPU Time)::5 nodes",
+            "value": 1.3848179000000238,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Async Default (Real Time)::7 nodes",
+            "value": 575.9833330000163,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Async Default (CPU Time)::7 nodes",
+            "value": 2.003344900000026,
+            "unit": "ms"
+          },
+          {
+            "name": "Log Append (Real Time)::command/10",
+            "value": 1227.5988874542206,
+            "unit": "ns"
+          },
+          {
+            "name": "Log Append (Real Time)::command/100",
+            "value": 6567.955088611367,
+            "unit": "ns"
+          },
+          {
+            "name": "Log Append (Real Time)::command/1000",
+            "value": 74564.84725307183,
+            "unit": "ns"
+          },
+          {
+            "name": "Log Append (Real Time)::change/10",
+            "value": 1378.403326088895,
+            "unit": "ns"
+          },
+          {
+            "name": "Log Append (Real Time)::change/100",
+            "value": 7977.770485986464,
+            "unit": "ns"
+          },
+          {
+            "name": "Log Append (Real Time)::append",
+            "value": 764.5180501396962,
+            "unit": "ns"
+          },
+          {
+            "name": "Log Get Entry (Real Time)::get_entry/100",
+            "value": 8.432559519051948,
+            "unit": "ns"
+          },
+          {
+            "name": "Log Get Entry (Real Time)::get_entry/10000",
+            "value": 8.43975855397752,
+            "unit": "ns"
+          },
+          {
+            "name": "Log Acquire (Real Time)::acquire",
+            "value": 35038.972523679055,
+            "unit": "ns"
+          },
+          {
+            "name": "Log Getters (Real Time)::getters",
+            "value": 5.274243541036388,
+            "unit": "ns"
+          },
+          {
+            "name": "Log Truncate (Real Time)::truncate/100",
+            "value": 2754.0266562117977,
+            "unit": "ns"
+          },
+          {
+            "name": "Log Truncate (Real Time)::truncate/1000",
+            "value": 18580.11362053297,
+            "unit": "ns"
+          },
+          {
+            "name": "Log Take Snapshot (Real Time)::take_snapshot",
+            "value": 37349.18935532382,
+            "unit": "ns"
+          },
+          {
+            "name": "Log Load Restore (Real Time)::load_restore",
+            "value": 8.709999974598759e-10,
+            "unit": "ns"
+          },
+          {
+            "name": "Add New Member (Real Time)::3 nodes",
+            "value": 21.262473202999388,
+            "unit": "ms"
+          },
+          {
+            "name": "Add New Member (CPU Time)::3 nodes",
+            "value": 0.4484421990000038,
+            "unit": "ms"
+          },
+          {
+            "name": "Add New Member (Real Time)::5 nodes",
+            "value": 21.558167626920685,
+            "unit": "ms"
+          },
+          {
+            "name": "Add New Member (CPU Time)::5 nodes",
+            "value": 0.8902906320512856,
+            "unit": "ms"
+          },
+          {
+            "name": "Add New Member (Real Time)::7 nodes",
+            "value": 22.248730778463425,
+            "unit": "ms"
+          },
+          {
+            "name": "Add New Member (CPU Time)::7 nodes",
+            "value": 1.4507985134576222,
+            "unit": "ms"
+          },
+          {
+            "name": "Apply Command (Real Time)::3 nodes",
+            "value": 20.90003229600194,
+            "unit": "ms"
+          },
+          {
+            "name": "Apply Command (CPU Time)::3 nodes",
+            "value": 0.341398678999977,
+            "unit": "ms"
+          },
+          {
+            "name": "Apply Command (Real Time)::5 nodes",
+            "value": 21.458346906468176,
+            "unit": "ms"
+          },
+          {
+            "name": "Apply Command (CPU Time)::5 nodes",
+            "value": 0.7900565173210353,
+            "unit": "ms"
+          },
+          {
+            "name": "Apply Command (Real Time)::7 nodes",
+            "value": 22.125244699801396,
+            "unit": "ms"
+          },
+          {
+            "name": "Apply Command (CPU Time)::7 nodes",
+            "value": 1.3939803996023519,
+            "unit": "ms"
+          },
+          {
+            "name": "Remove Existing Member (Real Time)::3 nodes",
+            "value": 20.907835128002603,
+            "unit": "ms"
+          },
+          {
+            "name": "Remove Existing Member (CPU Time)::3 nodes",
+            "value": 0.34178609899998236,
+            "unit": "ms"
+          },
+          {
+            "name": "Remove Existing Member (Real Time)::5 nodes",
+            "value": 21.459586428900778,
+            "unit": "ms"
+          },
+          {
+            "name": "Remove Existing Member (CPU Time)::5 nodes",
+            "value": 0.8122110068807696,
+            "unit": "ms"
+          },
+          {
+            "name": "Remove Existing Member (Real Time)::7 nodes",
+            "value": 22.1269899505968,
+            "unit": "ms"
+          },
+          {
+            "name": "Remove Existing Member (CPU Time)::7 nodes",
+            "value": 1.3830666620553635,
+            "unit": "ms"
+          },
+          {
+            "name": "Add New Member Default (Real Time)::3 nodes",
+            "value": 98.48360700000627,
+            "unit": "ms"
+          },
+          {
+            "name": "Add New Member Default (CPU Time)::3 nodes",
+            "value": 0.5440306199999867,
+            "unit": "ms"
+          },
+          {
+            "name": "Add New Member Default (Real Time)::5 nodes",
+            "value": 102.74198298000783,
+            "unit": "ms"
+          },
+          {
+            "name": "Add New Member Default (CPU Time)::5 nodes",
+            "value": 0.9856940199997766,
+            "unit": "ms"
+          },
+          {
+            "name": "Add New Member Default (Real Time)::7 nodes",
+            "value": 85.8795405999956,
+            "unit": "ms"
+          },
+          {
+            "name": "Add New Member Default (CPU Time)::7 nodes",
+            "value": 1.6127548599995833,
+            "unit": "ms"
+          },
+          {
+            "name": "Apply Command Default (Real Time)::3 nodes",
+            "value": 110.05837527001404,
+            "unit": "ms"
+          },
+          {
+            "name": "Apply Command Default (CPU Time)::3 nodes",
+            "value": 0.47181686999977046,
+            "unit": "ms"
+          },
+          {
+            "name": "Apply Command Default (Real Time)::5 nodes",
+            "value": 98.40060154999607,
+            "unit": "ms"
+          },
+          {
+            "name": "Apply Command Default (CPU Time)::5 nodes",
+            "value": 0.8842032199997973,
+            "unit": "ms"
+          },
+          {
+            "name": "Apply Command Default (Real Time)::7 nodes",
+            "value": 82.9620644299871,
+            "unit": "ms"
+          },
+          {
+            "name": "Apply Command Default (CPU Time)::7 nodes",
+            "value": 1.5185241699999708,
+            "unit": "ms"
+          },
+          {
+            "name": "Remove Existing Member Default (Real Time)::3 nodes",
+            "value": 100.73689937998552,
+            "unit": "ms"
+          },
+          {
+            "name": "Remove Existing Member Default (CPU Time)::3 nodes",
+            "value": 0.4621664199997255,
+            "unit": "ms"
+          },
+          {
+            "name": "Remove Existing Member Default (Real Time)::5 nodes",
+            "value": 101.63711435998833,
+            "unit": "ms"
+          },
+          {
+            "name": "Remove Existing Member Default (CPU Time)::5 nodes",
+            "value": 0.8858828600000024,
+            "unit": "ms"
+          },
+          {
+            "name": "Remove Existing Member Default (Real Time)::7 nodes",
+            "value": 95.3919627300047,
+            "unit": "ms"
+          },
+          {
+            "name": "Remove Existing Member Default (CPU Time)::7 nodes",
+            "value": 1.4985148599998155,
+            "unit": "ms"
+          },
+          {
+            "name": "Add New Member Async (Real Time)::3 nodes",
+            "value": 41.32189191998691,
+            "unit": "ms"
+          },
+          {
+            "name": "Add New Member Async (CPU Time)::3 nodes",
+            "value": 0.4645544799999995,
+            "unit": "ms"
+          },
+          {
+            "name": "Add New Member Async (Real Time)::5 nodes",
+            "value": 41.525750909987664,
+            "unit": "ms"
+          },
+          {
+            "name": "Add New Member Async (CPU Time)::5 nodes",
+            "value": 0.9131859799999961,
+            "unit": "ms"
+          },
+          {
+            "name": "Add New Member Async (Real Time)::7 nodes",
+            "value": 42.35573620000082,
+            "unit": "ms"
+          },
+          {
+            "name": "Add New Member Async (CPU Time)::7 nodes",
+            "value": 1.463756339999992,
+            "unit": "ms"
+          },
+          {
+            "name": "Apply Command Async (Real Time)::3 nodes",
+            "value": 41.380118569993556,
+            "unit": "ms"
+          },
+          {
+            "name": "Apply Command Async (CPU Time)::3 nodes",
+            "value": 0.3561837799999812,
+            "unit": "ms"
+          },
+          {
+            "name": "Apply Command Async (Real Time)::5 nodes",
+            "value": 41.68944278998083,
+            "unit": "ms"
+          },
+          {
+            "name": "Apply Command Async (CPU Time)::5 nodes",
+            "value": 0.8444085600000073,
+            "unit": "ms"
+          },
+          {
+            "name": "Apply Command Async (Real Time)::7 nodes",
+            "value": 42.30098145000284,
+            "unit": "ms"
+          },
+          {
+            "name": "Apply Command Async (CPU Time)::7 nodes",
+            "value": 1.4384800000000197,
+            "unit": "ms"
+          },
+          {
+            "name": "Remove Existing Member Async (Real Time)::3 nodes",
+            "value": 41.38627050000309,
+            "unit": "ms"
+          },
+          {
+            "name": "Remove Existing Member Async (CPU Time)::3 nodes",
+            "value": 0.34624968999998673,
+            "unit": "ms"
+          },
+          {
+            "name": "Remove Existing Member Async (Real Time)::5 nodes",
+            "value": 41.65356544999213,
+            "unit": "ms"
+          },
+          {
+            "name": "Remove Existing Member Async (CPU Time)::5 nodes",
+            "value": 0.7845840999999831,
+            "unit": "ms"
+          },
+          {
+            "name": "Remove Existing Member Async (Real Time)::7 nodes",
+            "value": 42.18073157999356,
+            "unit": "ms"
+          },
+          {
+            "name": "Remove Existing Member Async (CPU Time)::7 nodes",
+            "value": 1.3614950700000295,
+            "unit": "ms"
+          },
+          {
+            "name": "Add New Member Async Default (Real Time)::3 nodes",
+            "value": 306.7846753999788,
+            "unit": "ms"
+          },
+          {
+            "name": "Add New Member Async Default (CPU Time)::3 nodes",
+            "value": 0.7056362999998456,
+            "unit": "ms"
+          },
+          {
+            "name": "Add New Member Async Default (Real Time)::5 nodes",
+            "value": 311.44384430006085,
+            "unit": "ms"
+          },
+          {
+            "name": "Add New Member Async Default (CPU Time)::5 nodes",
+            "value": 1.1405127000000181,
+            "unit": "ms"
+          },
+          {
+            "name": "Add New Member Async Default (Real Time)::7 nodes",
+            "value": 300.3624685000091,
+            "unit": "ms"
+          },
+          {
+            "name": "Add New Member Async Default (CPU Time)::7 nodes",
+            "value": 1.7722402000000415,
+            "unit": "ms"
+          },
+          {
+            "name": "Apply Command Async Default (Real Time)::3 nodes",
+            "value": 315.050706000045,
+            "unit": "ms"
+          },
+          {
+            "name": "Apply Command Async Default (CPU Time)::3 nodes",
+            "value": 0.630270400000077,
+            "unit": "ms"
+          },
+          {
+            "name": "Apply Command Async Default (Real Time)::5 nodes",
+            "value": 260.9456330999251,
+            "unit": "ms"
+          },
+          {
+            "name": "Apply Command Async Default (CPU Time)::5 nodes",
+            "value": 0.9933385000000516,
+            "unit": "ms"
+          },
+          {
+            "name": "Apply Command Async Default (Real Time)::7 nodes",
+            "value": 267.89699979997295,
+            "unit": "ms"
+          },
+          {
+            "name": "Apply Command Async Default (CPU Time)::7 nodes",
+            "value": 1.626075499999935,
+            "unit": "ms"
+          },
+          {
+            "name": "Remove Existing Member Async Default (Real Time)::3 nodes",
+            "value": 288.6701224999342,
+            "unit": "ms"
+          },
+          {
+            "name": "Remove Existing Member Async Default (CPU Time)::3 nodes",
+            "value": 0.622081700000221,
+            "unit": "ms"
+          },
+          {
+            "name": "Remove Existing Member Async Default (Real Time)::5 nodes",
+            "value": 313.3313741000393,
+            "unit": "ms"
+          },
+          {
+            "name": "Remove Existing Member Async Default (CPU Time)::5 nodes",
+            "value": 1.0099926999997066,
+            "unit": "ms"
+          },
+          {
+            "name": "Remove Existing Member Async Default (Real Time)::7 nodes",
+            "value": 283.99646000007124,
+            "unit": "ms"
+          },
+          {
+            "name": "Remove Existing Member Async Default (CPU Time)::7 nodes",
+            "value": 1.6335894999999212,
+            "unit": "ms"
+          },
+          {
+            "name": "Serialize Message (Real Time)::cluster_config",
+            "value": 54.84560295682523,
+            "unit": "ns"
+          },
+          {
+            "name": "Serialize Message (Real Time)::append_entries_request_message",
+            "value": 95.33709373417453,
+            "unit": "ns"
+          },
+          {
+            "name": "Serialize Message (Real Time)::append_entries_response_message",
+            "value": 27.795584012731535,
+            "unit": "ns"
+          },
+          {
+            "name": "Serialize Message (Real Time)::snapshot_request_message",
+            "value": 72.68565590139222,
+            "unit": "ns"
+          },
+          {
+            "name": "Serialize Message (Real Time)::vote_request_message",
+            "value": 27.435550398199663,
+            "unit": "ns"
+          },
+          {
+            "name": "Serialize Message (Real Time)::vote_response_message",
+            "value": 27.44579100531086,
             "unit": "ns"
           }
         ]
