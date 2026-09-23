@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1789933210733,
+  "lastUpdate": 1790188822423,
   "repoUrl": "https://github.com/wstux/raft",
   "entries": {
     "Benchmark": [
@@ -4144,6 +4144,250 @@ window.BENCHMARK_DATA = {
           {
             "name": "Serialize Message (Real Time)::vote_response_message",
             "value": 819.0395779153577,
+            "unit": "ns"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "wstux1@gmail.com",
+            "name": "wstux",
+            "username": "wstux"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "bc5d5702b6de6cc4baf51621d0142459fc930593",
+          "message": "* all: #14 Merge remote-tracking branch 'wstux/feature/serialize_optimize' into master;",
+          "timestamp": "2026-09-23T21:34:31+03:00",
+          "tree_id": "ddfd27c477ee09cc8de04e975d0095edfaad16fc",
+          "url": "https://github.com/wstux/raft/commit/bc5d5702b6de6cc4baf51621d0142459fc930593"
+        },
+        "date": 1790188821340,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "Leader Election (Real Time)::3 nodes",
+            "value": 41.515428269994466,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election (CPU Time)::3 nodes",
+            "value": 0.38786356999999866,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election (Real Time)::5 nodes",
+            "value": 43.72034246000511,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election (CPU Time)::5 nodes",
+            "value": 0.9090609900000035,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election (Real Time)::7 nodes",
+            "value": 44.48489048000283,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election (CPU Time)::7 nodes",
+            "value": 1.446966099999994,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Default (Real Time)::3 nodes",
+            "value": 576.8783417000009,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Default (CPU Time)::3 nodes",
+            "value": 0.9132493000000075,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Default (Real Time)::5 nodes",
+            "value": 628.6293028999864,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Default (CPU Time)::5 nodes",
+            "value": 1.6225094000000273,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Default (Real Time)::7 nodes",
+            "value": 596.6140120999967,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Default (CPU Time)::7 nodes",
+            "value": 2.037525999999923,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Async (Real Time)::3 nodes",
+            "value": 41.49946547999775,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Async (CPU Time)::3 nodes",
+            "value": 0.37111968000000056,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Async (Real Time)::5 nodes",
+            "value": 43.27838912999937,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Async (CPU Time)::5 nodes",
+            "value": 0.8617067399999986,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Async (Real Time)::7 nodes",
+            "value": 43.854657809996525,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Async (CPU Time)::7 nodes",
+            "value": 1.4548731399999977,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Async Default (Real Time)::3 nodes",
+            "value": 667.5371749999954,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Async Default (CPU Time)::3 nodes",
+            "value": 1.0314227999999481,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Async Default (Real Time)::5 nodes",
+            "value": 563.9851395999983,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Async Default (CPU Time)::5 nodes",
+            "value": 1.5731504000000007,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Async Default (Real Time)::7 nodes",
+            "value": 574.3434765999893,
+            "unit": "ms"
+          },
+          {
+            "name": "Leader Election Async Default (CPU Time)::7 nodes",
+            "value": 1.9885363999999517,
+            "unit": "ms"
+          },
+          {
+            "name": "Log Append (Real Time)::command/10",
+            "value": 1066.892456556488,
+            "unit": "ns"
+          },
+          {
+            "name": "Log Append (Real Time)::command/100",
+            "value": 6090.261574955783,
+            "unit": "ns"
+          },
+          {
+            "name": "Log Append (Real Time)::command/1000",
+            "value": 69977.29863716997,
+            "unit": "ns"
+          },
+          {
+            "name": "Log Append (Real Time)::change/10",
+            "value": 1234.952428516527,
+            "unit": "ns"
+          },
+          {
+            "name": "Log Append (Real Time)::change/100",
+            "value": 7705.270631940503,
+            "unit": "ns"
+          },
+          {
+            "name": "Log Append (Real Time)::append",
+            "value": 657.7565162622059,
+            "unit": "ns"
+          },
+          {
+            "name": "Log Get Entry (Real Time)::get_entry/100",
+            "value": 7.434670890962106,
+            "unit": "ns"
+          },
+          {
+            "name": "Log Get Entry (Real Time)::get_entry/10000",
+            "value": 7.411427572845316,
+            "unit": "ns"
+          },
+          {
+            "name": "Log Acquire (Real Time)::acquire",
+            "value": 43511.67988946837,
+            "unit": "ns"
+          },
+          {
+            "name": "Log Getters (Real Time)::getters",
+            "value": 5.291585749231023,
+            "unit": "ns"
+          },
+          {
+            "name": "Log Truncate (Real Time)::truncate/100",
+            "value": 2504.4407302922,
+            "unit": "ns"
+          },
+          {
+            "name": "Log Truncate (Real Time)::truncate/1000",
+            "value": 17970.555578224557,
+            "unit": "ns"
+          },
+          {
+            "name": "Log Take Snapshot (Real Time)::take_snapshot",
+            "value": 36812.76925094471,
+            "unit": "ns"
+          },
+          {
+            "name": "Log Load Restore (Real Time)::load_restore",
+            "value": 6.6100000140068e-10,
+            "unit": "ns"
+          },
+          {
+            "name": "Serialize Message (Real Time)::cluster_config",
+            "value": 57.7802422131256,
+            "unit": "ns"
+          },
+          {
+            "name": "Serialize Message (Real Time)::append_entries_request_message",
+            "value": 94.79124390592467,
+            "unit": "ns"
+          },
+          {
+            "name": "Serialize Message (Real Time)::append_entries_response_message",
+            "value": 24.94397473591895,
+            "unit": "ns"
+          },
+          {
+            "name": "Serialize Message (Real Time)::snapshot_request_message",
+            "value": 69.1630325542508,
+            "unit": "ns"
+          },
+          {
+            "name": "Serialize Message (Real Time)::vote_request_message",
+            "value": 26.158596295457027,
+            "unit": "ns"
+          },
+          {
+            "name": "Serialize Message (Real Time)::vote_response_message",
+            "value": 26.167632657496924,
             "unit": "ns"
           }
         ]
