@@ -152,9 +152,7 @@ void server::handle_message(const inbuffer_type& msg_buf)
         return;
     }
 
-    details::message msg;
-    details::deserialize(msg_buf, msg);
-
+    details::message msg = details::deserialize<details::message>(msg_buf);
     m_p_ctx->schd.execute_strand([p_ctx = m_p_ctx.get(), msg = std::move(msg)]() { raft::handle_message(*p_ctx, msg); });
 }
 

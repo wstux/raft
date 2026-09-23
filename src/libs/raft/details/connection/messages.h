@@ -91,12 +91,10 @@ struct message final
 {
     static constexpr size_t version = message_version::v_1;
 
-    message() {}
-
     explicit message(message_type t)
         : type(t)
     {
-        init();
+        apply<construct_op>();
     }
 
     ~message() { apply<destroy_op>(); }
@@ -107,6 +105,7 @@ struct message final
         : type(other.type)
         , src_id(other.src_id)
         , dst_id(other.dst_id)
+        , address(std::move(other.address))
         , term(other.term)
     {
         apply_other<move_op>(other);
@@ -115,8 +114,6 @@ struct message final
 
     message& operator=(const message&) = delete;
     message& operator=(message&&) = delete;
-
-    void init() { apply<construct_op>(); }
 
     message_type type;
 

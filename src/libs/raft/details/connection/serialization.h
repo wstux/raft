@@ -25,148 +25,512 @@
 #ifndef _LIBS_RAFT_SERIALIZATION_H_
 #define _LIBS_RAFT_SERIALIZATION_H_
 
-#include <array>
+#include <cassert>
+#include <type_traits>
 #include <utility>
 
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/iostreams/stream.hpp>
-#include <boost/iostreams/device/back_inserter.hpp>
-#include <boost/serialization/access.hpp>
-#include <boost/serialization/nvp.hpp>
-#include <boost/serialization/shared_ptr.hpp>
-#include <boost/serialization/vector.hpp>
+#include <boost/endian/conversion.hpp>
 
+#include "raft/io.h"
 #include "raft/details/connection/messages.h"
-
-namespace boost {
-namespace serialization {
-namespace version_1 {
-
-template<typename TArch>
-void serialize(TArch& ar, ::wstux::raft::details::message& msg, const unsigned int /*version*/)
-{
-    ar & msg.type;
-
-    ar & msg.src_id;
-    ar & msg.dst_id;
-    ar & msg.address;
-    ar & msg.term;
-
-    if (TArch::is_loading::value) {
-        msg.init();
-    }
-    if (msg.type == ::wstux::raft::details::message_type::append_entries_request) {
-        ar & msg.append_entries_req.prev_log_index;
-        ar & msg.append_entries_req.prev_log_term;
-        ar & msg.append_entries_req.leader_commit;
-        ar & msg.append_entries_req.entries;
-    } else if (msg.type == ::wstux::raft::details::message_type::append_entries_response) {
-        ar & msg.append_entries_resp.accept;
-        ar & msg.append_entries_resp.last_log_index;
-    } else if (msg.type == ::wstux::raft::details::message_type::snapshot_request) {
-        ar & msg.snapshot_req.last_index;
-        ar & msg.snapshot_req.last_term;
-        ar & msg.snapshot_req.conf;
-        ar & msg.snapshot_req.conf_index;
-        ar & msg.snapshot_req.buffer;
-    } else if (msg.type == ::wstux::raft::details::message_type::vote_request) {
-        ar & msg.vote_req.is_prevote;
-        ar & msg.vote_req.last_log_index;
-        ar & msg.vote_req.last_log_term;
-    } else if (msg.type == ::wstux::raft::details::message_type::vote_response) {
-        ar & msg.vote_resp.is_prevote;
-        ar & msg.vote_resp.accept;
-    }
-}
-
-} // namespace ver_1
-
-template<typename TArch>
-void serialize(TArch& ar, ::wstux::raft::cluster_config& cfg, const unsigned int /*version*/)
-{
-    ar & cfg.servers;
-}
-
-template<typename TArch>
-void serialize(TArch& ar, ::wstux::raft::entry& entry, const unsigned int /*version*/)
-{
-    ar & entry.term;
-    ar & entry.type;
-    ar & entry.buffer;
-}
-
-template<typename TArch>
-void serialize(TArch& ar, ::wstux::raft::server_config& cfg, const unsigned int /*version*/)
-{
-    ar & cfg.id;
-    ar & cfg.address;
-    ar & cfg.is_voter;
-}
-
-template<typename TArch>
-void serialize(TArch& ar, ::wstux::raft::details::message& msg, const unsigned int version)
-{
-    size_t msg_version = ::wstux::raft::details::message::version;
-    ar & msg_version;
-
-    if (msg_version == ::wstux::raft::details::message_version::v_1) {
-        version_1::serialize<TArch>(ar, msg, version);
-    }
-}
-
-} // namespace serialization
-} // namespace boost
 
 namespace wstux {
 namespace raft {
 namespace details {
+namespace v1 {
 
-template<typename TBuffer, typename T>
-void deserialize(const TBuffer& buffer, T& data)
+template<typename T>
+inline void read(T& value, const char*& p_buffer)
 {
-    using iostream_type = boost::iostreams::stream<boost::iostreams::array_source>;
-
-    // Create an input stream from the vector's data and size using an array_source device
-    iostream_type sin(buffer.data(), buffer.size());
-
-    // Create a binary input archive and deserialize the data
-    boost::archive::binary_iarchive arch(sin);
-    arch >> data;
+    std::memcpy(&value, p_buffer, sizeof(T));
+    value = boost::endian::big_to_native(value);
+    p_buffer += sizeof(T);
 }
 
 template<typename T>
-T deserialize(const buffer_type& buffer)
+inline void write(const T& value, char*& p_buffer)
 {
-    T data;
-
-    deserialize(buffer, data);
-    return data;
+    T temp = boost::endian::native_to_big(value);
+    std::memcpy(p_buffer, &temp, sizeof(T));
+    p_buffer += sizeof(T);
 }
 
 template<typename T>
-void serialize(const T& data, buffer_type& buffer)
+constexpr size_t size(const T&) { return sizeof(T); }
+
+template<>
+inline void read<bool>(bool& value, const char*& p_buffer)
 {
-    using inserter_type = boost::iostreams::back_insert_device<buffer_type>;
-    using iostream_type = boost::iostreams::stream<inserter_type>;
+    uint8_t byte;
+    std::memcpy(&byte, p_buffer, 1);
+    p_buffer += 1;
+    value = (byte != 0);
+}
 
-    iostream_type sout{inserter_type(buffer)};
+template<>
+inline void write<bool>(const bool& value, char*& p_buffer)
+{
+    uint8_t byte = value ? 1 : 0;
+    std::memcpy(p_buffer, &byte, 1);
+    p_buffer += 1;
+}
 
-    // Create a binary output archive and serialize the data
-    boost::archive::binary_oarchive arch(sout);
+template<>
+constexpr size_t size<bool>(const bool&) { return 1; }
 
-    arch << data;
+template<>
+inline void read<entry_type>(entry_type& type, const char*& p_buffer)
+{
+    static_assert(sizeof(int32_t) == sizeof(entry_type));
+    static_assert(std::is_same<int32_t, std::underlying_type_t<entry_type>>::value);
 
-    // Flush the stream to ensure all data is written to the vector
-    sout.flush();
+    int32_t raw_type;
+    read<int32_t>(raw_type, p_buffer);
+    type = static_cast<entry_type>(raw_type);
+}
+
+template<>
+inline void write<entry_type>(const entry_type& type, char*& p_buffer)
+{
+    static_assert(sizeof(int32_t) == sizeof(entry_type));
+    static_assert(std::is_same<int32_t, std::underlying_type_t<entry_type>>::value);
+
+    const int32_t raw_type = static_cast<int32_t>(type);
+    write<int32_t>(raw_type, p_buffer);
+}
+
+template<>
+inline void read<message_type>(message_type& type, const char*& p_buffer)
+{
+    static_assert(sizeof(int32_t) == sizeof(message_type));
+    static_assert(std::is_same<int32_t, std::underlying_type_t<message_type>>::value);
+
+    int32_t raw_type;
+    read<int32_t>(raw_type, p_buffer);
+    type = static_cast<message_type>(raw_type);
+}
+
+template<>
+inline void write<message_type>(const message_type& type, char*& p_buffer)
+{
+    static_assert(sizeof(int32_t) == sizeof(message_type));
+    static_assert(std::is_same<int32_t, std::underlying_type_t<message_type>>::value);
+
+    const int32_t raw_type = static_cast<int32_t>(type);
+    write<int32_t>(raw_type, p_buffer);
+}
+
+template<>
+inline void read<message_version>(message_version& version, const char*& p_buffer)
+{
+    static_assert(sizeof(uint32_t) == sizeof(message_version));
+    static_assert(std::is_same<uint32_t, std::underlying_type_t<message_version>>::value);
+
+    uint32_t raw_version;
+    read<uint32_t>(raw_version, p_buffer);
+    version = static_cast<message_version>(raw_version);
+}
+
+template<>
+inline void write<message_version>(const message_version& version, char*& p_buffer)
+{
+    static_assert(sizeof(uint32_t) == sizeof(message_version));
+    static_assert(std::is_same<uint32_t, std::underlying_type_t<message_version>>::value);
+
+    const uint32_t raw_version = static_cast<uint32_t>(version);
+    write<uint32_t>(raw_version, p_buffer);
+}
+
+template<>
+inline void read<buffer_type>(buffer_type& buffer, const char*& p_buffer)
+{
+    uint64_t size = 0;
+    read<uint64_t>(size, p_buffer);
+    if (size != 0) {
+        buffer.resize(size);
+        std::memcpy(buffer.data(), p_buffer, size);
+        p_buffer += size;
+    }
+}
+
+template<>
+inline void write<buffer_type>(const buffer_type& buffer, char*& p_buffer)
+{
+    const uint64_t size = static_cast<uint64_t>(buffer.size());
+    write<uint64_t>(size, p_buffer);
+    if (size != 0) {
+        std::memcpy(p_buffer, buffer.data(), size);
+        p_buffer += size;
+    }
+}
+
+template<>
+inline size_t size<buffer_type>(const buffer_type& buffer)
+{
+    return size<uint64_t>(buffer.size()) + (buffer.size() * sizeof(buffer_type::value_type));
+}
+
+template<>
+inline void read<std::string>(std::string& str, const char*& p_buffer)
+{
+    uint64_t size = 0;
+    read<uint64_t>(size, p_buffer);
+    if (size != 0) {
+        str.resize(size);
+        std::memcpy(str.data(), p_buffer, size);
+        p_buffer += size;
+    }
+}
+
+template<>
+inline void write<std::string>(const std::string& str, char*& p_buffer)
+{
+    const uint64_t size = static_cast<uint64_t>(str.size());
+    write<uint64_t>(size, p_buffer);
+    if (size != 0) {
+        std::memcpy(p_buffer, str.data(), size);
+        p_buffer += size;
+    }
+}
+
+template<>
+inline size_t size<std::string>(const std::string& str) { return size<uint64_t>(str.size()) + (str.size() * sizeof(std::string::value_type)); }
+
+template<>
+inline void read<entry::ptr>(entry::ptr& p_entry, const char*& p_buffer)
+{
+    assert(p_entry == nullptr);
+    p_entry = std::make_shared<entry>();
+    read<term_t>(p_entry->term, p_buffer);
+    read<entry_type>(p_entry->type, p_buffer);
+    read<buffer_type>(p_entry->buffer, p_buffer);
+}
+
+template<>
+inline void write(const entry::ptr& p_entry, char*& p_buffer)
+{
+    assert(p_entry != nullptr);
+    write<term_t>(p_entry->term, p_buffer);
+    write<entry_type>(p_entry->type, p_buffer);
+    write<buffer_type>(p_entry->buffer, p_buffer);
+}
+
+template<>
+inline size_t size(const entry::ptr& p_entry)
+{
+    assert(p_entry != nullptr);
+
+    size_t full_size = 0;
+    full_size += size<term_t>(p_entry->term);
+    full_size += size<entry_type>(p_entry->type);
+    full_size += v1::size<buffer_type>(p_entry->buffer);
+    return full_size;
+}
+
+template<>
+inline void read<entry::list>(entry::list& entries, const char*& p_buffer)
+{
+    uint64_t size = 0;
+    read<uint64_t>(size, p_buffer);
+    if (size != 0) {
+        entries.resize(size);
+        for (uint64_t i = 0; i < size; ++i) {
+            read<entry::ptr>(entries[i], p_buffer);
+        }
+    }
+}
+
+template<>
+inline void write<entry::list>(const entry::list& entries, char*& p_buffer)
+{
+    const uint64_t size = static_cast<uint64_t>(entries.size());
+    write<uint64_t>(size, p_buffer);
+    if (size != 0) {
+        for (uint64_t i = 0; i < size; ++i) {
+            write<entry::ptr>(entries[i], p_buffer);
+        }
+    }
+}
+
+template<>
+inline size_t size<entry::list>(const entry::list& entries)
+{
+    size_t full_size = size<uint64_t>(entries.size());
+    if (entries.size() != 0) {
+        for (size_t i = 0; i < entries.size(); ++i) {
+            full_size += size<entry::ptr>(entries[i]);
+        }
+    }
+    return full_size;
+}
+
+template<>
+inline void read<server_config>(server_config& cfg, const char*& p_buffer)
+{
+    read<server_id_t>(cfg.id, p_buffer);
+    read<std::string>(cfg.address, p_buffer);
+    read<bool>(cfg.is_voter, p_buffer);
+}
+
+template<>
+inline void write<server_config>(const server_config& val, char*& p_buffer)
+{
+    write<server_id_t>(val.id, p_buffer);
+    write<std::string>(val.address, p_buffer);
+    write<bool>(val.is_voter, p_buffer);
+}
+
+template<>
+inline size_t size<server_config>(const server_config& val)
+{
+    size_t full_size = 0;
+    full_size += size<server_id_t>(val.id);
+    full_size += v1::size<std::string>(val.address);
+    full_size += size<bool>(val.is_voter);
+    return full_size;
+}
+
+template<>
+inline void read<std::vector<server_config>>(std::vector<server_config>& servers, const char*& p_buffer)
+{
+    uint64_t size = 0;
+    read<uint64_t>(size, p_buffer);
+    if (size != 0) {
+        servers.resize(size);
+        for (uint64_t i = 0; i < size; ++i) {
+            read<server_config>(servers[i], p_buffer);
+        }
+    }
+}
+
+template<>
+inline void write<std::vector<server_config>>(const std::vector<server_config>& servers, char*& p_buffer)
+{
+    const uint64_t size = static_cast<uint64_t>(servers.size());
+    write<uint64_t>(size, p_buffer);
+    if (size != 0) {
+        for (uint64_t i = 0; i < size; ++i) {
+            write<server_config>(servers[i], p_buffer);
+        }
+    }
+}
+
+template<>
+inline size_t size<std::vector<server_config>>(const std::vector<server_config>& servers)
+{
+    size_t full_size = size<uint64_t>(servers.size());
+    if (servers.size() != 0) {
+        for (size_t i = 0; i < servers.size(); ++i) {
+            full_size += size<server_config>(servers[i]);
+        }
+    }
+    return full_size;
+}
+
+template<>
+inline void read<cluster_config>(cluster_config& cfg, const char*& p_buffer)
+{
+    read<std::vector<server_config>>(cfg.servers, p_buffer);
+}
+
+template<>
+inline void write<cluster_config>(const cluster_config& cfg, char*& p_buffer) { write<std::vector<server_config>>(cfg.servers, p_buffer); }
+
+template<>
+inline size_t size<cluster_config>(const cluster_config& cfg) { return v1::size<std::vector<server_config>>(cfg.servers); }
+
+template<>
+inline void read<message>(message& msg, const char*& p_buffer)
+{
+    uint32_t version = 0;
+    read<uint32_t>(version, p_buffer);
+    if (version == message_version::v_1) {
+        read<server_id_t>(msg.src_id, p_buffer);
+        read<server_id_t>(msg.dst_id, p_buffer);
+        read<std::string>(msg.address, p_buffer);
+        read<term_t>(msg.term, p_buffer);
+
+        if (msg.type == ::wstux::raft::details::message_type::append_entries_request) {
+            read<index_t>(msg.append_entries_req.prev_log_index, p_buffer);
+            read<term_t>(msg.append_entries_req.prev_log_term, p_buffer);
+            read<index_t>(msg.append_entries_req.leader_commit, p_buffer);
+            read<entry::list>(msg.append_entries_req.entries, p_buffer);
+        } else if (msg.type == ::wstux::raft::details::message_type::append_entries_response) {
+            read<bool>(msg.append_entries_resp.accept, p_buffer);
+            read<index_t>(msg.append_entries_resp.last_log_index, p_buffer);
+        } else if (msg.type == ::wstux::raft::details::message_type::snapshot_request) {
+            read<index_t>(msg.snapshot_req.last_index, p_buffer);
+            read<term_t>(msg.snapshot_req.last_term, p_buffer);
+            read<cluster_config>(msg.snapshot_req.conf, p_buffer);
+            read<index_t>(msg.snapshot_req.conf_index, p_buffer);
+            read<buffer_type>(msg.snapshot_req.buffer, p_buffer);
+        } else if (msg.type == ::wstux::raft::details::message_type::vote_request) {
+            read<bool>(msg.vote_req.is_prevote, p_buffer);
+            read<index_t>(msg.vote_req.last_log_index, p_buffer);
+            read<term_t>(msg.vote_req.last_log_term, p_buffer);
+        } else if (msg.type == ::wstux::raft::details::message_type::vote_response) {
+            read<bool>(msg.vote_resp.is_prevote, p_buffer);
+            read<bool>(msg.vote_resp.accept, p_buffer);
+        }
+    }
+}
+
+template<>
+inline void write<message>(const message& msg, char*& p_buffer)
+{
+    write<uint32_t>(message::version, p_buffer);
+    if (message::version == message_version::v_1) {
+        write<server_id_t>(msg.src_id, p_buffer);
+        write<server_id_t>(msg.dst_id, p_buffer);
+        write<std::string>(msg.address, p_buffer);
+        write<term_t>(msg.term, p_buffer);
+
+        if (msg.type == ::wstux::raft::details::message_type::append_entries_request) {
+            write<index_t>(msg.append_entries_req.prev_log_index, p_buffer);
+            write<term_t>(msg.append_entries_req.prev_log_term, p_buffer);
+            write<index_t>(msg.append_entries_req.leader_commit, p_buffer);
+            write<entry::list>(msg.append_entries_req.entries, p_buffer);
+        } else if (msg.type == ::wstux::raft::details::message_type::append_entries_response) {
+            write<bool>(msg.append_entries_resp.accept, p_buffer);
+            write<index_t>(msg.append_entries_resp.last_log_index, p_buffer);
+        } else if (msg.type == ::wstux::raft::details::message_type::snapshot_request) {
+            write<index_t>(msg.snapshot_req.last_index, p_buffer);
+            write<term_t>(msg.snapshot_req.last_term, p_buffer);
+            write<cluster_config>(msg.snapshot_req.conf, p_buffer);
+            write<index_t>(msg.snapshot_req.conf_index, p_buffer);
+            write<buffer_type>(msg.snapshot_req.buffer, p_buffer);
+        } else if (msg.type == ::wstux::raft::details::message_type::vote_request) {
+            write<bool>(msg.vote_req.is_prevote, p_buffer);
+            write<index_t>(msg.vote_req.last_log_index, p_buffer);
+            write<term_t>(msg.vote_req.last_log_term, p_buffer);
+        } else if (msg.type == ::wstux::raft::details::message_type::vote_response) {
+            write<bool>(msg.vote_resp.is_prevote, p_buffer);
+            write<bool>(msg.vote_resp.accept, p_buffer);
+        }
+    }
+}
+
+template<>
+inline size_t size<message>(const message& msg)
+{
+    size_t full_size = 0;
+    full_size += size<message_type>(msg.type);
+    full_size += size<uint32_t>(message::version);
+
+    if (message::version == message_version::v_1) {
+        full_size += size<server_id_t>(msg.src_id);
+        full_size += size<server_id_t>(msg.dst_id);
+        full_size += v1::size<std::string>(msg.address);
+        full_size += size<term_t>(msg.term);
+
+        if (msg.type == ::wstux::raft::details::message_type::append_entries_request) {
+            full_size += size<index_t>(msg.append_entries_req.prev_log_index);
+            full_size += size<term_t>(msg.append_entries_req.prev_log_term);
+            full_size += size<index_t>(msg.append_entries_req.leader_commit);
+            full_size += v1::size<entry::list>(msg.append_entries_req.entries);
+        } else if (msg.type == ::wstux::raft::details::message_type::append_entries_response) {
+            full_size += size<bool>(msg.append_entries_resp.accept);
+            full_size += size<index_t>(msg.append_entries_resp.last_log_index);
+        } else if (msg.type == ::wstux::raft::details::message_type::snapshot_request) {
+            full_size += size<index_t>(msg.snapshot_req.last_index);
+            full_size += size<term_t>(msg.snapshot_req.last_term);
+            full_size += size<cluster_config>(msg.snapshot_req.conf);
+            full_size += size<index_t>(msg.snapshot_req.conf_index);
+            full_size += v1::size<buffer_type>(msg.snapshot_req.buffer);
+        } else if (msg.type == ::wstux::raft::details::message_type::vote_request) {
+            full_size += size<bool>(msg.vote_req.is_prevote);
+            full_size += size<index_t>(msg.vote_req.last_log_index);
+            full_size += size<term_t>(msg.vote_req.last_log_term);
+        } else if (msg.type == ::wstux::raft::details::message_type::vote_response) {
+            full_size += size<bool>(msg.vote_resp.is_prevote);
+            full_size += size<bool>(msg.vote_resp.accept);
+        }
+    }
+    return full_size;
 }
 
 template<typename T>
-buffer_type serialize(const T& data)
+inline T deserialize(const char*& p_buffer)
+{
+    T value;
+    read<T>(value, p_buffer);
+    return value;
+}
+
+template<>
+inline message deserialize<message>(const char*& p_buffer)
+{
+    message_type type = message_type::invalid;
+    read<message_type>(type, p_buffer);
+
+    message msg(type);
+    read<message>(msg, p_buffer);
+    return msg;
+}
+
+template<typename T, typename TBuffer>
+inline T deserialize(const TBuffer& buffer)
+{
+    const char* p_buffer = buffer.data();
+    T value = deserialize<T>(p_buffer);
+    assert(p_buffer == (buffer.data() + buffer.size()));
+    return value;
+}
+
+template<typename T, typename TBuffer>
+inline void deserialize(T& data, const TBuffer& buffer)
+{
+    const char* p_buffer = buffer.data();
+    read<T>(data, p_buffer);
+    assert(p_buffer == (buffer.data() + buffer.size()));
+}
+
+template<typename T>
+inline void serialize(const T& data, buffer_type& buffer)
+{
+    assert(buffer.empty());
+
+    const size_t full_size = size<T>(data);
+    buffer.resize(full_size);
+    buffer_type::value_type* p_buffer = buffer.data();
+    write<T>(data, p_buffer);
+
+    assert(p_buffer == (buffer.data() + buffer.size()));
+}
+
+template<>
+inline void serialize<message>(const message& msg, buffer_type& buffer)
+{
+    assert(buffer.empty());
+
+    const size_t full_size = size<message>(msg);
+    buffer.resize(full_size);
+    buffer_type::value_type* p_buffer = buffer.data();
+
+    write<message_type>(msg.type, p_buffer);
+    write<message>(msg, p_buffer);
+    assert(p_buffer == (buffer.data() + buffer.size()));
+}
+
+} // namespace v1
+
+template<typename T, typename TBuffer>
+inline T deserialize(const TBuffer& buffer)
+{
+    return v1::deserialize<T, TBuffer>(buffer);
+}
+
+template<typename T, typename TBuffer>
+inline void deserialize(const TBuffer& buffer, T& data)
+{
+    v1::deserialize<T, TBuffer>(data, buffer);
+}
+
+template<typename T>
+inline buffer_type serialize(const T& data)
 {
     buffer_type buffer;
-
-    serialize<T>(data, buffer);
+    v1::serialize<T>(data, buffer);
     return buffer;
 }
 

@@ -26,6 +26,21 @@
 
 #include "raft/details/connection/serialization.h"
 
+namespace wstux {
+namespace raft {
+
+bool operator==(const server_config& lhs, const server_config& rhs)
+{
+    bool is_eq = true;
+    is_eq = is_eq && (lhs.id == rhs.id);
+    is_eq = is_eq && (lhs.address == rhs.address);
+    is_eq = is_eq && (lhs.is_voter == rhs.is_voter);
+    return is_eq;
+}
+
+} // namespace raft
+} // namespace wstux
+
 namespace {
 
 bool operator==(const ::wstux::raft::details::message& lhs, const ::wstux::raft::details::message& rhs)
@@ -55,6 +70,11 @@ bool operator==(const ::wstux::raft::details::message& lhs, const ::wstux::raft:
         is_eq = is_eq && (lhs.vote_resp.accept == rhs.vote_resp.accept);
     }
     return is_eq;
+}
+
+bool operator==(const ::wstux::raft::cluster_config& lhs, const ::wstux::raft::cluster_config& rhs)
+{
+    return (lhs.servers == rhs.servers);
 }
 
 } // <anonymous> namespace
@@ -96,8 +116,7 @@ TEST(raft_serialization, vote_request)
 {
     namespace raft = ::wstux::raft;
 
-    raft::details::message msg;
-    msg.type = raft::details::message_type::vote_request;
+    raft::details::message msg(raft::details::message_type::vote_request);
     msg.src_id = 1;
     msg.dst_id = 2;
     msg.term = 1;
@@ -112,8 +131,7 @@ TEST(raft_serialization, vote_response)
 {
     namespace raft = ::wstux::raft;
 
-    raft::details::message msg;
-    msg.type = raft::details::message_type::vote_response;
+    raft::details::message msg(raft::details::message_type::vote_response);
     msg.src_id = 1;
     msg.dst_id = 2;
     msg.term = 1;
@@ -123,6 +141,18 @@ TEST(raft_serialization, vote_response)
     raft::buffer_type buffer = raft::details::serialize(msg);
     raft::details::message dsr_msg = raft::details::deserialize<raft::details::message>(buffer);
     EXPECT_TRUE(msg == dsr_msg);
+}
+
+TEST(raft_serialization, cluster_config)
+{
+    namespace raft = ::wstux::raft;
+
+    raft::cluster_config cfg;
+    cfg.servers = {{1, "1", true}, {2, "2", true}};
+
+    raft::buffer_type buffer = raft::details::serialize(cfg);
+    raft::cluster_config dsr_cfg = raft::details::deserialize<raft::cluster_config>(buffer);
+    EXPECT_TRUE(cfg == dsr_cfg);
 }
 
 /*TEST(raft_serialization, invalid_buffer)
