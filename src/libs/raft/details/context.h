@@ -100,6 +100,8 @@ struct context final
 
 namespace utils {
 
+bool bootstrap(context& ctx, cluster_config cluster_cfg);
+
 /**
  *  \brief  Checks if the leader maintains active contact with a majority (quorum)
  *      of nodes.
@@ -122,7 +124,7 @@ peer::ptr find_peer(context& ctx, server_id_t id);
 
 server_config* find_server_config(context& ctx, server_id_t id);
 
-bool init(context& ctx, cluster_config cluster_cfg);
+bool init(context& ctx);
 
 bool is_in_cluster(const context& ctx, server_id_t id);
 

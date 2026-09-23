@@ -65,7 +65,9 @@ public:
 
     server_id_t id() const { return m_id; }
 
-    bool init(const cluster_config& cluster_cfg);
+    bool init();
+
+    bool init_bootstrap(const cluster_config& cluster_cfg);
 
     bool is_candidate() const;
 

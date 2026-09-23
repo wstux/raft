@@ -110,7 +110,7 @@ TYPED_TEST(raft_membership, add_server)
 }
 
 /// \todo Fix defect
-TYPED_TEST(raft_membership, DISABLED_add_server_single)
+TYPED_TEST(raft_membership, add_server_single)
 {
     using namespace std::chrono_literals;
     using server_ptr = tests::network_stub::server_ptr;
@@ -185,7 +185,7 @@ TYPED_TEST(raft_membership, multi_add_server)
 }
 
 /// \todo Fix defect
-TYPED_TEST(raft_membership, DISABLED_multi_add_server_single)
+TYPED_TEST(raft_membership, multi_add_server_single)
 {
     using namespace std::chrono_literals;
     using server_ptr = tests::network_stub::server_ptr;
@@ -224,7 +224,7 @@ TYPED_TEST(raft_membership, DISABLED_multi_add_server_single)
     }
 }
 
-TYPED_TEST(raft_membership, add_leader_server)
+TYPED_TEST(raft_membership, DISABLED_add_leader_server)
 {
     using namespace std::chrono_literals;
     using server_ptr = tests::network_stub::server_ptr;

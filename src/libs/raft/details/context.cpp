@@ -109,6 +109,18 @@ context::context(server_id_t id, const io::ptr p_io, const fsm::ptr p_fsm, loggi
 
 namespace utils {
 
+bool bootstrap(context& ctx, cluster_config cluster_cfg)
+{
+    ctx.state.cluster_cfg = std::move(cluster_cfg);
+    std::sort(ctx.state.cluster_cfg.servers.begin(), ctx.state.cluster_cfg.servers.end(),
+        [](const server_config& l, const server_config& r) -> bool { return l.id < r.id; });
+    if (! utils::is_valid_cluster(ctx.id, ctx.state.cluster_cfg)) {
+        return false;
+    }
+    //ctx.state.cluster_cfg = std::move(cluster_cfg);
+    return true;
+}
+
 bool check_contact_quorum(context& ctx)
 {
     assert(ctx.role.is_leader());
@@ -147,7 +159,7 @@ server_config* find_server_config(context& ctx, server_id_t id)
     return nullptr;
 }
 
-bool init(context& ctx, cluster_config cluster_cfg)
+bool init(context& ctx)
 {
     if (! ctx.p_io->init(ctx.id)) {
         RAFT_LOG_ERROR(ctx, "Server %llu(%s) failed to init I/O.", ctx.id, ctx.role.str());
@@ -159,13 +171,16 @@ bool init(context& ctx, cluster_config cluster_cfg)
         return false;
     }
 
-    std::sort(cluster_cfg.servers.begin(), cluster_cfg.servers.end(),
+    /*std::sort(cluster_cfg.servers.begin(), cluster_cfg.servers.end(),
         [](const server_config& l, const server_config& r) -> bool { return l.id < r.id; });
     if (! utils::is_valid_cluster(ctx.id, cluster_cfg)) {
         return false;
+    }*/
+    if (! ctx.state.cluster_cfg.servers.empty() && ! utils::is_valid_cluster(ctx.id, ctx.state.cluster_cfg)) {
+        return false;
     }
 
-    ctx.state.cluster_cfg = std::move(cluster_cfg);
+    //ctx.state.cluster_cfg = std::move(cluster_cfg);
 
     ctx.is_async_io = cfg.is_async_io;
 
@@ -194,9 +209,9 @@ bool init(context& ctx, cluster_config cluster_cfg)
 
 bool is_in_cluster(const context& ctx, server_id_t id)
 {
-    if (ctx.id == id) {
-        return false;
-    }
+    //if (ctx.id == id) {
+    //    return false;
+    //}
     std::vector<server_config>::const_iterator it =
         std::find_if(ctx.state.cluster_cfg.servers.cbegin(), ctx.state.cluster_cfg.servers.cend(),
             [id](const server_config& cfg) { return cfg.id == id; });
@@ -257,7 +272,7 @@ bool load(context& ctx)
 
         ctx.state.commit_index = 1;
         ctx.state.last_applied = 1;
-    } else {
+    } else if (! ctx.state.cluster_cfg.servers.empty()) {
         entries.resize(1);
         entries[0] = std::make_shared<entry>();
         entry::ptr& e = entries[0];

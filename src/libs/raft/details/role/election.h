@@ -36,7 +36,7 @@ bool election_results(context& ctx);
 
 void election_start(context& ctx);
 
-void initiate_election(context& ctx);
+void initiate_self_election(context& ctx);
 
 } // namespace role
 } // namespace details

@@ -61,7 +61,7 @@ void election_start(context& ctx)
     vote::request(ctx);
 }
 
-void initiate_election(context& ctx)
+void initiate_self_election(context& ctx)
 {
     assert(ctx.role.is_follower());
 
@@ -69,8 +69,11 @@ void initiate_election(context& ctx)
         return;
     }
 
-    if (utils::quorum_for_election(ctx) == 0) {
-        role::become_candidate(ctx);
+    //if (utils::quorum_for_election(ctx) == 1) {
+    //    role::become_candidate(ctx);
+    //}
+    if (utils::is_in_cluster(ctx, ctx.id) && details::utils::voting_members_count(ctx) == 1) {
+        details::role::become_candidate(ctx);
     }
 }
 

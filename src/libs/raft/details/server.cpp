@@ -109,9 +109,9 @@ void server::deinit()
     m_p_ctx->p_io->deinit();
 }
 
-bool server::init(const cluster_config& cluster_cfg)
+bool server::init()
 {
-    const bool is_inited = details::utils::init(*m_p_ctx, cluster_cfg);
+    const bool is_inited = details::utils::init(*m_p_ctx);
     if (! is_inited) {
         RAFT_LOG_ERROR((*m_p_ctx), "Filed to init raft server.");
         return false;
@@ -120,6 +120,16 @@ bool server::init(const cluster_config& cluster_cfg)
     m_p_ctx->heartbeat_task = m_p_ctx->schd.make_task([this]() { details::timeout::heartbeat_timeout_task(*m_p_ctx); });
 
     return true;
+}
+
+bool server::init_bootstrap(const cluster_config& cluster_cfg)
+{
+    const bool is_inited = details::utils::bootstrap(*m_p_ctx, cluster_cfg);
+    if (! is_inited) {
+        RAFT_LOG_ERROR((*m_p_ctx), "Filed to init bootstrap raft server.");
+        return false;
+    }
+    return init();
 }
 
 bool server::is_candidate() const
@@ -239,7 +249,11 @@ bool server::start()
         if (p_ctx->role.is_voter) {
             details::timeout::election_restart_task(*p_ctx);
         }
-        details::role::initiate_election(*p_ctx);
+        details::role::initiate_self_election(*p_ctx);
+        //const server_config* p_cfg = details::utils::find_server_config(*p_ctx, p_ctx->id);
+        //if (p_cfg != nullptr && p_cfg->is_voter && details::utils::voting_members_count(*p_ctx) == 1) {
+        //    details::role::become_candidate(*p_ctx);
+        //}
     };
     m_p_ctx->schd.execute_strand(std::move(handler));
     return true;
