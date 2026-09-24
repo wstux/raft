@@ -38,9 +38,9 @@ public:
 
 public:
     virtual ~fsm_stub() {}
-    virtual bool apply(const raft::buffer_type& buf) override { return change(buf); }
-    virtual bool restore(const raft::buffer_type& buf) override { return change(buf); }
-    virtual bool take_snapshot(raft::buffer_type& buf) override { buf = m_buffer; return is_result; }
+    virtual bool apply(const raft::buffer_type& buf) noexcept override { return change(buf); }
+    virtual bool restore(const raft::buffer_type& buf) noexcept override { return change(buf); }
+    virtual bool take_snapshot(raft::buffer_type& buf) noexcept override { buf = m_buffer; return is_result; }
 
     template<typename T>
     const T* get() const

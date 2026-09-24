@@ -248,7 +248,7 @@ bool load(context& ctx)
 
     ctx.term = p_io->load_term();
     if (ctx.term == 0) {
-        RAFT_LOG_ERROR(ctx, "Server %llu(%s) loaded invalig term.", ctx.id, ctx.role.str());
+        RAFT_LOG_ERROR(ctx, "Server %llu(%s) loaded invalid term (%u).", ctx.id, ctx.role.str(), ctx.term);
         return false;
     }
     ctx.role.voted_for = p_io->voted_for();

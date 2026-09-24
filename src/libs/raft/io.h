@@ -132,11 +132,11 @@ public:
 public:
     virtual ~fsm() {}
 
-    virtual bool apply(const buffer_type& buf) = 0;
+    virtual bool apply(const buffer_type& buf) noexcept = 0;
 
-    virtual bool restore(const buffer_type& buf) = 0;
+    virtual bool restore(const buffer_type& buf) noexcept = 0;
 
-    virtual bool take_snapshot(buffer_type& buf) = 0;
+    virtual bool take_snapshot(buffer_type& buf) noexcept = 0;
 };
 
 class io
