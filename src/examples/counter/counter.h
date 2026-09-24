@@ -50,6 +50,7 @@
 
 #include "counter/config.h"
 #include "counter/details/client.h"
+#include "counter/details/fsm.h"
 #include "counter/details/io.h"
 #include "counter/details/logging.h"
 
@@ -65,8 +66,6 @@ public:
     ~counter_node();
 
     virtual ::grpc::Status SendRaftMessage(::grpc::ServerContext* p_ctx, const ::cluster::Message* p_req, ::cluster::Empty* p_resp) override;
-
-    virtual ::grpc::Status SentCounterMessage(::grpc::ServerContext* p_ctx, const ::cluster::CounterMessage* p_req, ::cluster::Empty* p_resp) override;
 
     int run();
 
@@ -111,6 +110,7 @@ private:
     std::unique_ptr<std::thread> m_thread;
 
     details::io::ptr m_p_io;
+    details::fsm::ptr m_p_fsm;
     raft::server::ptr m_p_server;
 
     std::atomic_uint64_t m_counter;

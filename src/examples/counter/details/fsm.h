@@ -22,64 +22,65 @@
  * THE SOFTWARE.
  */
 
-#ifndef _EXAMPLES_RAFT_COUNTER_CONFIG_H_
-#define _EXAMPLES_RAFT_COUNTER_CONFIG_H_
+#ifndef _EXAMPLES_RAFT_COUNTER_FSM_H_
+#define _EXAMPLES_RAFT_COUNTER_FSM_H_
 
-#include <memory>
-#include <string>
-#include <vector>
+#include <atomic>
 
 #include "raft/io.h"
 
 namespace wstux {
 namespace examples {
 namespace counter {
+namespace details {
 
-class config final
+class fsm final : public raft::fsm
 {
 public:
-    using ptr = std::shared_ptr<config>;
-
-    struct server_config
-    {
-        using list = std::vector<server_config>;
-
-        raft::server_id_t id = raft::gk_invalid_id;
-        bool is_voter = false;
-        std::string endpoint;
-    };
+    using ptr = std::shared_ptr<fsm>;
 
 public:
-    const server_config::list& cluster_config() const  { return m_servers; }
+    virtual ~fsm() {}
 
-    const std::string& endpoint() const { return m_endpoint; }
+    virtual bool apply(const raft::buffer_type& buf) noexcept { return change(buf); }
 
-    bool bootstrap() const  { return m_bootstrap; }
+    virtual bool restore(const raft::buffer_type& buf) noexcept { return change(buf); }
 
-    raft::server_id_t server_id() const { return m_server_id; }
+    virtual bool take_snapshot(raft::buffer_type& buf) noexcept { buf = m_buffer; return true; }
 
-    raft::logging_handler::severity_level level() const { return m_level; }
-
-    bool load(int argc, char** argv);
+    uint64_t get_counter() const { return m_counter; }
 
 private:
-    bool parse_args(int argc, char** argv);
+    bool change(const raft::buffer_type& buf)
+    {
+        const uint64_t* p_counter = get_ptr(buf);
+        if (p_counter != nullptr) {
+            m_buffer = buf;
+            m_counter = *p_counter;
+            return true;
+        }
+        return false;
+    }
 
-    bool parse_config_file();
+    const uint64_t* get_ptr(const raft::buffer_type& buf) const
+    {
+        if (buf.size() == 0) {
+            return nullptr;
+        }
+        if (sizeof(uint64_t) > buf.size()) {
+            return nullptr;
+        }
+        return reinterpret_cast<const uint64_t*>(buf.data());
+    }
 
 private:
-    std::string m_endpoint;
-
-    raft::server_id_t m_server_id = raft::gk_invalid_id;
-    raft::logging_handler::severity_level m_level = raft::logging_handler::severity_level::info;
-
-    bool m_bootstrap = false;
-    server_config::list m_servers;
-    std::string m_cfg_file;
+    std::atomic_uint64_t m_counter = 0;
+    raft::buffer_type m_buffer;
 };
 
+} // namespace details
 } // namespace counter
 } // namespace examples
 } // namespace wstux
 
-#endif /* _EXAMPLES_RAFT_COUNTER_CONFIG_H_ */
+#endif /* _EXAMPLES_RAFT_COUNTER_FSM_H_ */
