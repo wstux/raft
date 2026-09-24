@@ -190,6 +190,8 @@ bool server::load(details::context& ctx)
 
 bool server::reconfigure()
 {
+    RAFT_LOG_INFO((*m_p_ctx), "Raft server %llu is reconfiguring.", m_p_ctx->id);
+
     if (! m_p_ctx->p_io->reconfigure(m_p_ctx->id)) {
         return false;
     }
@@ -205,15 +207,13 @@ bool server::reconfigure()
 
     if (! details::utils::is_valid_cluster(m_p_ctx->id, cluster_cfg)) {
         return false;
-    }
+    }*/
 
     m_p_ctx->schd.reconfigure(cfg.scheduler_threads_count);
 
     details::scheduler::handler_type handler =
-        [p_ctx = m_p_ctx.get(), cfg = std::move(cfg), cluster_cfg = std::move(cluster_cfg)]() -> void {
-            details::utils::reconfigure(*p_ctx, cfg, cluster_cfg);
-        };
-    m_p_ctx->schd.execute_strand(std::move(handler));*/
+        [p_ctx = m_p_ctx.get(), cfg = std::move(cfg)]() -> void { details::utils::reconfigure(*p_ctx, cfg); };
+    m_p_ctx->schd.execute_strand(std::move(handler));
     return true;
 }
 

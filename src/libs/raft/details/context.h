@@ -138,7 +138,7 @@ bool load(context& ctx);
 
 size_t quorum_for_election(const context& ctx);
 
-void reconfigure(context& ctx, const config& cfg, const cluster_config& cluster_cfg);
+void reconfigure(context& ctx, const config& cfg);
 
 size_t voting_members_count(const context& ctx);
 
