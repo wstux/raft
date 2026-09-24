@@ -50,7 +50,7 @@ public:
 public:
     io(const config::server_config::list& servers, raft::logging_handler::severity_level lvl)
         : m_servers(servers)
-        , m_term(0)
+        , m_term(1)
         , m_voted_for(raft::gk_invalid_id)
         , m_level(lvl)
         , m_logger(m_level)
@@ -60,19 +60,22 @@ public:
 
     virtual ~io() {}
 
-    virtual raft::cluster_config bootstrap() const noexcept override final
+    virtual bool append(const raft::entry::list& entries) noexcept override final
     {
-        raft::cluster_config cluster_cfg;
-        std::transform(m_servers.cbegin(), m_servers.cend(), std::back_inserter(cluster_cfg.servers),
-            [](const config::server_config& cfg) -> raft::server_config {
-                return raft::server_config(cfg.id, cfg.endpoint, cfg.is_voter);
-            });
-        return cluster_cfg;
+        std::lock_guard<std::mutex> lock(m_entries_mutex);
+        m_entries.assign(entries.begin(), entries.end());
+        return true;
     }
 
     virtual raft::config configuration() const noexcept override final { return m_cfg; };
 
     virtual void deinit() noexcept override final {}
+
+    virtual std::optional<raft::snapshot> get_snapshot() const noexcept override final
+    {
+        std::lock_guard<std::mutex> lock(m_snapshot_mutex);
+        return m_snapshot;
+    }
 
     virtual bool init(raft::server_id_t id) noexcept override final
     {
@@ -86,24 +89,74 @@ public:
         return true;
     }
 
+    virtual raft::entry::list load_entries() noexcept override final
+    {
+        std::lock_guard<std::mutex> lock(m_entries_mutex);
+        return m_entries;
+    }
+
+    virtual raft::index_t load_snapshot_index() noexcept override final
+    {
+        std::lock_guard<std::mutex> lock(m_snapshot_mutex);
+        if (m_snapshot) {
+            return m_snapshot->index;
+        }
+        return 0;
+    }
+
+    virtual raft::term_t load_snapshot_term() noexcept override final
+    {
+        std::lock_guard<std::mutex> lock(m_snapshot_mutex);
+        if (m_snapshot) {
+            return m_snapshot->term;
+        }
+        return 0;
+    }
+
+    virtual raft::index_t load_start_index() noexcept override final
+    {
+        std::lock_guard<std::mutex> lock(m_entries_mutex);
+        return m_entries.size() + 1;
+    }
+
     virtual raft::term_t load_term() noexcept override final { return m_term; }
 
     virtual bool reconfigure(raft::server_id_t) noexcept override final { return true; }
 
-    virtual void send(raft::server_id_t id, std::string_view, const raft::buffer_type& msg) noexcept override final { m_clients.at(id)->send(msg); }
+    virtual void send(raft::server_id_t id, std::string_view, const raft::buffer_type& msg) noexcept override final
+    {
+        m_clients.at(id)->send(msg);
+    }
+
+    virtual bool set_snapshot(const raft::snapshot& sh) noexcept override final
+    {
+        std::lock_guard<std::mutex> lock(m_snapshot_mutex);
+        m_snapshot = sh;
+        m_term = m_snapshot->term;
+
+        std::lock_guard<std::mutex> entries_lock(m_entries_mutex);
+        if (m_snapshot->index < m_entries.size()) {
+            m_entries.erase(m_entries.begin() + m_snapshot->index, m_entries.end());
+        } else if (m_snapshot->index >= m_entries.size()) {
+            m_entries.resize(m_snapshot->index);
+        }
+        return true;
+    }
 
     virtual void set_term(raft::term_t term) noexcept override final { m_term = term; }
 
     virtual void set_voted_for(raft::server_id_t id) noexcept override final { m_voted_for = id; }
 
-    virtual raft::server_id_t voted_for() const noexcept override final { return m_voted_for; }
-
-    void update_counter(const uint64_t counter)
+    virtual bool truncate(const raft::index_t begin) noexcept override final
     {
-        for (std::unordered_map<raft::server_id_t, client::ptr>::value_type& v : m_clients) {
-            v.second->send_counter(counter);
+        std::lock_guard<std::mutex> lock(m_entries_mutex);
+        if (begin < m_entries.size()) {
+            m_entries.erase(m_entries.begin() + begin, m_entries.end());
         }
+        return true;
     }
+
+    virtual raft::server_id_t voted_for() const noexcept override final { return m_voted_for; }
 
 private:
     config::server_config::list m_servers;
@@ -113,6 +166,12 @@ private:
     raft::server_id_t m_voted_for;
 
     std::unordered_map<raft::server_id_t, client::ptr> m_clients;
+
+    std::mutex m_entries_mutex;
+    raft::entry::list m_entries;
+
+    mutable std::mutex m_snapshot_mutex;
+    std::optional<raft::snapshot> m_snapshot;
 
     raft::logging_handler::severity_level m_level;
     logging_handler m_logger;

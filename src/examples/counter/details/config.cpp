@@ -80,6 +80,8 @@ bool config::parse_args(int argc, char** argv)
                     m_level = raft::logging_handler::severity_level::error;
                 }
             }
+        } else if (arg == "-b" || arg == "--bootstrap") {
+            m_bootstrap = true;
         }
     }
     if (m_cfg_file.empty()) {

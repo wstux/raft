@@ -65,11 +65,11 @@ void commmit_change(context& ctx, const index_t index)
 bool commmit_command(context& ctx, const index_t index, const entry::ptr& p_entry)
 {
     if (! ctx.p_fsm->apply(p_entry->buffer)) {
-        RAFT_LOG_WARN(ctx, "Failed to commit command %u to fsm.", index);
+        RAFT_LOG_WARN(ctx, "Failed to commit command with index %u to fsm.", index);
         return false;
     }
 
-    RAFT_LOG_DEBUG(ctx, "Committed command %u to fsm.", index);
+    RAFT_LOG_DEBUG(ctx, "Committed command with index %u to fsm.", index);
     ctx.state.last_applied = index;
     return true;
 }

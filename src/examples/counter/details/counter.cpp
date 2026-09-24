@@ -32,12 +32,12 @@ namespace examples {
 namespace counter {
 namespace {
 
-raft::server::ptr make_server(const details::io::ptr& p_io, const config::ptr& p_cfg)
+raft::server::ptr make_server(const details::io::ptr& p_io, details::fsm::ptr& p_fsm, const config::ptr& p_cfg)
 {
     raft::server::ptr p_srv;
     const std::function<bool()> is_stop_fn = []()->bool { return false; };
     raft::logging_handler::ptr p_logger = std::make_unique<details::logging_handler>(p_cfg->level());
-    p_srv = std::make_shared<raft::server>(p_cfg->server_id(), p_io, std::move(p_logger), is_stop_fn);
+    p_srv = std::make_shared<raft::server>(p_cfg->server_id(), p_io, p_fsm, std::move(p_logger), is_stop_fn);
     return p_srv;
 }
 
@@ -46,7 +46,8 @@ raft::server::ptr make_server(const details::io::ptr& p_io, const config::ptr& p
 counter_node::counter_node(const config::ptr& p_config)
     : m_p_config(p_config)
     , m_p_io(std::make_shared<details::io>(m_p_config->cluster_config(), m_p_config->level()))
-    , m_p_server(make_server(m_p_io, m_p_config))
+    , m_p_fsm(std::make_shared<details::fsm>())
+    , m_p_server(make_server(m_p_io, m_p_fsm, m_p_config))
     , m_counter(0)
     , m_logger(m_p_config->level())
 {}
@@ -58,10 +59,22 @@ counter_node::~counter_node()
 
 int counter_node::run()
 {
-    if (! m_p_server->init()) {
-        LOG_ERROR(m_logger, "Failed to init raft server");
-        return 1;
+    if (m_p_config->bootstrap()) {
+        raft::cluster_config cluster_cfg;
+        for (const config::server_config& cfg : m_p_config->cluster_config()) {
+            cluster_cfg.servers.emplace_back(cfg.id, cfg.endpoint, cfg.is_voter);
+        }
+        if (! m_p_server->init_bootstrap(cluster_cfg)) {
+            LOG_ERROR(m_logger, "Failed to init bootstrap raft server");
+            return 1;
+        }
+    } else {
+        if (! m_p_server->init()) {
+            LOG_ERROR(m_logger, "Failed to init raft server");
+            return 1;
+        }
     }
+
     if (! m_p_server->start()) {
         LOG_ERROR(m_logger, "Failed to start raft server");
         return 1;
@@ -76,7 +89,9 @@ int counter_node::run()
     while (is_ready()) {
         if (m_p_server->is_leader()) {
             ++m_counter;
-            m_p_io->update_counter(m_counter);
+            m_p_server->apply(m_counter);
+        } else if (m_p_server->is_follower()) {
+            m_counter = m_p_fsm->get_counter();
         }
         if (m_counter % 10 == 0) {
             LOG_INFO(m_logger, "Current counter value " << m_counter);
@@ -164,16 +179,8 @@ void counter_node::thread_main_rpc(const std::string& address)
 {
     LOG_TRACE(m_logger, "Got raft message.");
 
-    raft::buffer_type msg(p_req->buffer().data(), p_req->buffer().size());
+    raft::inbuffer_type msg(p_req->buffer().data(), p_req->buffer().size());
     m_p_server->handle_message(msg);
-    return ::grpc::Status::OK;
-}
-
-::grpc::Status counter_node::SentCounterMessage(::grpc::ServerContext*, const ::cluster::CounterMessage* p_req, ::cluster::Empty*)
-{
-    LOG_DEBUG(m_logger, "Got counter message.");
-
-    m_counter = p_req->counter();
     return ::grpc::Status::OK;
 }
 

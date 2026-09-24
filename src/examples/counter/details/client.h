@@ -83,20 +83,6 @@ public:
         }
     }
 
-    void send_counter(const uint64_t counter)
-    {
-        context_type ctx;
-
-        ::cluster::CounterMessage msg;
-        msg.set_counter(counter);
-
-        ::cluster::Empty resp;
-        ::grpc::Status status = m_p_stub->SentCounterMessage(&ctx, msg, &resp);
-        if (! status.ok()) {
-            LOG_ERROR(m_logger, "Failed to send append entries request data to server " << m_address);
-        }
-    }
-
 private:
     static std::shared_ptr<::grpc::Channel> make_channel(const std::string& addr)
     {

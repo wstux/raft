@@ -244,8 +244,8 @@ void request(context& ctx, peer& p)
         prev_term = ctx.log.term(prev_index);
         // Raft Paper, Section 7: If the term for prev_index returns 0, it means this entry is already inside a compacted snapshot.
         if (prev_term == 0) {
-            assert(prev_index < snapshot_index);
             if (p.recent_recv && ! p.shapshot.is_in_process) {
+                assert(prev_index < snapshot_index);
                 RAFT_AE_LOG_TRACE(ctx, "Sending snapshot request to server %u. Server %llu(%s), current term %u",
                     p.id, ctx.id, ctx.role.str(), ctx.term);
 

@@ -34,7 +34,8 @@
 
 void print_usage()
 {
-    std::cout << "Usage: <program> -i/--id <server_id(>0)> -l/--level <trace/debug/info/warning/error> -c/--config <cfg_file>" << std::endl;
+    std::cout << "Usage: <program> -i/--id <server_id(>0)> -l/--level"
+              << "<trace/debug/info/warning/error> -c/--config <cfg_file> -b/--bootstrap" << std::endl;
 }
 
 int main(int argc, char** argv)
