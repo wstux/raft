@@ -31,6 +31,7 @@
 #include "raft/details/connection/messages.h"
 #include "raft/details/connection/serialization.h"
 #include "raft/details/handlers/append_entries_handler.h"
+#include "raft/details/handlers/join_handler.h"
 #include "raft/details/handlers/snapshot_handler.h"
 #include "raft/details/handlers/timeout_handler.h"
 #include "raft/details/handlers/vote_handler.h"
@@ -50,6 +51,12 @@ void handle_message(details::context& ctx, const details::message& msg)
         break;
     case details::message_type::append_entries_response:
         details::append_entries::handle_response(ctx, msg.src_id, msg.address, msg.term, msg.append_entries_resp);
+        break;
+    case details::message_type::join_request:
+        details::join::handle_request(ctx, msg.src_id, msg.address, msg.term, msg.join_req);
+        break;
+    case details::message_type::join_response:
+        details::join::handle_response(ctx, msg.src_id, msg.address, msg.term, msg.join_resp);
         break;
     case details::message_type::snapshot_request:
         details::snapshot::handle_request(ctx, msg.src_id, msg.address, msg.term, msg.snapshot_req);

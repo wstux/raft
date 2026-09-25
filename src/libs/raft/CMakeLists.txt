@@ -5,6 +5,7 @@ LibTarget(raft STATIC
         details/server.cpp
         details/handlers/append_entries_handler.cpp
         details/handlers/heartbeat_handler.cpp
+        details/handlers/join_handler.cpp
         details/handlers/snapshot_handler.cpp
         details/handlers/timeout_handler.cpp
         details/handlers/vote_handler.cpp
