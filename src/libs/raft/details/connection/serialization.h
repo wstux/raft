@@ -356,8 +356,14 @@ inline void read<message>(message& msg, const char*& p_buffer)
             read<index_t>(msg.append_entries_req.leader_commit, p_buffer);
             read<entry::list>(msg.append_entries_req.entries, p_buffer);
         } else if (msg.type == ::wstux::raft::details::message_type::append_entries_response) {
+            read<server_id_t>(msg.join_req.id, p_buffer);
+            read<std::string>(msg.join_req.address, p_buffer);
+            read<bool>(msg.join_req.is_voter, p_buffer);
+        } else if (msg.type == ::wstux::raft::details::message_type::join_request) {
             read<bool>(msg.append_entries_resp.accept, p_buffer);
             read<index_t>(msg.append_entries_resp.last_log_index, p_buffer);
+        } else if (msg.type == ::wstux::raft::details::message_type::join_response) {
+            read<uint32_t>(msg.join_resp.status, p_buffer);
         } else if (msg.type == ::wstux::raft::details::message_type::snapshot_request) {
             read<index_t>(msg.snapshot_req.last_index, p_buffer);
             read<term_t>(msg.snapshot_req.last_term, p_buffer);
@@ -393,6 +399,12 @@ inline void write<message>(const message& msg, char*& p_buffer)
         } else if (msg.type == ::wstux::raft::details::message_type::append_entries_response) {
             write<bool>(msg.append_entries_resp.accept, p_buffer);
             write<index_t>(msg.append_entries_resp.last_log_index, p_buffer);
+        } else if (msg.type == ::wstux::raft::details::message_type::join_request) {
+            write<server_id_t>(msg.join_req.id, p_buffer);
+            write<std::string>(msg.join_req.address, p_buffer);
+            write<bool>(msg.join_req.is_voter, p_buffer);
+        } else if (msg.type == ::wstux::raft::details::message_type::join_response) {
+            write<uint32_t>(msg.join_resp.status, p_buffer);
         } else if (msg.type == ::wstux::raft::details::message_type::snapshot_request) {
             write<index_t>(msg.snapshot_req.last_index, p_buffer);
             write<term_t>(msg.snapshot_req.last_term, p_buffer);
@@ -431,6 +443,12 @@ inline size_t size<message>(const message& msg)
         } else if (msg.type == ::wstux::raft::details::message_type::append_entries_response) {
             full_size += size<bool>(msg.append_entries_resp.accept);
             full_size += size<index_t>(msg.append_entries_resp.last_log_index);
+        } else if (msg.type == ::wstux::raft::details::message_type::join_request) {
+            full_size += size<server_id_t>(msg.join_req.id);
+            full_size += v1::size<std::string>(msg.join_req.address);
+            full_size += size<bool>(msg.join_req.is_voter);
+        } else if (msg.type == ::wstux::raft::details::message_type::join_response) {
+            full_size += size<uint32_t>(msg.join_resp.status);
         } else if (msg.type == ::wstux::raft::details::message_type::snapshot_request) {
             full_size += size<index_t>(msg.snapshot_req.last_index);
             full_size += size<term_t>(msg.snapshot_req.last_term);

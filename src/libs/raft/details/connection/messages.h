@@ -42,9 +42,11 @@ enum message_type : int32_t
 {
     append_entries_request  = 0,
     append_entries_response = 1,
-    snapshot_request        = 2,
-    vote_request            = 3,
-    vote_response           = 4,
+    join_request            = 2,
+    join_response           = 3,
+    snapshot_request        = 4,
+    vote_request            = 5,
+    vote_response           = 6,
     invalid
 };
 
@@ -61,6 +63,18 @@ struct append_entries_response_message final
 {
     bool accept;
     index_t last_log_index;
+};
+
+struct join_message final
+{
+    server_id_t id;
+    std::string address;
+    bool is_voter;
+};
+
+struct join_response_message final
+{
+    uint32_t status;
 };
 
 struct snapshot_message
@@ -125,6 +139,8 @@ struct message final
     union {
         append_entries_message          append_entries_req;
         append_entries_response_message append_entries_resp;
+        join_message                    join_req;
+        join_response_message           join_resp;
         snapshot_message                snapshot_req;
         vote_message                    vote_req;
         vote_response_message           vote_resp;
@@ -156,6 +172,8 @@ private:
         switch (type) {
         case append_entries_request:  TAction::run(this->*(&message::append_entries_req)); break;
         case append_entries_response: TAction::run(this->*(&message::append_entries_resp)); break;
+        case join_request:            TAction::run(this->*(&message::join_req)); break;
+        case join_response:           TAction::run(this->*(&message::join_resp)); break;
         case snapshot_request:        TAction::run(this->*(&message::snapshot_req)); break;
         case vote_request:            TAction::run(this->*(&message::vote_req)); break;
         case vote_response:           TAction::run(this->*(&message::vote_resp)); break;
@@ -169,6 +187,8 @@ private:
         switch (type) {
         case append_entries_request:  TAction::run(append_entries_req, other.append_entries_req); break;
         case append_entries_response: TAction::run(append_entries_resp, other.append_entries_resp); break;
+        case join_request:            TAction::run(join_req, other.join_req); break;
+        case join_response:           TAction::run(join_resp, other.join_resp); break;
         case snapshot_request:        TAction::run(snapshot_req, other.snapshot_req); break;
         case vote_request:            TAction::run(vote_req, other.vote_req); break;
         case vote_response:           TAction::run(vote_resp, other.vote_resp); break;

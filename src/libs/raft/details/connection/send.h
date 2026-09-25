@@ -63,6 +63,21 @@ template<> struct message_filler<message_type::append_entries_response>
     }
 };
 
+template<> struct message_filler<message_type::join_request>
+{
+    static void fill(message& msg, server_id_t id, std::string address, bool is_voter)
+    {
+        msg.join_req.id = id;
+        msg.join_req.address = std::move(address);
+        msg.join_req.is_voter = is_voter;
+    }
+};
+
+template<> struct message_filler<message_type::join_response>
+{
+    static void fill(message& msg, uint32_t status) { msg.join_resp.status = status; }
+};
+
 template<> struct message_filler<message_type::snapshot_request>
 {
     static void fill(message& msg, raft::snapshot&& sh)
@@ -128,6 +143,16 @@ inline void send_append_entries_request(context& ctx, server_id_t dst_id, std::s
 inline void send_append_entries_response(context& ctx, server_id_t dst_id, std::string addr, term_t term, bool accept, index_t last_log_index)
 {
     send_async<message_type::append_entries_response>(ctx, dst_id, std::move(addr), term, ctx.id, accept, last_log_index);
+}
+
+inline void send_join_request(context& ctx, server_id_t dst_id, std::string addr, term_t term, server_id_t id, std::string address, bool is_voter)
+{
+    send_async<message_type::join_request>(ctx, dst_id, std::move(addr), term, ctx.id, id, std::move(address), is_voter);
+}
+
+inline void send_join_response(context& ctx, server_id_t dst_id, std::string addr, term_t term, uint32_t status)
+{
+    send_async<message_type::join_response>(ctx, dst_id, std::move(addr), term, ctx.id, status);
 }
 
 inline void send_snapshot_request(context& ctx, server_id_t dst_id, std::string addr, term_t term, raft::snapshot&& sh)
