@@ -60,7 +60,12 @@ public:
     using ptr = std::shared_ptr<empty_io>;
 
 public:
-    empty_io() { cfg.scheduler_threads_count = 2; }
+    empty_io()
+    {
+        cfg.address = std::to_string(++m_addr_id);
+        cfg.scheduler_threads_count = 2;
+    }
+
     virtual ~empty_io() {}
 
     virtual bool append(const entry::list& entrs) noexcept override final
@@ -170,7 +175,12 @@ public:
     bool is_snapshot = true;
     bool is_truncate = true;
     bool is_stop = false;
+
+private:
+    static size_t m_addr_id;
 };
+
+size_t empty_io::m_addr_id = 0;
 
 } // namespace tests
 } // namespace raft

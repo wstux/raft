@@ -356,12 +356,12 @@ inline void read<message>(message& msg, const char*& p_buffer)
             read<index_t>(msg.append_entries_req.leader_commit, p_buffer);
             read<entry::list>(msg.append_entries_req.entries, p_buffer);
         } else if (msg.type == ::wstux::raft::details::message_type::append_entries_response) {
+            read<bool>(msg.append_entries_resp.accept, p_buffer);
+            read<index_t>(msg.append_entries_resp.last_log_index, p_buffer);
+        } else if (msg.type == ::wstux::raft::details::message_type::join_request) {
             read<server_id_t>(msg.join_req.id, p_buffer);
             read<std::string>(msg.join_req.address, p_buffer);
             read<bool>(msg.join_req.is_voter, p_buffer);
-        } else if (msg.type == ::wstux::raft::details::message_type::join_request) {
-            read<bool>(msg.append_entries_resp.accept, p_buffer);
-            read<index_t>(msg.append_entries_resp.last_log_index, p_buffer);
         } else if (msg.type == ::wstux::raft::details::message_type::join_response) {
             read<uint32_t>(msg.join_resp.status, p_buffer);
         } else if (msg.type == ::wstux::raft::details::message_type::snapshot_request) {

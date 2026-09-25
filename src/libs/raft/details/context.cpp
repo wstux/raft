@@ -167,6 +167,10 @@ bool init(context& ctx)
     }
 
     const config cfg = ctx.p_io->configuration();
+    if (cfg.address.empty()) {
+        return false;
+    }
+
     if (cfg.heartbeat_interval_ms == 0 || cfg.vote_timeout_max_ms == 0 || cfg.vote_timeout_max_ms < cfg.vote_timeout_min_ms) {
         return false;
     }
@@ -205,6 +209,8 @@ bool init(context& ctx)
     ctx.state.last_applied = 0;
     ctx.state.last_stored = 0;
     ctx.state.tasks_in_process = 0;
+
+    ctx.address = cfg.address;
 
     return true;
 }
@@ -315,6 +321,8 @@ void reconfigure(context& ctx, const config& cfg)
     ctx.raft_logger.is_snapshot_channel_enabled = cfg.is_snapshot_log_ch_enabled;
     ctx.raft_logger.is_timeout_channel_enabled = cfg.is_timeout_log_ch_enabled;
     ctx.raft_logger.is_vote_channel_enabled = cfg.is_vote_log_ch_enabled;
+
+    ctx.address = cfg.address;
 }
 
 size_t voting_members_count(const context& ctx)

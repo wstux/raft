@@ -209,6 +209,7 @@ public:
         , m_snapshot_term(0)
         , m_start_index(1)
     {
+        m_cfg.address = std::to_string(++m_addr_id);
         m_cfg.scheduler_threads_count = 2;
         m_cfg.snapshot_threshold = 5;
         m_cfg.snapshot_trailing = 2;
@@ -344,7 +345,13 @@ public:
 
     bool m_is_append = true;
     bool m_is_truncate = true;
+
+private:
+    static size_t m_addr_id;
 };
+
+size_t io_stub::m_addr_id = 0;
+
 
 } // namespace tests
 } // namespace raft

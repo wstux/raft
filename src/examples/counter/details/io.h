@@ -48,13 +48,19 @@ public:
     using ptr = std::shared_ptr<io>;
 
 public:
-    io(const config::server_config::list& servers, raft::logging_handler::severity_level lvl)
+    io(raft::server_id_t id, const config::server_config::list& servers, raft::logging_handler::severity_level lvl)
         : m_servers(servers)
         , m_term(1)
         , m_voted_for(raft::gk_invalid_id)
         , m_level(lvl)
         , m_logger(m_level)
     {
+        for (const config::server_config& cfg : m_servers) {
+            if (id == cfg.id) {
+                m_cfg.address = cfg.endpoint;
+                break;
+            }
+        }
         m_cfg.scheduler_threads_count = 4;
     }
 

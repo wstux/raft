@@ -125,7 +125,6 @@ bool server::init()
     }
     m_p_ctx->election_task = m_p_ctx->schd.make_task([this]() { details::timeout::election_timeout_task(*m_p_ctx); });
     m_p_ctx->heartbeat_task = m_p_ctx->schd.make_task([this]() { details::timeout::heartbeat_timeout_task(*m_p_ctx); });
-
     return true;
 }
 
@@ -151,7 +150,7 @@ bool server::is_follower() const
 
 bool server::is_inited() const
 {
-    return (m_p_ctx->election_task.get() != nullptr);
+    return (! m_p_ctx->address.empty());
 }
 
 bool server::is_leader() const
@@ -204,6 +203,9 @@ bool server::reconfigure()
     }
 
     config cfg = m_p_ctx->p_io->configuration();
+    if (cfg.address.empty()) {
+        return false;;
+    }
     if (cfg.heartbeat_interval_ms == 0 || cfg.vote_timeout_max_ms == 0 || cfg.vote_timeout_max_ms < cfg.vote_timeout_min_ms) {
         return false;
     }
