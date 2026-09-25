@@ -194,7 +194,9 @@ bool init(context& ctx)
     ctx.state.snapshot.threshold = cfg.snapshot_threshold;
     ctx.state.snapshot.trailing = cfg.snapshot_trailing;
 
+    ctx.raft_logger.is_append_entries_channel_enabled = cfg.is_append_entries_log_ch_enabled;
     ctx.raft_logger.is_heartbeat_channel_enabled = cfg.is_heartbeat_log_ch_enabled;
+    ctx.raft_logger.is_join_channel_enabled = cfg.is_join_log_ch_enabled;
     ctx.raft_logger.is_snapshot_channel_enabled = cfg.is_snapshot_log_ch_enabled;
     ctx.raft_logger.is_timeout_channel_enabled = cfg.is_timeout_log_ch_enabled;
     ctx.raft_logger.is_vote_channel_enabled = cfg.is_vote_log_ch_enabled;
@@ -307,7 +309,9 @@ void reconfigure(context& ctx, const config& cfg)
     ctx.state.snapshot.threshold = cfg.snapshot_threshold;
     ctx.state.snapshot.trailing = cfg.snapshot_trailing;
 
+    ctx.raft_logger.is_append_entries_channel_enabled = cfg.is_append_entries_log_ch_enabled;
     ctx.raft_logger.is_heartbeat_channel_enabled = cfg.is_heartbeat_log_ch_enabled;
+    ctx.raft_logger.is_join_channel_enabled = cfg.is_join_log_ch_enabled;
     ctx.raft_logger.is_snapshot_channel_enabled = cfg.is_snapshot_log_ch_enabled;
     ctx.raft_logger.is_timeout_channel_enabled = cfg.is_timeout_log_ch_enabled;
     ctx.raft_logger.is_vote_channel_enabled = cfg.is_vote_log_ch_enabled;

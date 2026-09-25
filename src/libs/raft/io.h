@@ -67,6 +67,8 @@ struct config final
 
     bool is_async_io = false;
 
+    bool is_append_entries_log_ch_enabled = true;
+    bool is_join_log_ch_enabled = true;
     bool is_heartbeat_log_ch_enabled = true;
     bool is_snapshot_log_ch_enabled = true;
     bool is_timeout_log_ch_enabled = true;
