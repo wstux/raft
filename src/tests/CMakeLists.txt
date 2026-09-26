@@ -103,6 +103,15 @@ TestTarget(ut_raft_scheduler
         googletest
 )
 
+TestTarget(ut_raft_send
+    SOURCES
+        ut_raft_send.cpp
+    LIBRARIES
+        raft
+    DEPENDS
+        googletest
+)
+
 TestTarget(ut_raft_serialization
     SOURCES
         ut_raft_serialization.cpp

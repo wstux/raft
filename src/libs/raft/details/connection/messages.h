@@ -131,9 +131,9 @@ struct message final
 
     message_type type;
 
-    server_id_t src_id;
-    server_id_t dst_id;
-    std::string address;
+    server_id_t src_id;  // source server id
+    server_id_t dst_id;  // destination server id
+    std::string address; // source server address
     term_t term;
 
     union {
