@@ -188,6 +188,7 @@ bool init(context& ctx)
 
     ctx.is_async_io = cfg.is_async_io;
 
+    ctx.role.is_voter = cfg.is_voter;
     ctx.role.voted_for = gk_invalid_id;
 
     ctx.schd.init(cfg.scheduler_threads_count);

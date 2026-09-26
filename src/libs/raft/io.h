@@ -56,6 +56,7 @@ constexpr server_id_t gk_invalid_id = 0;
 struct config final
 {
     std::string address;
+    bool is_voter = false;
 
     size_t vote_timeout_min_ms = 250;
     size_t vote_timeout_max_ms = 500;

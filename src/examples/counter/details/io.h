@@ -61,6 +61,7 @@ public:
                 break;
             }
         }
+        m_cfg.is_voter = true;
         m_cfg.scheduler_threads_count = 4;
     }
 

@@ -52,7 +52,9 @@ void election_cancel_task(context& ctx)
 
 void election_restart_task(context& ctx)
 {
-    ctx.schd.reschedule(ctx.election_task, election_timeout_ms(ctx));
+    if (ctx.role.is_voter) {
+        ctx.schd.reschedule(ctx.election_task, election_timeout_ms(ctx));
+    }
 }
 
 void election_timeout_task(context& ctx)

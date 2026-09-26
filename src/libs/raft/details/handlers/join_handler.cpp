@@ -82,7 +82,7 @@ void handle_response(context& ctx, server_id_t src_id, const std::string& addres
 void request(context& ctx, const std::string& address)
 {
     RAFT_JOIN_LOG_TRACE(ctx, "Sending request to server %s to join. Server %llu(%s), current term %u", address.c_str(), ctx.role.str(), ctx.term);
-    return utils::send_join_request(ctx, gk_invalid_id, address, ctx.term, ctx.id, ctx.address, true);
+    return utils::send_join_request(ctx, gk_invalid_id, address, ctx.term, ctx.id, ctx.address, ctx.role.is_voter);
 }
 
 } // namespace heartbeat
