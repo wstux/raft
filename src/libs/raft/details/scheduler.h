@@ -114,6 +114,8 @@ public:
     /// \param  ms - delay before execution in milliseconds.
     void reschedule(const task_type& task, int32_t ms);
 
+    void schedule(handler_type&& handler, int32_t ms);
+
     /// \brief  Schedules a task to execute with a specified delay.
     /// \param  task - task.
     /// \param  ms - delay before execution in milliseconds.

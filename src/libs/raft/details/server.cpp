@@ -120,7 +120,7 @@ bool server::init()
 {
     const bool is_inited = details::utils::init(*m_p_ctx);
     if (! is_inited) {
-        RAFT_LOG_ERROR((*m_p_ctx), "Filed to init raft server.");
+        RAFT_LOG_ERROR((*m_p_ctx), "Failed to init raft server.");
         return false;
     }
     m_p_ctx->election_task = m_p_ctx->schd.make_task([this]() { details::timeout::election_timeout_task(*m_p_ctx); });
@@ -156,6 +156,13 @@ bool server::is_inited() const
 bool server::is_leader() const
 {
     return m_p_ctx->role.is_leader();
+}
+
+void server::join(std::string cluster_addr) const
+{
+    m_p_ctx->schd.execute_strand([p_ctx = m_p_ctx.get(), cluster_addr = std::move(cluster_addr)]() {
+        details::join::request(*p_ctx, cluster_addr);
+    });
 }
 
 void server::handle_message(const inbuffer_type& msg_buf)

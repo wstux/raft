@@ -79,6 +79,8 @@ public:
 
     bool is_stop() const { return m_is_stop || m_is_stop_fn(); }
 
+    void join(std::string cluster_addr) const;
+
     void handle_message(const inbuffer_type& msg_buf);
 
     index_t last_applied_index() const;

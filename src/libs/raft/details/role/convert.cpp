@@ -101,8 +101,7 @@ void update_leader(context& ctx, server_id_t leader_id)
     assert(ctx.role.is_follower());
 
     if (ctx.role.leader_id != leader_id) {
-        RAFT_LOG_INFO(ctx, "Updating leader for server %llu(%s) to server with id %llu",
-            ctx.id, ctx.role.str(), leader_id);
+        RAFT_LOG_INFO(ctx, "Updating leader for server %llu(%s) to server with id %llu", ctx.id, ctx.role.str(), leader_id);
         ctx.role.leader_id = leader_id;
         //ctx.role.follower.leader_address = leader_addr;
     }
