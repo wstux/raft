@@ -45,7 +45,7 @@ raft::server::ptr make_server(const details::io::ptr& p_io, details::fsm::ptr& p
 
 counter_node::counter_node(const config::ptr& p_config)
     : m_p_config(p_config)
-    , m_p_io(std::make_shared<details::io>(m_p_config->server_id(), m_p_config->cluster_config(), m_p_config->level()))
+    , m_p_io(std::make_shared<details::io>(m_p_config->endpoint(), m_p_config->cluster_config(), m_p_config->level()))
     , m_p_fsm(std::make_shared<details::fsm>())
     , m_p_server(make_server(m_p_io, m_p_fsm, m_p_config))
     , m_counter(0)
@@ -60,6 +60,7 @@ counter_node::~counter_node()
 int counter_node::run()
 {
     if (m_p_config->bootstrap()) {
+        LOG_DEBUG(m_logger, "Counter starts with bootstrap and '" << m_p_config->endpoint() << "' endpoint");
         raft::cluster_config cluster_cfg;
         for (const config::server_config& cfg : m_p_config->cluster_config()) {
             cluster_cfg.servers.emplace_back(cfg.id, cfg.endpoint, cfg.is_voter);
@@ -69,6 +70,7 @@ int counter_node::run()
             return 1;
         }
     } else {
+        LOG_DEBUG(m_logger, "Counter starts with '" << m_p_config->endpoint() << "' endpoint");
         if (! m_p_server->init()) {
             LOG_ERROR(m_logger, "Failed to init raft server");
             return 1;
@@ -84,6 +86,11 @@ int counter_node::run()
         LOG_ERROR(m_logger, "Failed to start rpc server");
         stop();
         return 1;
+    }
+
+    if (! m_p_config->cluster_address().empty()) {
+        LOG_DEBUG(m_logger, "Counter with '" << m_p_config->endpoint() << "' endpoint is joining to cluster " << m_p_config->cluster_address());
+        m_p_server->join(m_p_config->cluster_address());
     }
 
     while (is_ready()) {
