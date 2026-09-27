@@ -244,8 +244,6 @@ public:
         return true;
     }
 
-    virtual config configuration() const noexcept override final { return m_cfg; };
-
     virtual void deinit() noexcept override final {}
 
     virtual std::optional<snapshot> get_snapshot() const noexcept override final { return m_p_snapshot; }

@@ -84,8 +84,6 @@ public:
         return is_append;
     }
 
-    virtual config configuration() const noexcept override final { return cfg; };
-
     virtual void deinit() noexcept override final {}
 
     virtual std::optional<snapshot> get_snapshot() const noexcept override final { return p_snapshot; }

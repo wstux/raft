@@ -65,9 +65,9 @@ public:
 
     server_id_t id() const { return m_id; }
 
-    bool init();
+    bool init(const config& cfg);
 
-    bool init_bootstrap(const cluster_config& cluster_cfg);
+    bool init_bootstrap(const config& cfg, const cluster_config& cluster_cfg);
 
     bool is_candidate() const;
 
@@ -87,7 +87,7 @@ public:
 
     server_id_t leader_id() const;
 
-    bool reconfigure();
+    bool reconfigure(const config& cfg);
 
     void remove(const server_id_t id);
 

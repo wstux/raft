@@ -125,7 +125,7 @@ peer::ptr find_peer(context& ctx, server_id_t id);
 
 server_config* find_server_config(context& ctx, server_id_t id);
 
-bool init(context& ctx);
+bool init(context& ctx, const config& cfg);
 
 bool is_in_cluster(const context& ctx, server_id_t id);
 
