@@ -179,9 +179,9 @@ bool update(context& ctx, const entry::ptr& p_entry)
     }
 
     std::vector<server_config>::const_iterator it =
-        std::find_if(ctx.state.cluster_cfg.servers.cbegin(), ctx.state.cluster_cfg.servers.cend(),
+        std::find_if(cluster_cfg.servers.cbegin(), cluster_cfg.servers.cend(),
             [&ctx](const server_config& cfg) -> bool { return cfg.id == ctx.id; });
-    if (it == ctx.state.cluster_cfg.servers.cend()) {
+    if (it == cluster_cfg.servers.cend()) {
         return false;
         /*if (! ctx.role.is_follower()) {
             role::become_follower(ctx);

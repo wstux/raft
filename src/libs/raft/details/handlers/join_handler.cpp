@@ -67,8 +67,8 @@ void handle_request(context& ctx, server_id_t src_id, const std::string& /*addre
             RAFT_JOIN_LOG_ERROR(ctx, "Reject join request from server %llu. Reason: server have invalid configuration", msg.id);
             return utils::send_join_response(ctx, src_id, msg.address, ctx.term, join_status::no_leader);
         }
-        RAFT_JOIN_LOG_DEBUG(ctx, "Resend join request to leader %llu.", ctx.id);
-        utils::send_join_request(ctx, src_id, p_cfg->address, term, msg.id, msg.address, msg.is_voter);
+        RAFT_JOIN_LOG_DEBUG(ctx, "Resend join request to leader %llu.", p_cfg->id);
+        utils::send_join_request(ctx, p_cfg->id, p_cfg->address, term, msg.id, msg.address, msg.is_voter);
     }
 }
 
@@ -77,8 +77,8 @@ void handle_response(context& ctx, server_id_t src_id, const std::string& addres
     RAFT_JOIN_LOG_DEBUG(ctx, "Handle join response. Response from server %llu to server %llu(%s).", src_id, ctx.id, ctx.role.str());
     if (msg.status == join_status::accept) {
         RAFT_JOIN_LOG_TRACE(ctx, "Server %llu(%s) joined to cluster with leader %s", ctx.id, ctx.role.str(), address.c_str());
-        role::become_follower(ctx);
-        role::update_leader(ctx, src_id);
+        //role::become_follower(ctx);
+        //role::update_leader(ctx, src_id);
     } else if (msg.status == join_status::no_leader || msg.status == join_status::busy_leader) {
         RAFT_JOIN_LOG_WARN(ctx, "Failed to join cluster. Repeat request in 100 ms.");
         ctx.schd.schedule([&ctx, leader_addr = address]() { request(ctx, leader_addr); }, 100);
