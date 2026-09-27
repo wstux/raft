@@ -103,6 +103,15 @@ TestTarget(ut_raft_scheduler
         googletest
 )
 
+TestTarget(ut_raft_send
+    SOURCES
+        ut_raft_send.cpp
+    LIBRARIES
+        raft
+    DEPENDS
+        googletest
+)
+
 TestTarget(ut_raft_serialization
     SOURCES
         ut_raft_serialization.cpp
@@ -117,6 +126,27 @@ TestTarget(ut_raft_server
         ut_raft_server.cpp
     LIBRARIES
         raft
+    DEPENDS
+        googletest
+)
+
+TestTarget(ut_raft_server_join
+    SOURCES
+        ut_raft_server_join.cpp
+    LIBRARIES
+        raft
+        raft_stub
+    DEPENDS
+        googletest
+)
+
+TestTarget(ut_raft_server_join_async
+    SOURCES
+        ut_raft_server_join.cpp
+    COMPILE_DEFINITIONS USE_ASYNC_IO
+    LIBRARIES
+        raft
+        raft_stub
     DEPENDS
         googletest
 )

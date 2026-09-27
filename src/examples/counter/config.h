@@ -56,6 +56,8 @@ public:
 
     bool bootstrap() const  { return m_bootstrap; }
 
+    const std::string cluster_address() const { return m_cluster_address; }
+
     raft::server_id_t server_id() const { return m_server_id; }
 
     raft::logging_handler::severity_level level() const { return m_level; }
@@ -72,6 +74,8 @@ private:
 
     raft::server_id_t m_server_id = raft::gk_invalid_id;
     raft::logging_handler::severity_level m_level = raft::logging_handler::severity_level::info;
+
+    std::string m_cluster_address;
 
     bool m_bootstrap = false;
     server_config::list m_servers;

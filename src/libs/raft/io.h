@@ -55,6 +55,9 @@ constexpr server_id_t gk_invalid_id = 0;
 
 struct config final
 {
+    std::string address;
+    bool is_voter = false;
+
     size_t vote_timeout_min_ms = 250;
     size_t vote_timeout_max_ms = 500;
 
@@ -67,6 +70,8 @@ struct config final
 
     bool is_async_io = false;
 
+    bool is_append_entries_log_ch_enabled = true;
+    bool is_join_log_ch_enabled = true;
     bool is_heartbeat_log_ch_enabled = true;
     bool is_snapshot_log_ch_enabled = true;
     bool is_timeout_log_ch_enabled = true;

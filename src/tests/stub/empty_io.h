@@ -44,13 +44,18 @@ public:
     using ptr = std::shared_ptr<empty_client>;
 
 public:
+    explicit empty_client(std::string_view addr)
+        : address(addr)
+    {}
+
     void send(const buffer_type& b) { buffer = b; }
 
-    static empty_client::ptr make() { return std::make_shared<empty_client>(); }
+    static empty_client::ptr make(std::string_view addr) { return std::make_shared<empty_client>(addr); }
 
     details::message decode() const { return details::deserialize<details::message>(buffer); }
 
 public:
+    const std::string address;
     buffer_type buffer;
 };
 
@@ -60,7 +65,12 @@ public:
     using ptr = std::shared_ptr<empty_io>;
 
 public:
-    empty_io() { cfg.scheduler_threads_count = 2; }
+    empty_io()
+    {
+        cfg.address = std::to_string(++m_addr_id);
+        cfg.scheduler_threads_count = 2;
+    }
+
     virtual ~empty_io() {}
 
     virtual bool append(const entry::list& entrs) noexcept override final
@@ -85,7 +95,7 @@ public:
         if (clients.empty() && ! cluster_cfg.servers.empty()) {
             for (const server_config& cfg : cluster_cfg.servers) {
                 if (cfg.id != id) {
-                    clients.emplace(cfg.id, empty_client::make());
+                    clients.emplace(cfg.id, empty_client::make(cfg.address));
                 }
             }
         }
@@ -107,7 +117,7 @@ public:
     virtual index_t load_start_index() noexcept override final { return start_index; }
     virtual term_t load_term() noexcept override final { return 1; }
     virtual bool reconfigure(server_id_t) noexcept override final { return true; }
-    virtual void send(server_id_t id, std::string_view, const buffer_type& msg) noexcept override final
+    virtual void send(server_id_t id, std::string_view addr, const buffer_type& msg) noexcept override final
     {
         empty_client* p_client = nullptr;
         {
@@ -116,7 +126,7 @@ public:
             if (it != clients.end()) {
                 p_client = it->second.get();
             } else {
-                p_client = clients.emplace(id, empty_client::make()).first->second.get();
+                p_client = clients.emplace(id, empty_client::make(addr)).first->second.get();
             }
         }
         p_client->send(msg);
@@ -170,7 +180,12 @@ public:
     bool is_snapshot = true;
     bool is_truncate = true;
     bool is_stop = false;
+
+private:
+    static size_t m_addr_id;
 };
+
+size_t empty_io::m_addr_id = 0;
 
 } // namespace tests
 } // namespace raft

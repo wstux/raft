@@ -175,6 +175,12 @@ void scheduler::reschedule(const task_type& task, int32_t ms)
     schedule(task, ms);
 }
 
+void scheduler::schedule(handler_type&& handler, int32_t ms)
+{
+    task_type task = make_task(std::move(handler));
+    schedule(task, ms);
+}
+
 void scheduler::schedule(const task_type& task, int32_t ms)
 {
     using asio_allocator_type = boost::asio::recycling_allocator<void>;

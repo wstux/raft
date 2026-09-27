@@ -27,6 +27,7 @@
 
 #include <sys/time.h>
 
+#include <cstdint>
 #include <algorithm>
 #include <chrono>
 #include <fstream>
@@ -199,7 +200,7 @@ public:
     };
 
 public:
-    io_stub(const cluster_config& cluster_cfg, const iclient_factory::ptr& p_factory)
+    io_stub(server_id_t id, const cluster_config& cluster_cfg, const iclient_factory::ptr& p_factory)
         : m_cluster_cfg(cluster_cfg)
         , m_is_changed_cluster_cfg(false)
         , m_p_factory(p_factory)
@@ -209,6 +210,8 @@ public:
         , m_snapshot_term(0)
         , m_start_index(1)
     {
+        m_cfg.address = std::to_string(id);
+        m_cfg.is_voter = true;
         m_cfg.scheduler_threads_count = 2;
         m_cfg.snapshot_threshold = 5;
         m_cfg.snapshot_trailing = 2;
@@ -279,10 +282,13 @@ public:
 
     virtual bool reconfigure(server_id_t) noexcept override final { return true; }
 
-    virtual void send(server_id_t id, std::string_view, const buffer_type& msg) noexcept override final
+    virtual void send(server_id_t id, std::string_view addr, const buffer_type& msg) noexcept override final
     {
         iclient* p_client = nullptr;
         {
+            if (id == gk_invalid_id) {
+                id = static_cast<server_id_t>(std::stoull(std::string(addr)));
+            }
             std::unique_lock<std::mutex> lock(m_clients_mutex);
             std::unordered_map<server_id_t, iclient::ptr>::iterator it = m_clients.find(id);
             if (it != m_clients.end()) {

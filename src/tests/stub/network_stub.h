@@ -77,7 +77,7 @@ public:
         cluster_cfg.servers.emplace_back(id, std::to_string(id), is_voter);
 
         io_stub::iclient_factory::ptr p_factory = this->shared_from_this();
-        io_stub::ptr p_io = std::make_shared<io_stub>(cluster_cfg, p_factory);
+        io_stub::ptr p_io = std::make_shared<io_stub>(id, cluster_cfg, p_factory);
         server_ptr p_srv = create_server_impl(id, p_io);
 
         p_srv->init();
@@ -125,7 +125,7 @@ public:
             m_cluster_cfg.servers.emplace_back(id, std::to_string(id), is_voter);
         }
         for (const server_config& cfg : m_cluster_cfg.servers) {
-            io_stub::ptr p_io = std::make_shared<io_stub>(m_cluster_cfg, this->shared_from_this());
+            io_stub::ptr p_io = std::make_shared<io_stub>(cfg.id, m_cluster_cfg, this->shared_from_this());
             create_server_impl(cfg.id, p_io);
         }
         if (is_init) {

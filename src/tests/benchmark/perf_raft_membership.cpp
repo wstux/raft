@@ -58,12 +58,11 @@ static void add_member(benchmark::State& state)
         p_network->wait_leader();
 
         raft::server::ptr p_leader = p_network->get_leader();
-        const raft::index_t idx = 2;//p_leader->last_applied_index() + 1;
         p_network->create_server(N + 1, true);
 
         state.ResumeTiming();
         p_leader->add(N + 1, std::to_string(N + 1), true);
-        p_network->wait_for_update(idx);
+        p_network->wait_for_update(2);
         state.PauseTiming();
 
         p_network->stop();
@@ -100,11 +99,10 @@ static void apply_member(benchmark::State& state)
         p_network->wait_leader();
 
         raft::server::ptr p_leader = p_network->get_leader();
-        const raft::index_t idx = 2;//p_leader->last_applied_index() + 1;
 
         state.ResumeTiming();
         p_leader->apply<size_t>(1234567);
-        p_network->wait_for_update(idx);
+        p_network->wait_for_update(2);
         state.PauseTiming();
 
         p_network->stop();
@@ -141,12 +139,11 @@ static void remove_member(benchmark::State& state)
         p_network->wait_leader();
 
         raft::server::ptr p_leader = p_network->get_leader();
-        const raft::index_t idx = 2;//p_leader->last_applied_index() + 1;
         raft::server_id_t remove_id = (p_leader->id() == N) ? 1 : (p_leader->id() + 1);
 
         state.ResumeTiming();
         p_leader->remove(remove_id);
-        p_network->wait_for_update(idx, remove_id);
+        p_network->wait_for_update(2, remove_id);
         state.PauseTiming();
 
         p_network->stop();
@@ -176,12 +173,11 @@ static void add_member_default(benchmark::State& state)
         p_network->wait_leader();
 
         raft::server::ptr p_leader = p_network->get_leader();
-        const raft::index_t idx = 2;//p_leader->last_applied_index() + 1;
         p_network->create_server(N + 1, true);
 
         state.ResumeTiming();
         p_leader->add(N + 1, std::to_string(N + 1), true);
-        p_network->wait_for_update(idx);
+        p_network->wait_for_update(2);
         state.PauseTiming();
 
         p_network->stop();
@@ -211,11 +207,10 @@ static void apply_member_default(benchmark::State& state)
         p_network->wait_leader();
 
         raft::server::ptr p_leader = p_network->get_leader();
-        const raft::index_t idx = 2;//p_leader->last_applied_index() + 1;
 
         state.ResumeTiming();
         p_leader->apply<size_t>(1234567);
-        p_network->wait_for_update(idx);
+        p_network->wait_for_update(2);
         state.PauseTiming();
 
         p_network->stop();
@@ -245,12 +240,11 @@ static void remove_member_default(benchmark::State& state)
         p_network->wait_leader();
 
         raft::server::ptr p_leader = p_network->get_leader();
-        const raft::index_t idx = 2;//p_leader->last_applied_index() + 1;
         const raft::server_id_t remove_id = (p_leader->id() == N) ? 1 : (p_leader->id() + 1);
 
         state.ResumeTiming();
         p_leader->remove(remove_id);
-        p_network->wait_for_update(idx, remove_id);
+        p_network->wait_for_update(2, remove_id);
         state.PauseTiming();
 
         p_network->stop();

@@ -22,37 +22,26 @@
  * THE SOFTWARE.
  */
 
-#include <cstdlib>
-#include <iostream>
-#include <string>
-#include <string_view>
+#ifndef _LIBS_RAFT_HANDLERS_JOIN_HANDLER_H_
+#define _LIBS_RAFT_HANDLERS_JOIN_HANDLER_H_
 
-#include "raft/io.h"
+#include "raft/details/context.h"
+#include "raft/details/connection/messages.h"
 
-#include "counter/config.h"
-#include "counter/counter.h"
+namespace wstux {
+namespace raft {
+namespace details {
+namespace join {
 
-void print_usage()
-{
-    std::cout << "Usage: <program> -i/--id <server_id(>0)> -l/--level <trace/debug/info/warning/error> -c/--config <cfg_file>" << std::endl;
-    std::cout << "Usage bootstrap: <program> -i/--id <server_id(>0)> -l/--level <trace/debug/info/warning/error> "
-              << "-c/--config <cfg_file> -b/--bootstrap" << std::endl;
-    std::cout << "Usage join: <program> -i/--id <server_id(>0)> -l/--level <trace/debug/info/warning/error> "
-              << "-e/endpoint <addr> -j/--join <cluster_addr>" << std::endl;
-}
+void handle_request(context& ctx, server_id_t src_id, const std::string& address, term_t term, const join_message& msg);
 
-int main(int argc, char** argv)
-{
-    namespace raft = ::wstux::raft;
+void handle_response(context& ctx, server_id_t src_id, const std::string& address, term_t term, const join_response_message& msg);
 
-    ::wstux::examples::counter::config::ptr p_config = std::make_shared<::wstux::examples::counter::config>();
+void request(context& ctx, const std::string& address);
 
-    if (! p_config->load(argc, argv)) {
-        print_usage();
-        return 1;
-    }
+} // namespace heartbeat
+} // namespace details
+} // namespace raft
+} // namespace wstux
 
-    wstux::examples::counter::counter_node node(p_config);
-    const int rc = node.run();
-    return rc;
-}
+#endif /* _LIBS_RAFT_HANDLERS_JOIN_HANDLER_H_ */

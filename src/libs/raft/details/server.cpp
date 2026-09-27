@@ -31,6 +31,7 @@
 #include "raft/details/connection/messages.h"
 #include "raft/details/connection/serialization.h"
 #include "raft/details/handlers/append_entries_handler.h"
+#include "raft/details/handlers/join_handler.h"
 #include "raft/details/handlers/snapshot_handler.h"
 #include "raft/details/handlers/timeout_handler.h"
 #include "raft/details/handlers/vote_handler.h"
@@ -50,6 +51,12 @@ void handle_message(details::context& ctx, const details::message& msg)
         break;
     case details::message_type::append_entries_response:
         details::append_entries::handle_response(ctx, msg.src_id, msg.address, msg.term, msg.append_entries_resp);
+        break;
+    case details::message_type::join_request:
+        details::join::handle_request(ctx, msg.src_id, msg.address, msg.term, msg.join_req);
+        break;
+    case details::message_type::join_response:
+        details::join::handle_response(ctx, msg.src_id, msg.address, msg.term, msg.join_resp);
         break;
     case details::message_type::snapshot_request:
         details::snapshot::handle_request(ctx, msg.src_id, msg.address, msg.term, msg.snapshot_req);
@@ -113,12 +120,11 @@ bool server::init()
 {
     const bool is_inited = details::utils::init(*m_p_ctx);
     if (! is_inited) {
-        RAFT_LOG_ERROR((*m_p_ctx), "Filed to init raft server.");
+        RAFT_LOG_ERROR((*m_p_ctx), "Failed to init raft server.");
         return false;
     }
     m_p_ctx->election_task = m_p_ctx->schd.make_task([this]() { details::timeout::election_timeout_task(*m_p_ctx); });
     m_p_ctx->heartbeat_task = m_p_ctx->schd.make_task([this]() { details::timeout::heartbeat_timeout_task(*m_p_ctx); });
-
     return true;
 }
 
@@ -144,12 +150,19 @@ bool server::is_follower() const
 
 bool server::is_inited() const
 {
-    return (m_p_ctx->election_task.get() != nullptr);
+    return (! m_p_ctx->address.empty());
 }
 
 bool server::is_leader() const
 {
     return m_p_ctx->role.is_leader();
+}
+
+void server::join(std::string cluster_addr) const
+{
+    m_p_ctx->schd.execute_strand([p_ctx = m_p_ctx.get(), cluster_addr = std::move(cluster_addr)]() {
+        details::join::request(*p_ctx, cluster_addr);
+    });
 }
 
 void server::handle_message(const inbuffer_type& msg_buf)
@@ -197,6 +210,9 @@ bool server::reconfigure()
     }
 
     config cfg = m_p_ctx->p_io->configuration();
+    if (cfg.address.empty()) {
+        return false;;
+    }
     if (cfg.heartbeat_interval_ms == 0 || cfg.vote_timeout_max_ms == 0 || cfg.vote_timeout_max_ms < cfg.vote_timeout_min_ms) {
         return false;
     }

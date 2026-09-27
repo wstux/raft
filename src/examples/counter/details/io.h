@@ -48,13 +48,15 @@ public:
     using ptr = std::shared_ptr<io>;
 
 public:
-    io(const config::server_config::list& servers, raft::logging_handler::severity_level lvl)
+    io(const std::string& addr, const config::server_config::list& servers, raft::logging_handler::severity_level lvl)
         : m_servers(servers)
         , m_term(1)
         , m_voted_for(raft::gk_invalid_id)
         , m_level(lvl)
         , m_logger(m_level)
     {
+        m_cfg.address = addr;
+        m_cfg.is_voter = true;
         m_cfg.scheduler_threads_count = 4;
     }
 
@@ -123,9 +125,19 @@ public:
 
     virtual bool reconfigure(raft::server_id_t) noexcept override final { return true; }
 
-    virtual void send(raft::server_id_t id, std::string_view, const raft::buffer_type& msg) noexcept override final
+    virtual void send(raft::server_id_t id, std::string_view endpoint, const raft::buffer_type& msg) noexcept override final
     {
-        m_clients.at(id)->send(msg);
+        client* p_client = nullptr;
+        {
+            std::unique_lock<std::mutex> lock(m_clients_mutex);
+            std::unordered_map<raft::server_id_t, client::ptr>::iterator it = m_clients.find(id);
+            if (it != m_clients.end()) {
+                p_client = it->second.get();
+            } else {
+                p_client = m_clients.emplace(id, std::make_shared<client>(std::string(endpoint), m_level)).first->second.get();
+            }
+        }
+        p_client->send(msg);
     }
 
     virtual bool set_snapshot(const raft::snapshot& sh) noexcept override final
@@ -165,6 +177,7 @@ private:
     raft::term_t m_term;
     raft::server_id_t m_voted_for;
 
+    std::mutex m_clients_mutex;
     std::unordered_map<raft::server_id_t, client::ptr> m_clients;
 
     std::mutex m_entries_mutex;

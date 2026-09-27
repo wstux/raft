@@ -54,6 +54,7 @@ struct context final
 
     const server_id_t id;
     const is_stop_fn_t is_stop_fn;
+    std::string address;
     allocator_type alloc;
 
     bool is_async_io;

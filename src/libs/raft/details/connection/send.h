@@ -63,6 +63,21 @@ template<> struct message_filler<message_type::append_entries_response>
     }
 };
 
+template<> struct message_filler<message_type::join_request>
+{
+    static void fill(message& msg, server_id_t id, std::string address, bool is_voter)
+    {
+        msg.join_req.id = id;
+        msg.join_req.address = std::move(address);
+        msg.join_req.is_voter = is_voter;
+    }
+};
+
+template<> struct message_filler<message_type::join_response>
+{
+    static void fill(message& msg, uint32_t status) { msg.join_resp.status = status; }
+};
+
 template<> struct message_filler<message_type::snapshot_request>
 {
     static void fill(message& msg, raft::snapshot&& sh)
@@ -97,53 +112,67 @@ template<> struct message_filler<message_type::vote_response>
 };
 
 template<message_type TMsgType, typename... TArgs>
-void send(io::ptr p_io, server_id_t dst_id, std::string_view addr, term_t term, server_id_t src_id, TArgs&&... args)
+void send(io::ptr p_io, server_id_t dst_id, std::string_view src_addr, std::string_view dst_addr, term_t term, server_id_t src_id, TArgs&&... args)
 {
     message msg(TMsgType);
 
     msg.src_id = src_id;
     msg.dst_id = dst_id;
+    msg.address = src_addr;
     msg.term = term;
 
     message_filler<TMsgType>::fill(msg, std::forward<TArgs>(args)...);
 
-    p_io->send(dst_id, addr, serialize(msg));
+    p_io->send(dst_id, dst_addr, serialize(msg));
 }
 
 template<message_type TMsgType, typename... TArgs>
-inline void send_async(context& ctx, server_id_t dst_id, std::string address, TArgs&&... args)
+inline void send_async(context& ctx, server_id_t dst_id, std::string src_address, std::string dst_address, TArgs&&... args)
 {
     assert(ctx.id != dst_id);
-    ctx.schd.execute_async([p_io = ctx.p_io, dst_id, addr = std::move(address), args...]() mutable -> void {
-        send<TMsgType>(std::move(p_io), dst_id, addr, std::move(args)...);
-    });
+    ctx.schd.execute_async(
+        [p_io = ctx.p_io, dst_id, src_addr = std::move(src_address), dst_addr = std::move(dst_address), args...]() mutable -> void {
+            send<TMsgType>(std::move(p_io), dst_id, src_addr, dst_addr, std::move(args)...);
+        }
+    );
 }
 
 inline void send_append_entries_request(context& ctx, server_id_t dst_id, std::string addr, term_t term,
                                         index_t log_index, term_t log_term, index_t commit, entry::list&& entries)
 {
-    send_async<message_type::append_entries_request>(ctx, dst_id, std::move(addr), term, ctx.id, log_index, log_term, commit, std::move(entries));
+    send_async<message_type::append_entries_request>(ctx, dst_id, ctx.address, std::move(addr), term, ctx.id,
+        log_index, log_term, commit, std::move(entries));
 }
 
 inline void send_append_entries_response(context& ctx, server_id_t dst_id, std::string addr, term_t term, bool accept, index_t last_log_index)
 {
-    send_async<message_type::append_entries_response>(ctx, dst_id, std::move(addr), term, ctx.id, accept, last_log_index);
+    send_async<message_type::append_entries_response>(ctx, dst_id, ctx.address, std::move(addr), term, ctx.id, accept, last_log_index);
+}
+
+inline void send_join_request(context& ctx, server_id_t dst_id, std::string addr, term_t term, server_id_t id, std::string address, bool is_voter)
+{
+    send_async<message_type::join_request>(ctx, dst_id, ctx.address, std::move(addr), term, ctx.id, id, std::move(address), is_voter);
+}
+
+inline void send_join_response(context& ctx, server_id_t dst_id, std::string addr, term_t term, uint32_t status)
+{
+    send_async<message_type::join_response>(ctx, dst_id, ctx.address, std::move(addr), term, ctx.id, status);
 }
 
 inline void send_snapshot_request(context& ctx, server_id_t dst_id, std::string addr, term_t term, raft::snapshot&& sh)
 {
-    send_async<message_type::snapshot_request>(ctx, dst_id, std::move(addr), term, ctx.id, std::move(sh));
+    send_async<message_type::snapshot_request>(ctx, dst_id, ctx.address, std::move(addr), term, ctx.id, std::move(sh));
 }
 
 inline void send_vote_request(context& ctx, server_id_t dst_id, std::string addr, term_t term, bool is_prevote,
                               index_t last_log_index, term_t last_log_term)
 {
-    send_async<message_type::vote_request>(ctx, dst_id, std::move(addr), term, ctx.id, is_prevote, last_log_index, last_log_term);
+    send_async<message_type::vote_request>(ctx, dst_id, ctx.address, std::move(addr), term, ctx.id, is_prevote, last_log_index, last_log_term);
 }
 
 inline void send_vote_response(context& ctx, server_id_t dst_id, std::string addr, term_t term, bool is_prevote, bool accept)
 {
-    send_async<message_type::vote_response>(ctx, dst_id, std::move(addr), term, ctx.id, is_prevote, accept);
+    send_async<message_type::vote_response>(ctx, dst_id, ctx.address, std::move(addr), term, ctx.id, is_prevote, accept);
 }
 
 } // namespace utils

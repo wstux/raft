@@ -94,7 +94,6 @@ TYPED_TEST(raft_snapshot, take_snapshot)
     raft::cluster_config cfg  = p_network->get_io(p_leader->id())->m_cluster_cfg;
     ASSERT_TRUE(cfg.servers.size() == 3) << cfg.servers.size();
 
-    const raft::index_t idx = p_leader->last_applied_index() + 5;
     size_t value = 1234567;
     p_leader->apply(value);
     p_leader->apply(value);
@@ -102,7 +101,7 @@ TYPED_TEST(raft_snapshot, take_snapshot)
     p_leader->apply(value);
     p_leader->apply(++value);
 
-    p_network->wait_for_update(idx);
+    p_network->wait_for_update(6);
     EXPECT_TRUE(p_leader->last_applied_index() == 6) << p_leader->last_applied_index();
 
     p_leader->add(p_srv->id(), std::to_string(p_srv->id()), true);
@@ -116,7 +115,7 @@ TYPED_TEST(raft_snapshot, take_snapshot)
     }
 
     p_leader->apply(++value);
-    p_network->wait_for_update(idx);
+    p_network->wait_for_update(8);
     EXPECT_TRUE(p_leader->last_applied_index() == 8) << p_leader->last_applied_index();
 
     for (size_t i = 1; i < 5; ++i) {

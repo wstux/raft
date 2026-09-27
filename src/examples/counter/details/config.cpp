@@ -37,7 +37,7 @@ bool config::load(int argc, char** argv)
     if (! parse_args(argc, argv)) {
         return false;
     }
-    if (! parse_config_file()) {
+    if (m_cluster_address.empty() && ! parse_config_file()) {
         return false;
     }
 
@@ -82,9 +82,19 @@ bool config::parse_args(int argc, char** argv)
             }
         } else if (arg == "-b" || arg == "--bootstrap") {
             m_bootstrap = true;
+        } else if (arg == "-j" || arg == "--join") {
+            m_cluster_address = argv[++i];
+        } else if (arg == "-e" || arg == "--endpoint") {
+            m_endpoint = argv[++i];
         }
     }
-    if (m_cfg_file.empty()) {
+    if (m_cluster_address.empty() && m_cfg_file.empty()) {
+        return false;
+    }
+    if (! m_cluster_address.empty() && ! m_cfg_file.empty()) {
+        return false;
+    }
+    if (! m_cluster_address.empty() && m_bootstrap) {
         return false;
     }
     if (m_server_id == raft::gk_invalid_id) {

@@ -45,6 +45,7 @@ struct logger
     bool can_root_log(logging_handler::severity_level lvl) const { return cal_log(lvl); }
     bool can_append_entries_log(logging_handler::severity_level lvl) const { return is_append_entries_channel_enabled && cal_log(lvl); }
     bool can_heartbeat_log(logging_handler::severity_level lvl) const { return is_heartbeat_channel_enabled && cal_log(lvl); }
+    bool can_join_log(logging_handler::severity_level lvl) const { return is_join_channel_enabled && cal_log(lvl); }
     bool can_snapshot_log(logging_handler::severity_level lvl) const { return is_snapshot_channel_enabled && cal_log(lvl); }
     bool can_timeout_log(logging_handler::severity_level lvl) const { return is_timeout_channel_enabled && cal_log(lvl); }
     bool can_vote_log(logging_handler::severity_level lvl) const { return is_vote_channel_enabled && cal_log(lvl); }
@@ -63,6 +64,7 @@ struct logger
 
     bool is_append_entries_channel_enabled = true;
     bool is_heartbeat_channel_enabled = true;
+    bool is_join_channel_enabled = true;
     bool is_snapshot_channel_enabled = true;
     bool is_timeout_channel_enabled = true;
     bool is_vote_channel_enabled = true;
@@ -135,6 +137,16 @@ struct logger
 #define RAFT_AE_LOG_INFO(ctx,   fmt, ...)  RAFT_LOG_CH_INFO(ctx,   append_entries, "AppendEntries", fmt, ##__VA_ARGS__)
 #define RAFT_AE_LOG_DEBUG(ctx,  fmt, ...)  RAFT_LOG_CH_DEBUG(ctx,  append_entries, "AppendEntries", fmt, ##__VA_ARGS__)
 #define RAFT_AE_LOG_TRACE(ctx,  fmt, ...)  RAFT_LOG_CH_TRACE(ctx,  append_entries, "AppendEntries", fmt, ##__VA_ARGS__)
+
+#define RAFT_JOIN_LOG_EMERG(ctx,  fmt, ...)  RAFT_LOG_CH_EMERG(ctx,  join, "Join", fmt, ##__VA_ARGS__)
+#define RAFT_JOIN_LOG_FATAL(ctx,  fmt, ...)  RAFT_LOG_CH_FATAL(ctx,  join, "Join", fmt, ##__VA_ARGS__)
+#define RAFT_JOIN_LOG_CRIT(ctx,   fmt, ...)  RAFT_LOG_CH_CRIT(ctx,   join, "Join", fmt, ##__VA_ARGS__)
+#define RAFT_JOIN_LOG_ERROR(ctx,  fmt, ...)  RAFT_LOG_CH_ERROR(ctx,  join, "Join", fmt, ##__VA_ARGS__)
+#define RAFT_JOIN_LOG_WARN(ctx,   fmt, ...)  RAFT_LOG_CH_WARN(ctx,   join, "Join", fmt, ##__VA_ARGS__)
+#define RAFT_JOIN_LOG_NOTICE(ctx, fmt, ...)  RAFT_LOG_CH_NOTICE(ctx, join, "Join", fmt, ##__VA_ARGS__)
+#define RAFT_JOIN_LOG_INFO(ctx,   fmt, ...)  RAFT_LOG_CH_INFO(ctx,   join, "Join", fmt, ##__VA_ARGS__)
+#define RAFT_JOIN_LOG_DEBUG(ctx,  fmt, ...)  RAFT_LOG_CH_DEBUG(ctx,  join, "Join", fmt, ##__VA_ARGS__)
+#define RAFT_JOIN_LOG_TRACE(ctx,  fmt, ...)  RAFT_LOG_CH_TRACE(ctx,  join, "Join", fmt, ##__VA_ARGS__)
 
 #define RAFT_HB_LOG_EMERG(ctx,  fmt, ...)  RAFT_LOG_CH_EMERG(ctx,  heartbeat, "Heartbeat", fmt, ##__VA_ARGS__)
 #define RAFT_HB_LOG_FATAL(ctx,  fmt, ...)  RAFT_LOG_CH_FATAL(ctx,  heartbeat, "Heartbeat", fmt, ##__VA_ARGS__)
