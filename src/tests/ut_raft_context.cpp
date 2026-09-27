@@ -71,12 +71,6 @@ protected:
     details::context::ptr m_p_ctx;
 };
 
-std::ostream& operator<<(std::ostream& os, const details::context& ctx)
-{
-    os << ctx.id << "(" << ctx.role.str() << ")";
-    return os;
-}
-
 } // <anonymous> namespace
 
 TEST_F(raft_context, init)
@@ -84,7 +78,7 @@ TEST_F(raft_context, init)
     details::context& ctx = init(1);
 
     EXPECT_TRUE(details::utils::bootstrap(ctx, m_p_io->cluster_cfg));
-    EXPECT_TRUE(details::utils::init(ctx));
+    EXPECT_TRUE(details::utils::init(ctx, m_p_io->cfg));
 }
 
 TEST_F(raft_context, init_failed)
@@ -93,7 +87,7 @@ TEST_F(raft_context, init_failed)
 
     m_p_io->is_init = false;
     EXPECT_TRUE(details::utils::bootstrap(ctx, m_p_io->cluster_cfg));
-    EXPECT_FALSE(details::utils::init(ctx));
+    EXPECT_FALSE(details::utils::init(ctx, m_p_io->cfg));
 }
 
 TEST_F(raft_context, init_invalid_config)
@@ -102,7 +96,7 @@ TEST_F(raft_context, init_invalid_config)
 
     m_p_io->cfg.heartbeat_interval_ms = 0;
     EXPECT_TRUE(details::utils::bootstrap(ctx, m_p_io->cluster_cfg));
-    EXPECT_FALSE(details::utils::init(ctx));
+    EXPECT_FALSE(details::utils::init(ctx, m_p_io->cfg));
 }
 
 TEST_F(raft_context, load)
@@ -110,7 +104,7 @@ TEST_F(raft_context, load)
     details::context& ctx = init(1);
 
     EXPECT_TRUE(details::utils::bootstrap(ctx, m_p_io->cluster_cfg));
-    EXPECT_TRUE(details::utils::init(ctx));
+    EXPECT_TRUE(details::utils::init(ctx, m_p_io->cfg));
     EXPECT_TRUE(details::utils::load(ctx));
 }
 
@@ -118,7 +112,7 @@ TEST_F(raft_context, DISABLED_load_failed)
 {
     details::context& ctx = init(1);
     EXPECT_TRUE(details::utils::bootstrap(ctx, m_p_io->cluster_cfg));
-    EXPECT_TRUE(details::utils::init(ctx));
+    EXPECT_TRUE(details::utils::init(ctx, m_p_io->cfg));
 
     details::role::become_follower(ctx);
     details::role::become_candidate(ctx);
@@ -134,18 +128,8 @@ TEST_F(raft_context, load_failed_duplicated_peer)
 
     m_p_io->cluster_cfg.servers.emplace_back(2, "2", true);
     EXPECT_FALSE(details::utils::bootstrap(ctx, m_p_io->cluster_cfg));
-    EXPECT_FALSE(details::utils::init(ctx));
+    EXPECT_FALSE(details::utils::init(ctx, m_p_io->cfg));
     EXPECT_FALSE(details::utils::load(ctx));
-}
-
-TEST_F(raft_context, to_string)
-{
-    details::context& ctx = init(3);
-
-    ctx.role.role = details::role::role_type::candidate;
-    std::stringstream ss;
-    ss << ctx;
-    EXPECT_TRUE(ss.str() == "1(candidate)");
 }
 
 int main(int argc, char** argv)

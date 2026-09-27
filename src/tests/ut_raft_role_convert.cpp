@@ -60,7 +60,7 @@ public:
         }
 
         details::utils::bootstrap(*m_p_ctx, m_p_io->cluster_cfg);
-        details::utils::init(*m_p_ctx);
+        details::utils::init(*m_p_ctx, m_p_io->cfg);
         m_p_ctx->election_task = m_p_ctx->schd.make_task(std::bind(&details::timeout::election_timeout_task, std::ref(*m_p_ctx)));
         m_p_ctx->heartbeat_task = m_p_ctx->schd.make_task(std::bind(&details::timeout::heartbeat_timeout_task, std::ref(*m_p_ctx)));
 

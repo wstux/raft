@@ -159,14 +159,13 @@ server_config* find_server_config(context& ctx, server_id_t id)
     return nullptr;
 }
 
-bool init(context& ctx)
+bool init(context& ctx, const config& cfg)
 {
     if (! ctx.p_io->init(ctx.id)) {
         RAFT_LOG_ERROR(ctx, "Server %llu(%s) failed to init I/O.", ctx.id, ctx.role.str());
         return false;
     }
 
-    const config cfg = ctx.p_io->configuration();
     if (cfg.address.empty()) {
         return false;
     }

@@ -116,9 +116,9 @@ void server::deinit()
     m_p_ctx->p_io->deinit();
 }
 
-bool server::init()
+bool server::init(const config& cfg)
 {
-    const bool is_inited = details::utils::init(*m_p_ctx);
+    const bool is_inited = details::utils::init(*m_p_ctx, cfg);
     if (! is_inited) {
         RAFT_LOG_ERROR((*m_p_ctx), "Failed to init raft server.");
         return false;
@@ -128,14 +128,14 @@ bool server::init()
     return true;
 }
 
-bool server::init_bootstrap(const cluster_config& cluster_cfg)
+bool server::init_bootstrap(const config& cfg, const cluster_config& cluster_cfg)
 {
     const bool is_inited = details::utils::bootstrap(*m_p_ctx, cluster_cfg);
     if (! is_inited) {
         RAFT_LOG_ERROR((*m_p_ctx), "Filed to init bootstrap raft server.");
         return false;
     }
-    return init();
+    return init(cfg);
 }
 
 bool server::is_candidate() const
@@ -201,7 +201,7 @@ bool server::load(details::context& ctx)
     return true;
 }
 
-bool server::reconfigure()
+bool server::reconfigure(const config& cfg)
 {
     RAFT_LOG_INFO((*m_p_ctx), "Raft server %llu is reconfiguring.", m_p_ctx->id);
 
@@ -209,7 +209,6 @@ bool server::reconfigure()
         return false;
     }
 
-    config cfg = m_p_ctx->p_io->configuration();
     if (cfg.address.empty()) {
         return false;;
     }
@@ -228,7 +227,7 @@ bool server::reconfigure()
     m_p_ctx->schd.reconfigure(cfg.scheduler_threads_count);
 
     details::scheduler::handler_type handler =
-        [p_ctx = m_p_ctx.get(), cfg = std::move(cfg)]() -> void { details::utils::reconfigure(*p_ctx, cfg); };
+        [p_ctx = m_p_ctx.get(), cfg = cfg]() -> void { details::utils::reconfigure(*p_ctx, cfg); };
     m_p_ctx->schd.execute_strand(std::move(handler));
     return true;
 }

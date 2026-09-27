@@ -59,19 +59,24 @@ counter_node::~counter_node()
 
 int counter_node::run()
 {
+    raft::config cfg;
+    cfg.address = m_p_config->endpoint();
+    cfg.is_voter = true;
+    cfg.scheduler_threads_count = 4;
+
     if (m_p_config->bootstrap()) {
         LOG_DEBUG(m_logger, "Counter starts with bootstrap and '" << m_p_config->endpoint() << "' endpoint");
         raft::cluster_config cluster_cfg;
         for (const config::server_config& cfg : m_p_config->cluster_config()) {
             cluster_cfg.servers.emplace_back(cfg.id, cfg.endpoint, cfg.is_voter);
         }
-        if (! m_p_server->init_bootstrap(cluster_cfg)) {
+        if (! m_p_server->init_bootstrap(cfg, cluster_cfg)) {
             LOG_ERROR(m_logger, "Failed to init bootstrap raft server");
             return 1;
         }
     } else {
         LOG_DEBUG(m_logger, "Counter starts with '" << m_p_config->endpoint() << "' endpoint");
-        if (! m_p_server->init()) {
+        if (! m_p_server->init(cfg)) {
             LOG_ERROR(m_logger, "Failed to init raft server");
             return 1;
         }
