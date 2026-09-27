@@ -45,7 +45,7 @@ raft::server::ptr make_server(const details::io::ptr& p_io, details::fsm::ptr& p
 
 counter_node::counter_node(const config::ptr& p_config)
     : m_p_config(p_config)
-    , m_p_io(std::make_shared<details::io>(m_p_config->endpoint(), m_p_config->cluster_config(), m_p_config->level()))
+    , m_p_io(std::make_shared<details::io>(m_p_config->cluster_config(), m_p_config->level()))
     , m_p_fsm(std::make_shared<details::fsm>())
     , m_p_server(make_server(m_p_io, m_p_fsm, m_p_config))
     , m_counter(0)

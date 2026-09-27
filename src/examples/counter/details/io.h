@@ -48,17 +48,13 @@ public:
     using ptr = std::shared_ptr<io>;
 
 public:
-    io(const std::string& addr, const config::server_config::list& servers, raft::logging_handler::severity_level lvl)
+    io(const config::server_config::list& servers, raft::logging_handler::severity_level lvl)
         : m_servers(servers)
         , m_term(1)
         , m_voted_for(raft::gk_invalid_id)
         , m_level(lvl)
         , m_logger(m_level)
-    {
-        m_cfg.address = addr;
-        m_cfg.is_voter = true;
-        m_cfg.scheduler_threads_count = 4;
-    }
+    {}
 
     virtual ~io() {}
 
@@ -68,8 +64,6 @@ public:
         m_entries.assign(entries.begin(), entries.end());
         return true;
     }
-
-    virtual raft::config configuration() const noexcept override final { return m_cfg; };
 
     virtual void deinit() noexcept override final {}
 
@@ -172,7 +166,6 @@ public:
 
 private:
     config::server_config::list m_servers;
-    raft::config m_cfg;
 
     raft::term_t m_term;
     raft::server_id_t m_voted_for;

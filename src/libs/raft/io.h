@@ -154,8 +154,6 @@ public:
 
     virtual bool append(const entry::list& entries) noexcept = 0;
 
-    virtual config configuration() const noexcept = 0;
-
     virtual void deinit() noexcept = 0;
 
     virtual std::optional<snapshot> get_snapshot() const noexcept = 0;
