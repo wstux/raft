@@ -97,10 +97,9 @@ TYPED_TEST(raft_membership, add_server)
     raft::cluster_config cfg = p_io->m_cluster_cfg;
     ASSERT_TRUE(cfg.servers.size() == 3) << cfg.servers.size();
 
-    const raft::index_t idx = p_leader->last_applied_index() + 1;
     p_leader->add(p_srv->id(), std::to_string(p_srv->id()), true);
 
-    p_network->wait_for_update(idx);
+    p_network->wait_for_update(2);
     EXPECT_FALSE(p_srv->is_leader());
 
     for (size_t i = 1; i < 5; ++i) {
@@ -132,10 +131,9 @@ TYPED_TEST(raft_membership, add_server_single)
     raft::cluster_config cfg = p_io->m_cluster_cfg;
     ASSERT_TRUE(cfg.servers.size() == 1) << cfg.servers.size();
 
-    const raft::index_t idx = p_leader->last_applied_index() + 1;
     p_leader->add(p_srv->id(), std::to_string(p_srv->id()), true);
 
-    p_network->wait_for_update(idx);
+    p_network->wait_for_update(2);
     EXPECT_TRUE(p_leader->is_leader());
     EXPECT_FALSE(p_srv->is_leader());
 
@@ -163,9 +161,9 @@ TYPED_TEST(raft_membership, multi_add_server)
     server_ptr p_leader = p_network->get_leader();
     io_ptr p_io = p_network->get_io(p_leader->id());
 
+    raft::index_t idx = 1;
     for (size_t id = 4; id < 7; ++id) {
         ASSERT_TRUE(p_leader->is_leader());
-        const raft::index_t idx = p_leader->last_applied_index() + 1;
         server_ptr p_srv = p_network->create_server(id, true);
 
         raft::cluster_config cfg = p_io->m_cluster_cfg;
@@ -174,7 +172,7 @@ TYPED_TEST(raft_membership, multi_add_server)
 
         p_leader->add(p_srv->id(), std::to_string(p_srv->id()), true);
 
-        p_network->wait_for_update(idx);
+        p_network->wait_for_update(++idx);
         EXPECT_FALSE(p_srv->is_leader());
 
         for (size_t i = 1; i < id + 1; ++i) {
@@ -203,9 +201,9 @@ TYPED_TEST(raft_membership, multi_add_server_single)
     server_ptr p_leader = p_network->get_leader();
     io_ptr p_io = p_network->get_io(p_leader->id());
 
+    raft::index_t idx = 1;
     for (size_t id = 2; id < 7; ++id) {
         ASSERT_TRUE(p_leader->is_leader());
-        const raft::index_t idx = p_leader->last_applied_index() + 1;
         server_ptr p_srv = p_network->create_server(id, true);
 
         raft::cluster_config cfg = p_io->m_cluster_cfg;
@@ -214,7 +212,7 @@ TYPED_TEST(raft_membership, multi_add_server_single)
 
         p_leader->add(p_srv->id(), std::to_string(p_srv->id()), true);
 
-        p_network->wait_for_update(idx);
+        p_network->wait_for_update(++idx);
         EXPECT_FALSE(p_srv->is_leader());
 
         for (size_t i = 1; i < id + 1; ++i) {
@@ -249,10 +247,10 @@ TYPED_TEST(raft_membership, DISABLED_add_leader_server)
     raft::cluster_config cfg = p_io->m_cluster_cfg;
     ASSERT_TRUE(cfg.servers.size() == 3) << cfg.servers.size();
 
-    const raft::index_t idx = p_leader->last_applied_index() + 1;
     p_leader->add(p_srv->id(), std::to_string(p_srv->id()), true);
 
-    p_network->wait_for_update(idx);
+    p_network->wait_for_update(2);
+    EXPECT_TRUE(p_leader->last_applied_index() == 2) << p_leader->last_applied_index() << " != 2";
     EXPECT_FALSE(p_srv->is_leader());
 
     for (size_t i = 1; i < 5; ++i) {
@@ -280,12 +278,11 @@ TYPED_TEST(raft_membership, apply)
         ASSERT_TRUE(p_network->get_fsm(i)->get<size_t>() == nullptr);
     }
 
-    const raft::index_t idx = p_leader->last_applied_index() + 1;
     const size_t value = 1234567;
     raft::buffer_type buffer((char*)&value, (char*)&value + sizeof(value));
     p_leader->apply(buffer);
 
-    p_network->wait_for_update(idx);
+    p_network->wait_for_update(2);
     for (size_t i = 1; i < 4; ++i) {
         const size_t* p_value = p_network->get_fsm(i)->get<size_t>();
         ASSERT_TRUE(p_value != nullptr);
@@ -307,15 +304,15 @@ TYPED_TEST(raft_membership, multi_apply)
     p_network->wait_leader();
     EXPECT_TRUE(p_network->leaders_count() == 1) << p_network->leaders_count();
 
+    raft::index_t idx = 1;
     server_ptr p_leader = p_network->get_leader();
     for (size_t it = 0; it < 7; ++it) {
         ASSERT_TRUE(p_leader->is_leader());
-        const raft::index_t idx = p_leader->last_applied_index() + 1;
         const size_t value = 1234567 + it;
         raft::buffer_type buffer((char*)&value, (char*)&value + sizeof(value));
         p_leader->apply(buffer);
 
-        p_network->wait_for_update(idx);
+        p_network->wait_for_update(++idx);
         for (size_t i = 1; i < 4; ++i) {
             const size_t* p_value = p_network->get_fsm(i)->get<size_t>();
             ASSERT_TRUE(p_value != nullptr);
@@ -346,11 +343,10 @@ TYPED_TEST(raft_membership, remove_server)
     raft::cluster_config cfg = p_network->get_io(p_leader->id())->m_cluster_cfg;
     ASSERT_TRUE(cfg.servers.size() == 3) << cfg.servers.size();
 
-    const raft::index_t idx = p_leader->last_applied_index() + 1;
     p_leader->remove(remove_id);
     p_network->get_server(remove_id)->stop();
 
-    p_network->wait_for_update(idx, remove_id);
+    p_network->wait_for_update(2, remove_id);
     for (size_t i = 1; i < 4; ++i) {
         if (i == remove_id) {
             continue;
@@ -381,6 +377,7 @@ TYPED_TEST(raft_membership, multi_remove_server)
     std::set<raft::server_id_t> servers = {1, 2, 3, 4, 5, 6, 7};
     std::set<raft::server_id_t> removed_servers;
 
+    raft::index_t idx = 1;
     for (size_t iteration = 0; iteration < 4; ++iteration) {
         std::set<raft::server_id_t>::iterator it = ++(servers.find(p_leader->id()));
         const raft::server_id_t remove_id = (it == servers.end()) ? *servers.begin() : *it;
@@ -392,11 +389,10 @@ TYPED_TEST(raft_membership, multi_remove_server)
         raft::cluster_config cfg = p_network->get_io(p_leader->id())->m_cluster_cfg;
         ASSERT_TRUE(cfg.servers.size() == (servers.size() + 1)) << cfg.servers.size() << " != " << (servers.size() + 1);
 
-        const raft::index_t idx = p_leader->last_applied_index() + 1;
         p_leader->remove(remove_id);
         p_network->get_server(remove_id)->stop();
 
-        p_network->wait_for_update(idx, remove_id);
+        p_network->wait_for_update(++idx, remove_id);
         for (size_t i = 1; i < 8; ++i) {
             ASSERT_TRUE(p_leader->is_leader());
             if (removed_servers.count(i)) {
