@@ -100,7 +100,7 @@ bool is_configuration_enabled(context& ctx)
         return false;
     }
 
-    //assert(ctx.state.configuration_committed_index > 0);
+    assert(ctx.state.configuration_committed_index > 0);
     assert(ctx.log.last_index() >= ctx.state.configuration_committed_index);
 
     return true;
