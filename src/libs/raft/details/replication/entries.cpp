@@ -39,14 +39,6 @@ namespace replication {
 namespace entries {
 namespace {
 
-struct apply_context final
-{
-    using ptr = std::shared_ptr<apply_context>;
-
-    index_t index;
-    entry::list entries;
-};
-
 size_t update_last_stored(context& ctx, index_t first_index, const entry::list& entries)
 {
     size_t i = 0;
@@ -86,21 +78,16 @@ bool apply_callback(context& ctx, bool accept, index_t index, const entry::list&
     return accept;
 }
 
-void async_io_cb(context& ctx, const bool accept, apply_context::ptr p_async_ctx)
-{
-    assert(ctx.state.tasks_in_process > 0);
-    --ctx.state.tasks_in_process;
-    apply_callback(ctx, accept, p_async_ctx->index, p_async_ctx->entries);
-}
-
-void async_replicate(context& ctx, apply_context::ptr p_async_ctx)
+void async_replicate(context& ctx, index_t index, entry::list entries)
 {
     RAFT_LOG_TRACE(ctx, "Server %llu(%s) is replicating asynchronously.", ctx.id, ctx.role.str());
 
-    const bool accept = ctx.p_io->append(p_async_ctx->entries);
+    const bool accept = ctx.p_io->append(entries);
     ctx.schd.execute_strand(
-        [&ctx, accept, p_async_ctx = std::move(p_async_ctx)] () mutable -> void {
-            async_io_cb(ctx, accept, std::move(p_async_ctx));
+        [&ctx, accept, index, entries = std::move(entries)] () mutable -> void {
+            assert(ctx.state.tasks_in_process > 0);
+            --ctx.state.tasks_in_process;
+            apply_callback(ctx, accept, index, entries);
         }
     );
 }
@@ -187,22 +174,6 @@ size_t resolve_conflicts(context& ctx, index_t prev_log_index, const entry::list
         }
     }
     return entries.size();
-}
-
-bool store_log_to_storage(context& ctx, index_t index, apply_context::ptr& p_async_ctx)
-{
-    entry::list entries = ctx.log.acquire(index);
-    assert(entries.size() > 0);
-
-    if (ctx.is_async_io) {
-        p_async_ctx = std::allocate_shared<apply_context>(ctx.alloc);
-        p_async_ctx->index = index;
-        p_async_ctx->entries.swap(entries);
-        return true;
-    }
-
-    const bool accept = ctx.p_io->append(entries);
-    return apply_callback(ctx, accept, index, entries);
 }
 
 bool update_configuration(context& ctx, index_t first_index, term_t term, index_t leader_commit, const entry::list& entries)
@@ -416,19 +387,18 @@ bool replicate(context& ctx, index_t index)
 {
     assert(ctx.role.is_leader());
 
-    apply_context::ptr p_async_ctx;
-    const bool accept = store_log_to_storage(ctx, index, p_async_ctx);
-    if (accept) {
-        if (ctx.is_async_io && p_async_ctx) {
-            scheduler::handler_type handler_fn = [&ctx, p_async_ctx = std::move(p_async_ctx)] () -> void {
-                async_replicate(ctx, std::move(p_async_ctx));
-            };
-
-            ++ctx.state.tasks_in_process;
-            ctx.schd.execute_async(std::move(handler_fn));
-        }
+    entry::list entries = ctx.log.acquire(index);
+    assert(entries.size() > 0);
+    if (ctx.is_async_io) {
+        ++ctx.state.tasks_in_process;
+        ctx.schd.execute_async(
+            [&ctx, index, entries = std::move(entries)] () -> void {async_replicate(ctx, index, std::move(entries)); }
+        );
+        return true;
     }
-    return accept;
+
+    const bool accept = ctx.p_io->append(entries);
+    return apply_callback(ctx, accept, index, entries);
 }
 
 void update_commit_index(context& ctx, const index_t index)
