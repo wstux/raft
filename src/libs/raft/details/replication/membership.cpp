@@ -38,34 +38,12 @@ namespace replication {
 namespace membership {
 namespace {
 
-void async_io_cb(context& ctx, bool accept, entries::async::apply_context::ptr p_async_ctx)
+bool change_configuration(context& ctx)
 {
-    assert(ctx.state.tasks_in_process > 0);
-    --ctx.state.tasks_in_process;
-    entries::apply_callback(ctx, accept, p_async_ctx->index, p_async_ctx->entries);
-}
-
-bool change_configuration(context& ctx, cluster_config cluster_cfg)
-{
-    const index_t index = ctx.log.last_index() + 1;
-
-    entries::async::apply_context::ptr p_async_ctx;
-    const bool accept = entries::apply_configuration(ctx, std::move(cluster_cfg), p_async_ctx);
+    const bool accept = entries::apply_configuration(ctx, ctx.state.cluster_cfg);
     if (accept) {
-        if (ctx.is_async_io && p_async_ctx) {
-            scheduler::handler_type handler_fn = [&ctx, p_async_ctx = std::move(p_async_ctx)] () -> void {
-                RAFT_LOG_TRACE(ctx, "Server %llu(%s) is changing new peer asynchronously.", ctx.id, ctx.role.str());
-                const bool accept = ctx.p_io->append(p_async_ctx->entries);
-                ctx.schd.execute_strand([&ctx, accept, p_async_ctx = std::move(p_async_ctx)] () -> void {
-                    async_io_cb(ctx, accept, p_async_ctx);
-                });
-            };
-
-            ++ctx.state.tasks_in_process;
-            ctx.schd.execute_async(std::move(handler_fn));
-        }
+        ctx.state.configuration_uncommitted_index = ctx.log.last_index();
         append_entries::request(ctx);
-        ctx.state.configuration_uncommitted_index = index;
     }
     return accept;
 }
@@ -74,13 +52,8 @@ bool change_configuration(context& ctx, cluster_config cluster_cfg)
 
 bool append(context& ctx, const server_config& cfg)
 {
-    if (! ctx.role.is_leader()) {
-        RAFT_LOG_TRACE(ctx, "Adding new member to cluster. Server %llu(%s) is not leader.", ctx.id, ctx.role.str());
-        return false;
-    }
-
-    if (ctx.state.configuration_uncommitted_index != 0) {
-        RAFT_LOG_TRACE(ctx, "Adding new member to cluster. Server %llu(%s) is busy.", ctx.id, ctx.role.str());
+    if (! is_configuration_enabled(ctx)) {
+        RAFT_LOG_TRACE(ctx, "Adding new member to cluster. Configuration does not enable for changing.");
         return false;
     }
 
@@ -103,40 +76,40 @@ bool append(context& ctx, const server_config& cfg)
     std::sort(ctx.role.leader.peers.begin(), ctx.role.leader.peers.end(), [](const peer& l, const peer& r) -> bool { return l.id < r.id; });
 
     assert(ctx.state.cluster_cfg.servers.size() == (ctx.role.leader.peers.size() + 1));
-    return change_configuration(ctx, ctx.state.cluster_cfg);
+    return change_configuration(ctx);
 }
 
 bool apply(context& ctx, buffer_type buf)
 {
-    entries::async::apply_context::ptr p_async_ctx;
-    bool accept = entries::apply_command(ctx, std::move(buf), p_async_ctx);
+    const bool accept = entries::apply_command(ctx, std::move(buf));
     if (accept) {
-        if (ctx.is_async_io && p_async_ctx) {
-            scheduler::handler_type handler_fn = [&ctx, p_async_ctx = std::move(p_async_ctx)] () -> void {
-                RAFT_LOG_TRACE(ctx, "Server %llu(%s) is saving new command asynchronously.", ctx.id, ctx.role.str());
-                const bool accept = ctx.p_io->append(p_async_ctx->entries);
-                ctx.schd.execute_strand([&ctx, accept, p_async_ctx = std::move(p_async_ctx)] () -> void {
-                    async_io_cb(ctx, accept, p_async_ctx);
-                });
-            };
-
-            ++ctx.state.tasks_in_process;
-            ctx.schd.execute_async(std::move(handler_fn));
-        }
         append_entries::request(ctx);
     }
     return accept;
 }
 
-bool remove(context& ctx, const server_id_t id)
+bool is_configuration_enabled(context& ctx)
 {
     if (! ctx.role.is_leader()) {
-        RAFT_LOG_TRACE(ctx, "Removing member from cluster. Server %llu(%s) is not leader.", ctx.id, ctx.role.str());
+        RAFT_LOG_TRACE(ctx, "Server %llu(%s) is not leader. Configuration is disabled.", ctx.id, ctx.role.str());
         return false;
     }
 
     if (ctx.state.configuration_uncommitted_index != 0) {
-        RAFT_LOG_TRACE(ctx, "Removing member from cluster. Server %llu(%s) is busy.", ctx.id, ctx.role.str());
+        RAFT_LOG_TRACE(ctx, "Server %llu(%s) has uncommitted configuration. Configuration is disabled.", ctx.id, ctx.role.str());
+        return false;
+    }
+
+    assert(ctx.state.configuration_committed_index > 0);
+    assert(ctx.log.last_index() >= ctx.state.configuration_committed_index);
+
+    return true;
+}
+
+bool remove(context& ctx, const server_id_t id)
+{
+    if (! is_configuration_enabled(ctx)) {
+        RAFT_LOG_TRACE(ctx, "Removing member from cluster. Configuration does not enable for changing.");
         return false;
     }
 
@@ -159,7 +132,7 @@ bool remove(context& ctx, const server_id_t id)
     );
 
     assert(ctx.state.cluster_cfg.servers.size() == (ctx.role.leader.peers.size() + 1));
-    return change_configuration(ctx, ctx.state.cluster_cfg);
+    return change_configuration(ctx);
 }
 
 bool update(context& ctx, const entry::ptr& p_entry)

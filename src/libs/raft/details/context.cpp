@@ -36,7 +36,7 @@ namespace raft {
 namespace details {
 namespace {
 
-bool load_peers(context& ctx, cluster_config& cluster_cfg)
+bool load_peers(context& ctx, index_t index, cluster_config& cluster_cfg)
 {
     std::sort(cluster_cfg.servers.begin(), cluster_cfg.servers.end(),
         [](const server_config& l, const server_config& r) -> bool { return l.id < r.id; });
@@ -50,6 +50,15 @@ bool load_peers(context& ctx, cluster_config& cluster_cfg)
     if (const server_config* p_cfg = utils::find_server_config(ctx, ctx.id)) {
         ctx.role.is_voter = p_cfg->is_voter;
     }
+
+    if (index == 1) {
+        assert(ctx.state.configuration_uncommitted_index == 0);
+        ctx.state.configuration_committed_index = 1;
+    } else {
+        assert(ctx.state.configuration_committed_index < index);
+        ctx.state.configuration_uncommitted_index = index;
+    }
+
     return true;
 }
 
@@ -76,7 +85,7 @@ bool restore_entries(context& ctx, index_t snapshot_index, term_t snapshot_term,
 
     if (p_conf_entry) {
         cluster_config cluster_cfg = deserialize<cluster_config>(p_conf_entry->buffer);
-        if (! load_peers(ctx, cluster_cfg)) {
+        if (! load_peers(ctx, conf_index, cluster_cfg)) {
             return false;
         }
     }
@@ -282,11 +291,14 @@ bool load(context& ctx)
         ctx.state.last_applied = 1;
     } else if (! ctx.state.cluster_cfg.servers.empty()) {
         entries.resize(1);
-        entries[0] = std::make_shared<entry>();
+        entries[0] = std::allocate_shared<entry>(ctx.alloc);
         entry::ptr& e = entries[0];
         e->term = ctx.term;
         e->type = entry_type::change;
         e->buffer = serialize<cluster_config>(ctx.state.cluster_cfg);
+        if (! ctx.p_io->append(entries)) {
+            return false;
+        }
     }
 
     if (! restore_entries(ctx, snapshot_index, snapshot_term, start_index, entries)) {

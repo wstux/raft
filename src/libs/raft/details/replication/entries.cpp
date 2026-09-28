@@ -39,6 +39,59 @@ namespace replication {
 namespace entries {
 namespace {
 
+size_t update_last_stored(context& ctx, index_t first_index, const entry::list& entries)
+{
+    size_t i = 0;
+    for (i = 0; i < entries.size(); ++i) {
+        const entry::ptr& p_entry = entries[i];
+        index_t index = first_index + i;
+        term_t local_term = ctx.log.term(index);
+
+        if (local_term == 0 || (local_term > 0 && local_term != p_entry->term)) {
+            break;
+        }
+        assert(local_term != 0 && local_term == p_entry->term);
+    }
+    ctx.state.last_stored += i;
+    return i;
+}
+
+bool apply_callback(context& ctx, bool accept, index_t index, const entry::list& entries)
+{
+    if (accept) {
+        RAFT_LOG_TRACE(ctx, "Server %llu(%s) stored %zu to persistent storage.", ctx.id, ctx.role.str(), entries.size());
+        update_last_stored(ctx, index, entries);
+        if (! ctx.role.is_leader()) {
+            return false;
+        }
+        update_commit_index(ctx, index);
+        commit(ctx);
+    } else {
+        RAFT_LOG_ERROR(ctx, "Server %llu(%s) failed to add new entries to persistent storage.", ctx.id, ctx.role.str());
+        if (index <= ctx.log.last_index()) {
+            ctx.log.truncate(index);
+        }
+        if (ctx.role.is_leader()) {
+            role::become_follower(ctx);
+        }
+    }
+    return accept;
+}
+
+void async_replicate(context& ctx, index_t index, entry::list entries)
+{
+    RAFT_LOG_TRACE(ctx, "Server %llu(%s) is replicating asynchronously.", ctx.id, ctx.role.str());
+
+    const bool accept = ctx.p_io->append(entries);
+    ctx.schd.execute_strand(
+        [&ctx, accept, index, entries = std::move(entries)] () mutable -> void {
+            assert(ctx.state.tasks_in_process > 0);
+            --ctx.state.tasks_in_process;
+            apply_callback(ctx, accept, index, entries);
+        }
+    );
+}
+
 void commmit_change(context& ctx, const index_t index)
 {
     assert(index > 0);
@@ -121,39 +174,6 @@ size_t resolve_conflicts(context& ctx, index_t prev_log_index, const entry::list
         }
     }
     return entries.size();
-}
-
-bool store_log_to_storage(context& ctx, index_t index, async::apply_context::ptr& p_async_ctx)
-{
-    entry::list entries = ctx.log.acquire(index);
-    assert(entries.size() > 0);
-
-    if (ctx.is_async_io) {
-        p_async_ctx = std::allocate_shared<async::apply_context>(ctx.alloc);
-        p_async_ctx->index = index;
-        p_async_ctx->entries.swap(entries);
-        return true;
-    }
-
-    const bool accept = ctx.p_io->append(entries);
-    return apply_callback(ctx, accept, index, entries);
-}
-
-size_t update_last_stored(context& ctx, index_t first_index, const entry::list& entries)
-{
-    size_t i = 0;
-    for (i = 0; i < entries.size(); ++i) {
-        const entry::ptr& p_entry = entries[i];
-        index_t index = first_index + i;
-        term_t local_term = ctx.log.term(index);
-
-        if (local_term == 0 || (local_term > 0 && local_term != p_entry->term)) {
-            break;
-        }
-        assert(local_term != 0 && local_term == p_entry->term);
-    }
-    ctx.state.last_stored += i;
-    return i;
 }
 
 bool update_configuration(context& ctx, index_t first_index, term_t term, index_t leader_commit, const entry::list& entries)
@@ -283,7 +303,7 @@ bool append_callback(context& ctx, bool accept, term_t term, index_t index, inde
     return true;
 }
 
-bool apply_command(context& ctx, buffer_type buf, async::apply_context::ptr& p_async_ctx)
+bool apply_command(context& ctx, buffer_type buf)
 {
     if (! ctx.role.is_leader()) {
         return false;
@@ -295,15 +315,15 @@ bool apply_command(context& ctx, buffer_type buf, async::apply_context::ptr& p_a
 
     RAFT_LOG_TRACE(ctx, "Server %llu(%s) is applying new command.", ctx.id, ctx.role.str());
 
-    /* Index of the first entry being appended. */
+    // Index of the first entry being appended.
     index_t index = ctx.log.last_index() + 1;
 
     ctx.log.append_command(ctx.term, std::move(buf));
     assert(index == ctx.log.last_index());
-    return store_log_to_storage(ctx, index, p_async_ctx);
+    return replicate(ctx, index);
 }
 
-bool apply_configuration(context& ctx, cluster_config cluster_cfg, async::apply_context::ptr& p_async_ctx)
+bool apply_configuration(context& ctx, const cluster_config& cluster_cfg)
 {
     if (! ctx.role.is_leader()) {
         return false;
@@ -315,34 +335,7 @@ bool apply_configuration(context& ctx, cluster_config cluster_cfg, async::apply_
 
     ctx.log.append_change(ctx.term, cluster_cfg);
     assert(index == ctx.log.last_index());
-    return store_log_to_storage(ctx, index, p_async_ctx);
-}
-
-bool apply_callback(context& ctx, bool accept, index_t index, const entry::list& entries)
-{
-    //if (ctx.role.is_leader()) {
-    //    return false;
-    //}
-
-    if (! accept) {
-        RAFT_LOG_ERROR(ctx, "Server %llu(%s) failed to add new entries to persistent storage.", ctx.id, ctx.role.str());
-        if (index <= ctx.log.last_index()) {
-            ctx.log.truncate(index);
-        }
-        if (ctx.role.is_leader()) {
-            role::become_follower(ctx);
-        }
-        return false;
-    }
-
-    RAFT_LOG_TRACE(ctx, "Server %llu(%s) stored %zu to persistent storage.", ctx.id, ctx.role.str(), entries.size());
-    update_last_stored(ctx, index, entries);
-    if (! ctx.role.is_leader()) {
-        return false;
-    }
-    update_commit_index(ctx, index);
-    commit(ctx);
-    return true;
+    return replicate(ctx, index);
 }
 
 bool commit(context& ctx)
@@ -388,6 +381,24 @@ bool commit(context& ctx)
         return snapshot::take_snapshot(ctx);
     }
     return true;
+}
+
+bool replicate(context& ctx, index_t index)
+{
+    assert(ctx.role.is_leader());
+
+    entry::list entries = ctx.log.acquire(index);
+    assert(entries.size() > 0);
+    if (ctx.is_async_io) {
+        ++ctx.state.tasks_in_process;
+        ctx.schd.execute_async(
+            [&ctx, index, entries = std::move(entries)] () -> void {async_replicate(ctx, index, std::move(entries)); }
+        );
+        return true;
+    }
+
+    const bool accept = ctx.p_io->append(entries);
+    return apply_callback(ctx, accept, index, entries);
 }
 
 void update_commit_index(context& ctx, const index_t index)

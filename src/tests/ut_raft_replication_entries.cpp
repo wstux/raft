@@ -92,14 +92,12 @@ bool entries_append(details::context& ctx, raft::term_t term, raft::index_t lead
 
 bool entries_apply_command(details::context& ctx, raft::buffer_type buf)
 {
-    details::replication::entries::async::apply_context::ptr p_async_ctx;
-    return details::replication::entries::apply_command(ctx, std::move(buf), p_async_ctx);
+    return details::replication::entries::apply_command(ctx, std::move(buf));
 }
 
 bool entries_apply_configuration(details::context& ctx, raft::cluster_config cfg)
 {
-    details::replication::entries::async::apply_context::ptr p_async_ctx;
-    return details::replication::entries::apply_configuration(ctx, std::move(cfg), p_async_ctx);
+    return details::replication::entries::apply_configuration(ctx, std::move(cfg));
 }
 
 } // <anonymous> namespace
