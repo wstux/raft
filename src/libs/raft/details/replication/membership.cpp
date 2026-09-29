@@ -29,6 +29,7 @@
 #include "raft/details/handlers/append_entries_handler.h"
 #include "raft/details/replication/entries.h"
 #include "raft/details/replication/membership.h"
+#include "raft/details/replication/promotion.h"
 #include "raft/details/role/convert.h"
 
 namespace wstux {
@@ -75,6 +76,13 @@ bool append(context& ctx, const server_config& cfg)
     ctx.role.leader.peers.emplace_back(cfg, 1);
     std::sort(ctx.role.leader.peers.begin(), ctx.role.leader.peers.end(), [](const peer& l, const peer& r) -> bool { return l.id < r.id; });
 
+    server_config* p_cfg = utils::find_server_config(ctx, cfg.id);
+    assert(p_cfg != nullptr);
+    if (p_cfg->is_voter) {
+        p_cfg->is_voter = false;
+        ctx.role.leader.promotee_id = p_cfg->id;
+    }
+
     assert(ctx.state.cluster_cfg.servers.size() == (ctx.role.leader.peers.size() + 1));
     return change_configuration(ctx);
 }
@@ -100,9 +108,17 @@ bool is_configuration_enabled(context& ctx)
         return false;
     }
 
+    if (ctx.role.leader.promotee_id != gk_invalid_id) {
+        RAFT_LOG_TRACE(ctx, "Server %llu(%s) already promotes server. Configuration is disabled.", ctx.id, ctx.role.str());
+        return false;
+    }
+
     assert(ctx.state.configuration_committed_index > 0);
     assert(ctx.log.last_index() >= ctx.state.configuration_committed_index);
 
+    assert(ctx.role.leader.round == 0);
+    assert(ctx.role.leader.round_index == 0);
+    assert(ctx.role.leader.round_start_ms == 0);
     return true;
 }
 

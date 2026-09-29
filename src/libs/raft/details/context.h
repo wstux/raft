@@ -92,6 +92,7 @@ struct context final
     size_t heartbeat_interval_ms;
     scheduler::task_type heartbeat_task;
 
+    size_t election_interval_ms;
     std::mt19937 rand_engine;
     std::uniform_int_distribution<size_t> election_distribution;
     scheduler::task_type election_task;

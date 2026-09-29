@@ -29,6 +29,7 @@
 #include "raft/details/logger.h"
 #include "raft/details/replication/entries.h"
 #include "raft/details/replication/membership.h"
+#include "raft/details/replication/promotion.h"
 #include "raft/details/replication/snapshot.h"
 #include "raft/details/role/convert.h"
 
@@ -98,6 +99,7 @@ void commmit_change(context& ctx, const index_t index)
 
     if (ctx.state.configuration_uncommitted_index == index) {
         ctx.state.configuration_uncommitted_index = 0;
+        promotion::begin(ctx);
     }
 
     ctx.state.configuration_committed_index = index;

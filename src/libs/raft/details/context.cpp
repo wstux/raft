@@ -201,6 +201,7 @@ bool init(context& ctx, const config& cfg)
 
     ctx.schd.init(cfg.scheduler_threads_count);
 
+    ctx.election_interval_ms = cfg.vote_timeout_min_ms;
     ctx.election_distribution = std::uniform_int_distribution<size_t>(cfg.vote_timeout_min_ms, cfg.vote_timeout_max_ms);
     ctx.heartbeat_interval_ms = cfg.heartbeat_interval_ms;
 
@@ -321,6 +322,7 @@ void reconfigure(context& ctx, const config& cfg)
 
     ctx.schd.reconfigure(cfg.scheduler_threads_count);
 
+    ctx.election_interval_ms = cfg.vote_timeout_min_ms;
     ctx.election_distribution = std::uniform_int_distribution<size_t>(cfg.vote_timeout_min_ms, cfg.vote_timeout_max_ms);
     ctx.heartbeat_interval_ms = cfg.heartbeat_interval_ms;
 

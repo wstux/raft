@@ -80,7 +80,7 @@ bool operator==(const server_config& lhs, const server_config& rhs)
     bool is_eq = true;
     is_eq = is_eq && (lhs.id == rhs.id);
     is_eq = is_eq && (lhs.address == rhs.address);
-    is_eq = is_eq && (lhs.is_voter == rhs.is_voter);
+    //is_eq = is_eq && (lhs.is_voter == rhs.is_voter);
     return is_eq;
 }
 

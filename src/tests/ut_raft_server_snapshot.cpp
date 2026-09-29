@@ -106,7 +106,8 @@ TYPED_TEST(raft_snapshot, take_snapshot)
 
     p_leader->add(p_srv->id(), std::to_string(p_srv->id()), true);
 
-    std::this_thread::sleep_for(500ms);
+    //std::this_thread::sleep_for(500ms);
+    p_network->wait_for_update(8);
     EXPECT_FALSE(p_srv->is_leader());
 
     for (size_t i = 1; i < 5; ++i) {
@@ -115,8 +116,8 @@ TYPED_TEST(raft_snapshot, take_snapshot)
     }
 
     p_leader->apply(++value);
-    p_network->wait_for_update(8);
-    EXPECT_TRUE(p_leader->last_applied_index() == 8) << p_leader->last_applied_index();
+    p_network->wait_for_update(9);
+    EXPECT_TRUE(p_leader->last_applied_index() == 9) << p_leader->last_applied_index();
 
     for (size_t i = 1; i < 5; ++i) {
         ASSERT_TRUE(p_network->get_fsm(i)->get_value<size_t>(0) == value)

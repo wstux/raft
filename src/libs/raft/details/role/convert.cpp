@@ -88,6 +88,11 @@ void become_leader(context& ctx)
         }
     }
 
+    ctx.role.leader.promotee_id = gk_invalid_id;
+    ctx.role.leader.round = 0;
+    ctx.role.leader.round_index = 0;
+    ctx.role.leader.round_start_ms = 0;
+
     const size_t voters_count = utils::voting_members_count(ctx);
     if (voters_count == 0 && (ctx.state.last_stored > ctx.state.commit_index)) {
         ctx.state.commit_index = ctx.state.last_stored;

@@ -12,6 +12,7 @@ LibTarget(raft STATIC
         details/log/log.cpp
         details/replication/entries.cpp
         details/replication/membership.cpp
+        details/replication/promotion.cpp
         details/replication/snapshot.cpp
         details/role/convert.cpp
         details/role/election.cpp
