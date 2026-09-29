@@ -122,6 +122,10 @@ struct state final
         } candidate;
         struct {
             peer::list peers;
+            server_id_t promotee_id;
+            uint16_t round;
+            index_t round_index;
+            size_t round_start_ms;
         } leader;
     };
 
