@@ -31,6 +31,7 @@
 #include "raft/details/handlers/snapshot_handler.h"
 #include "raft/details/handlers/timeout_handler.h"
 #include "raft/details/replication/entries.h"
+#include "raft/details/replication/promotion.h"
 #include "raft/details/role/convert.h"
 
 namespace wstux {
@@ -194,6 +195,8 @@ void handle_response(context& ctx, server_id_t src_id, const std::string& /*addr
     if (p_src_peer->shapshot.is_in_process) {
         p_src_peer->update_state();
     }
+
+    replication::promotion::process(ctx, src_id);
 
     // Check if commitIndex can be advanced forward
     replication::entries::update_commit_index(ctx, last_index);

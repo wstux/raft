@@ -91,13 +91,13 @@ TYPED_TEST(raft_join, join)
     server_ptr p_srv = p_network->create_server(2, true);
     p_srv->join(std::to_string(p_leader->id()));
 
-    p_network->wait_for_update(2);
+    p_network->wait_for_update(3);
     for (size_t i = 1; i < 3; ++i) {
         const raft::cluster_config  cfg = p_network->get_io(i)->m_cluster_cfg;
         ASSERT_TRUE(cfg.servers.size() == 2) << "Server " << i << ": " << cfg.servers.size();
-        ASSERT_TRUE(cfg.servers[0].id == 1 && cfg.servers[0].address == "1")
+        ASSERT_TRUE(cfg.servers[0].id == 1 && cfg.servers[0].address == "1" && cfg.servers[0].is_voter)
             << "Server " << i << ": id = " << cfg.servers[0].id << "; address = " << cfg.servers[0].address;
-        ASSERT_TRUE(cfg.servers[1].id == 2 && cfg.servers[1].address == "2")
+        ASSERT_TRUE(cfg.servers[1].id == 2 && cfg.servers[1].address == "2" && cfg.servers[1].is_voter)
             << "Server " << i << ": id = " << cfg.servers[1].id << "; address = " << cfg.servers[1].address;
     }
 }
@@ -119,25 +119,29 @@ TYPED_TEST(raft_join, join_train)
     server_ptr p_srv = p_network->create_server(2, true);
     p_srv->join(std::to_string(p_leader->id()));
 
-    p_network->wait_for_update(2);
+    p_network->wait_for_update(3);
     for (size_t i = 1; i < 3; ++i) {
         const raft::cluster_config  cfg = p_network->get_io(i)->m_cluster_cfg;
         ASSERT_TRUE(cfg.servers.size() == 2) << "Server " << i << ": " << cfg.servers.size();
+        ASSERT_TRUE(cfg.servers[0].id == 1 && cfg.servers[0].address == "1" && cfg.servers[0].is_voter)
+            << "Server " << i << ": id = " << cfg.servers[0].id << "; address = " << cfg.servers[0].address;
+        ASSERT_TRUE(cfg.servers[1].id == 2 && cfg.servers[1].address == "2" && cfg.servers[1].is_voter)
+            << "Server " << i << ": id = " << cfg.servers[1].id << "; address = " << cfg.servers[1].address;
     }
 
     server_ptr p_second_srv = p_network->create_server(3, true);
     p_second_srv->join(std::to_string(p_srv->id()));
 
-    p_network->wait_for_update(3);
+    p_network->wait_for_update(5);
     for (size_t i = 1; i < 4; ++i) {
         const raft::cluster_config  cfg = p_network->get_io(i)->m_cluster_cfg;
         ASSERT_TRUE(cfg.servers.size() == 3) << "Server " << i << ": " << cfg.servers.size();
-        ASSERT_TRUE(cfg.servers[0].id == 1 && cfg.servers[0].address == "1")
+        ASSERT_TRUE(cfg.servers[0].id == 1 && cfg.servers[0].address == "1" && cfg.servers[0].is_voter)
             << "Server " << i << ": id = " << cfg.servers[0].id << "; address = " << cfg.servers[0].address;
-        ASSERT_TRUE(cfg.servers[1].id == 2 && cfg.servers[1].address == "2")
+        ASSERT_TRUE(cfg.servers[1].id == 2 && cfg.servers[1].address == "2" && cfg.servers[1].is_voter)
             << "Server " << i << ": id = " << cfg.servers[1].id << "; address = " << cfg.servers[1].address;
-        ASSERT_TRUE(cfg.servers[2].id == 3 && cfg.servers[2].address == "3")
-            << "Server " << i << ": id = " << cfg.servers[1].id << "; address = " << cfg.servers[1].address;
+        ASSERT_TRUE(cfg.servers[2].id == 3 && cfg.servers[2].address == "3" && cfg.servers[2].is_voter)
+            << "Server " << i << ": id = " << cfg.servers[2].id << "; address = " << cfg.servers[2].address;
     }
 }
 

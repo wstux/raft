@@ -99,16 +99,52 @@ TYPED_TEST(raft_membership, add_server)
 
     p_leader->add(p_srv->id(), std::to_string(p_srv->id()), true);
 
-    p_network->wait_for_update(2);
+    p_network->wait_for_update(3);
     EXPECT_FALSE(p_srv->is_leader());
 
     for (size_t i = 1; i < 5; ++i) {
         cfg = p_network->get_io(i)->m_cluster_cfg;
         ASSERT_TRUE(cfg.servers.size() == 4) << cfg.servers.size();
+        ASSERT_TRUE(cfg.servers[3].id == 4 && cfg.servers[3].address == "4" && cfg.servers[3].is_voter)
+            << "Server " << i << ": id = " << cfg.servers[3].id << "; address = " << cfg.servers[3].address;
     }
 }
 
-/// \todo Fix defect
+TYPED_TEST(raft_membership, add_server_non_voter)
+{
+    using namespace std::chrono_literals;
+    using server_ptr = tests::network_stub::server_ptr;
+    using io_ptr = tests::io_stub::ptr;
+
+    tests::network_stub::ptr p_network = this->m_p_network;
+    p_network->create_cluster({{1, true}, {2, true}, {3, true}});
+    EXPECT_TRUE(p_network->leaders_count() == 0);
+
+    p_network->start();
+
+    p_network->wait_leader();
+    EXPECT_TRUE(p_network->leaders_count() == 1) << p_network->leaders_count();
+
+    server_ptr p_leader = p_network->get_leader();
+    io_ptr p_io = p_network->get_io(p_leader->id());
+    server_ptr p_srv = p_network->create_server(4, false);
+
+    raft::cluster_config cfg = p_io->m_cluster_cfg;
+    ASSERT_TRUE(cfg.servers.size() == 3) << cfg.servers.size();
+
+    p_leader->add(p_srv->id(), std::to_string(p_srv->id()), false);
+
+    p_network->wait_for_update(3);
+    EXPECT_FALSE(p_srv->is_leader());
+
+    for (size_t i = 1; i < 5; ++i) {
+        cfg = p_network->get_io(i)->m_cluster_cfg;
+        ASSERT_TRUE(cfg.servers.size() == 4) << cfg.servers.size();
+        ASSERT_TRUE(cfg.servers[3].id == 4 && cfg.servers[3].address == "4" && ! cfg.servers[3].is_voter)
+            << "Server " << i << ": id = " << cfg.servers[3].id << "; address = " << cfg.servers[3].address;
+    }
+}
+
 TYPED_TEST(raft_membership, add_server_single)
 {
     using namespace std::chrono_literals;
@@ -133,6 +169,40 @@ TYPED_TEST(raft_membership, add_server_single)
 
     p_leader->add(p_srv->id(), std::to_string(p_srv->id()), true);
 
+    p_network->wait_for_update(3);
+    EXPECT_TRUE(p_leader->is_leader());
+    for (size_t i = 1; i < 3; ++i) {
+        cfg = p_network->get_io(i)->m_cluster_cfg;
+        ASSERT_TRUE(cfg.servers.size() == 2) << cfg.servers.size();
+        ASSERT_TRUE(cfg.servers[1].id == 2 && cfg.servers[1].address == "2" && cfg.servers[1].is_voter)
+            << "Server " << i << ": id = " << cfg.servers[1].id << "; address = " << cfg.servers[1].address;
+    }
+}
+
+TYPED_TEST(raft_membership, add_server_single_non_voter)
+{
+    using namespace std::chrono_literals;
+    using server_ptr = tests::network_stub::server_ptr;
+    using io_ptr = tests::io_stub::ptr;
+
+    tests::network_stub::ptr p_network = this->m_p_network;
+    p_network->create_cluster({{1, true}});
+    EXPECT_TRUE(p_network->leaders_count() == 0);
+
+    p_network->start();
+
+    p_network->wait_leader();
+    EXPECT_TRUE(p_network->leaders_count() == 1) << p_network->leaders_count();
+
+    server_ptr p_leader = p_network->get_leader();
+    io_ptr p_io = p_network->get_io(p_leader->id());
+    server_ptr p_srv = p_network->create_server(2, false);
+
+    raft::cluster_config cfg = p_io->m_cluster_cfg;
+    ASSERT_TRUE(cfg.servers.size() == 1) << cfg.servers.size();
+
+    p_leader->add(p_srv->id(), std::to_string(p_srv->id()), false);
+
     p_network->wait_for_update(2);
     EXPECT_TRUE(p_leader->is_leader());
     EXPECT_FALSE(p_srv->is_leader());
@@ -140,6 +210,18 @@ TYPED_TEST(raft_membership, add_server_single)
     for (size_t i = 1; i < 3; ++i) {
         cfg = p_network->get_io(i)->m_cluster_cfg;
         ASSERT_TRUE(cfg.servers.size() == 2) << cfg.servers.size();
+        ASSERT_TRUE(cfg.servers[1].id == 2 && cfg.servers[1].address == "2" && ! cfg.servers[1].is_voter)
+            << "Server " << i << ": id = " << cfg.servers[1].id << "; address = " << cfg.servers[1].address;
+    }
+
+    p_network->wait_for_update(3);
+    EXPECT_TRUE(p_leader->is_leader());
+    EXPECT_TRUE(p_leader->last_applied_index() == 2) << p_leader->last_applied_index();
+    for (size_t i = 1; i < 3; ++i) {
+        cfg = p_network->get_io(i)->m_cluster_cfg;
+        ASSERT_TRUE(cfg.servers.size() == 2) << cfg.servers.size();
+        ASSERT_TRUE(cfg.servers[1].id == 2 && cfg.servers[1].address == "2" && ! cfg.servers[1].is_voter)
+            << "Server " << i << ": id = " << cfg.servers[1].id << "; address = " << cfg.servers[1].address;
     }
 }
 
@@ -173,16 +255,17 @@ TYPED_TEST(raft_membership, multi_add_server)
         p_leader->add(p_srv->id(), std::to_string(p_srv->id()), true);
 
         p_network->wait_for_update(++idx);
+        p_network->wait_for_update(++idx);
         EXPECT_FALSE(p_srv->is_leader());
-
         for (size_t i = 1; i < id + 1; ++i) {
             cfg = p_network->get_io(i)->m_cluster_cfg;
             ASSERT_TRUE(cfg.servers.size() == id) << "Server " << i << ": " << cfg.servers.size() << " != " << id;
+            ASSERT_TRUE(cfg.servers[id - 1].id == id && cfg.servers[id - 1].address == std::to_string(id) && cfg.servers[id - 1].is_voter)
+                << "Server " << i << ": id = " << cfg.servers[id - 1].id << "; address = " << cfg.servers[id - 1].address;
         }
     }
 }
 
-/// \todo Fix defect
 TYPED_TEST(raft_membership, multi_add_server_single)
 {
     using namespace std::chrono_literals;
@@ -212,6 +295,7 @@ TYPED_TEST(raft_membership, multi_add_server_single)
 
         p_leader->add(p_srv->id(), std::to_string(p_srv->id()), true);
 
+        p_network->wait_for_update(++idx);
         p_network->wait_for_update(++idx);
         EXPECT_FALSE(p_srv->is_leader());
 
