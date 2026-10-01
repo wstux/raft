@@ -220,6 +220,8 @@ bool init(context& ctx, const config& cfg)
     ctx.state.last_stored = 0;
     ctx.state.tasks_in_process = 0;
 
+    ctx.log.entries.set_capacity(std::max(ctx.state.snapshot.threshold, ctx.state.snapshot.trailing));
+
     ctx.address = cfg.address;
 
     return true;
