@@ -98,9 +98,10 @@ bool restore_entries(context& ctx, index_t snapshot_index, term_t snapshot_term,
 // class context
 
 context::context(server_id_t id, const io::ptr p_io, const fsm::ptr p_fsm, logging_handler::ptr p_handler,
-                 const is_stop_fn_t& is_stop, const allocator_type& alloc)
+                 const is_stop_fn_t& is_stop, const stop_fn_t& stop_fn, const allocator_type& alloc)
     : id(id)
     , is_stop_fn(is_stop)
+    , stop_fn(stop_fn)
     , alloc(alloc)
     , is_async_io(false)
     , p_io(p_io)
@@ -219,6 +220,8 @@ bool init(context& ctx, const config& cfg)
     ctx.state.last_applied = 0;
     ctx.state.last_stored = 0;
     ctx.state.tasks_in_process = 0;
+
+    ctx.log.entries.set_capacity(std::max(ctx.state.snapshot.threshold, ctx.state.snapshot.trailing));
 
     ctx.address = cfg.address;
 
