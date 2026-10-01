@@ -142,6 +142,11 @@ bool is_consistent_log(context& ctx, index_t prev_log_index, term_t prev_log_ter
 
     if (local_prev_term != prev_log_term) {
         assert(prev_log_index <= ctx.state.commit_index);
+        if (prev_log_index <= ctx.state.commit_index) {
+            RAFT_LOG_FATAL(ctx, "Server %llu(%s) has conflicting terms %u and %u for entry %u (commit index %u). Server must be stopped.",
+                ctx.id, ctx.role.str(), local_prev_term, prev_log_term, prev_log_index, ctx.state.commit_index);
+            ctx.stop_fn();
+        }
         return false;
     }
 
@@ -156,7 +161,13 @@ size_t resolve_conflicts(context& ctx, index_t prev_log_index, const entry::list
         term_t local_term = ctx.log.term(entry_index);
 
         if (local_term > 0 && local_term != p_entry->term) {
-            assert(entry_index <= ctx.state.commit_index);
+            assert(entry_index > ctx.state.commit_index);
+            if (entry_index <= ctx.state.commit_index) {
+                RAFT_LOG_FATAL(ctx, "Server %llu(%s) has conflicts between new index %u and committed entry %u. Server must be stopped.",
+                    ctx.id, ctx.role.str(), entry_index, ctx.state.commit_index);
+                ctx.stop_fn();
+                return std::numeric_limits<size_t>::max();
+            }
             if (ctx.state.configuration_uncommitted_index >= entry_index) {
                 return 0;
             }
@@ -265,8 +276,13 @@ bool append(context& ctx, term_t term, index_t leader_commit, index_t prev_log_i
 
     const index_t index = prev_log_index + begin + 1;
     entry::list ac_entries = ctx.log.acquire(index);
-
     assert(ac_entries.size() != 0);
+    if (ac_entries.size() == 0) {
+        RAFT_LOG_FATAL(ctx, "Server %llu(%s) does not have appended entries at index %u. Log is invalid. Server must be stopped.",
+            ctx.id, ctx.role.str(), index);
+        ctx.stop_fn();
+        return false;
+    }
 
     if (ctx.is_async_io) {
         p_async_ctx = std::allocate_shared<async::append_context>(ctx.alloc);
@@ -391,6 +407,12 @@ bool replicate(context& ctx, index_t index)
 
     entry::list entries = ctx.log.acquire(index);
     assert(entries.size() > 0);
+    if (entries.size() == 0) {
+        RAFT_LOG_FATAL(ctx, "Server %llu(%s) does not have log entries found at index %u. Log is invalid. Server must be stopped.",
+            ctx.id, ctx.role.str(), index);
+        ctx.stop_fn();
+        return false;
+    }
     if (ctx.is_async_io) {
         ++ctx.state.tasks_in_process;
         ctx.schd.execute_async(
