@@ -98,9 +98,10 @@ bool restore_entries(context& ctx, index_t snapshot_index, term_t snapshot_term,
 // class context
 
 context::context(server_id_t id, const io::ptr p_io, const fsm::ptr p_fsm, logging_handler::ptr p_handler,
-                 const is_stop_fn_t& is_stop, const allocator_type& alloc)
+                 const is_stop_fn_t& is_stop, const stop_fn_t& stop_fn, const allocator_type& alloc)
     : id(id)
     , is_stop_fn(is_stop)
+    , stop_fn(stop_fn)
     , alloc(alloc)
     , is_async_io(false)
     , p_io(p_io)
