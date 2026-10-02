@@ -30,6 +30,15 @@ TestTarget(ut_raft_log
         googletest
 )
 
+TestTarget(ut_raft_logger
+    SOURCES
+        ut_raft_logger.cpp
+    LIBRARIES
+        raft
+    DEPENDS
+        googletest
+)
+
 TestTarget(ut_raft_peers
     SOURCES
         ut_raft_peers.cpp
