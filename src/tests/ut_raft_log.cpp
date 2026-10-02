@@ -441,6 +441,26 @@ TEST_F(raft_log, take_snapshot_trailing)
     EXPECT_TRUE(log.offset == 1) << "Offset: " << log.offset;
 }
 
+TEST_F(raft_log, take_snapshot_clear_all_entries)
+{
+    namespace raft = ::wstux::raft;
+    using raft_log = raft::details::log_store;
+
+    raft_log log;
+    log.load(10, 1, 10);
+
+    raft::entry::ptr p_entry = std::make_shared<raft::entry>();
+    p_entry->term = 1;
+    p_entry->type = raft::entry_type::command;
+    log.append(p_entry);
+
+    log.take_snapshot(10, 0);
+
+    raft::entry::list remaining = log.acquire(11);
+    EXPECT_TRUE(remaining.empty());
+    EXPECT_TRUE(log.last_index() == 10);
+}
+
 /**
  *  \brief  Checking the query term from the log.
  *
@@ -499,6 +519,27 @@ TEST_F(raft_log, truncate)
     EXPECT_TRUE(log.entries.size() == 2) << "Entries size in log: " << log.entries.size();
     EXPECT_TRUE(log.last_index() == 2) << "Last log index: " << log.last_index();
     EXPECT_TRUE(log.last_term() == 2) << "Last log trm: " << log.last_term();
+}
+
+TEST_F(raft_log, truncate_invalid_index)
+{
+    namespace raft = ::wstux::raft;
+    using raft_log = raft::details::log_store;
+
+    raft_log log;
+    log.load(0, 0, 1);
+    for (size_t i = 0; i < 5; ++i) {
+        log.append_change(i + 1, raft::cluster_config());
+    }
+
+    EXPECT_TRUE(log.entries.size() == 5) << "Entries size in log: " << log.entries.size();
+    EXPECT_TRUE(log.last_index() == 5) << "Last log index: " << log.last_index();
+    EXPECT_TRUE(log.last_term() == 5) << "Last log trm: " << log.last_term();
+
+    log.truncate(10);
+    EXPECT_TRUE(log.entries.size() == 5) << "Entries size in log: " << log.entries.size();
+    EXPECT_TRUE(log.last_index() == 5) << "Last log index: " << log.last_index();
+    EXPECT_TRUE(log.last_term() == 5) << "Last log trm: " << log.last_term();
 }
 
 int main(int argc, char** argv)
