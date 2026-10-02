@@ -85,7 +85,7 @@ struct logger
 #define _RAFT_CH_LOG(logger, channel, channel_name, level, fmt, ...)        \
     do {                                                                    \
         if (logger.can_## channel ##_log(level)) {                          \
-            logger.log(level, fmt, ##__VA_ARGS__);                          \
+            logger.log(level, "<" channel_name "> " fmt, ##__VA_ARGS__);    \
         }                                                                   \
     } while(0)
 
