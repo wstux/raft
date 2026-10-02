@@ -155,10 +155,6 @@ void log_store::take_snapshot(index_t new_last_index, size_t trailing)
         return;
     }
 
-    if (new_last_index <= trailing) {
-        return;
-    }
-
     // Find a position to the element following (new_last_index - trailing)
     assert(new_last_index > trailing);
     const index_t retain_idx = new_last_index - static_cast<index_t>(trailing);
