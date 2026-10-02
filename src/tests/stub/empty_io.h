@@ -113,7 +113,7 @@ public:
     virtual index_t load_snapshot_index() noexcept override final { return snapshot_index; }
     virtual term_t load_snapshot_term() noexcept override final { return snapshot_term; }
     virtual index_t load_start_index() noexcept override final { return start_index; }
-    virtual term_t load_term() noexcept override final { return 1; }
+    virtual term_t load_term() noexcept override final { return term; }
     virtual bool reconfigure(server_id_t) noexcept override final { return true; }
     virtual void send(server_id_t id, std::string_view addr, const buffer_type& msg) noexcept override final
     {
@@ -165,6 +165,8 @@ public:
     std::unordered_map<server_id_t, empty_client::ptr> clients;
 
     std::map<index_t, entry::ptr> entries;
+
+    term_t term = 1;
 
     index_t snapshot_index = 0;
     term_t snapshot_term = 0;

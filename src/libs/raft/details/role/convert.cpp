@@ -94,7 +94,7 @@ void become_leader(context& ctx)
     ctx.role.leader.round_start_ms = 0;
 
     const size_t voters_count = utils::voting_members_count(ctx);
-    if (voters_count == 0 && (ctx.state.last_stored > ctx.state.commit_index)) {
+    if (voters_count == 1 && (ctx.state.last_stored > ctx.state.commit_index)) {
         ctx.state.commit_index = ctx.state.last_stored;
         // do replication
         replication::entries::commit(ctx);

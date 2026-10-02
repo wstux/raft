@@ -318,7 +318,6 @@ size_t quorum_for_election(const context& ctx)
     return (members_count / 2);
 }
 
-/// \todo Fix reconfigure process.
 void reconfigure(context& ctx, const config& cfg)
 {
     ctx.is_async_io = cfg.is_async_io;
