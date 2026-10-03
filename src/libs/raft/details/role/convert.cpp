@@ -56,12 +56,12 @@ void become_candidate(context& ctx)
     ctx.role.become_candidate();
     ctx.role.leader_id = gk_invalid_id;
 
-    ctx.role.candidate.votes_granted = 0;
     ctx.role.candidate.is_prevote = true;
 
     if (utils::voting_members_count(ctx) == 1) {
         become_leader(ctx);
     } else {
+        ctx.role.candidate.votes.resize(ctx.state.cluster_cfg.servers.size(), false);
         election_start(ctx);
     }
 }

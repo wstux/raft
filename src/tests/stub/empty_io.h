@@ -119,6 +119,9 @@ public:
     {
         empty_client* p_client = nullptr;
         {
+            if (id == gk_invalid_id) {
+                id = static_cast<server_id_t>(std::stoull(std::string(addr)));
+            }
             std::unique_lock<std::mutex> lock(clients_mutex);
             std::unordered_map<server_id_t, empty_client::ptr>::iterator it = clients.find(id);
             if (it != clients.end()) {

@@ -259,7 +259,7 @@ void handle_response(context& ctx, server_id_t src_id, const std::string& /*addr
 
     if (msg.accept) {
         // Raft Paper, Section 5.2: Candidate receives a vote from a network node.
-        ++ctx.role.candidate.votes_granted;
+        role::election_process(ctx, src_id);
 
         // Raft Paper, Section 5.2: If a candidate wins a majority of votes from
         // the cluster nodes, it wins the election.
@@ -311,7 +311,7 @@ void request(context& ctx)
     }
 
     // Raft Paper, Section 5.2: "Each candidate votes for itself..."
-    ctx.role.candidate.votes_granted = 1;
+    role::election_process(ctx, ctx.id);
     timeout::election_restart_task(ctx);
 
     const bool is_prevote = ctx.role.candidate.is_prevote;

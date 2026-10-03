@@ -117,13 +117,13 @@ TEST_F(raft_role_election, initiate_self_election_cluster)
 
 TEST_F(raft_role_election, election_false_results)
 {
-    details::context& ctx = init(3);
+    details::context& ctx = init(4);
 
     details::role::become_follower(ctx);
     details::role::become_candidate(ctx);
     ASSERT_TRUE(ctx.role.is_candidate());
 
-    ctx.role.candidate.votes_granted = 1;
+    details::role::election_process(ctx, 2);
     EXPECT_FALSE(details::role::election_results(ctx));
 }
 
@@ -135,10 +135,11 @@ TEST_F(raft_role_election, election_true_results)
     details::role::become_candidate(ctx);
     ASSERT_TRUE(ctx.role.is_candidate());
 
-    ctx.role.candidate.votes_granted = 2;
+    details::role::election_process(ctx, 1);
+    details::role::election_process(ctx, 2);
     EXPECT_TRUE(details::role::election_results(ctx));
 
-    ctx.role.candidate.votes_granted = 3;
+    details::role::election_process(ctx, 3);
     EXPECT_TRUE(details::role::election_results(ctx));
 }
 

@@ -31,10 +31,12 @@
 #include "raft/details/context.h"
 #include "raft/details/connection/serialization.h"
 #include "raft/details/handlers/append_entries_handler.h"
+#include "raft/details/handlers/join_handler.h"
 #include "raft/details/handlers/snapshot_handler.h"
 #include "raft/details/handlers/timeout_handler.h"
 #include "raft/details/handlers/vote_handler.h"
 #include "raft/details/role/convert.h"
+#include "raft/details/role/election.h"
 
 #include "stub/empty_io.h"
 #include "stub/fsm_stub.h"
@@ -94,6 +96,7 @@ struct async
 };
 
 template<typename T> using raft_append_entries_handler = raft_handler<T>;
+template<typename T> using raft_join_handler = raft_handler<T>;
 template<typename T> using raft_snapshot_handler = raft_handler<T>;
 template<typename T> using raft_timeout_handler = raft_handler<T>;
 template<typename T> using raft_vote_handler = raft_handler<T>;
@@ -101,6 +104,7 @@ template<typename T> using raft_vote_handler = raft_handler<T>;
 typedef ::testing::Types<sync, async> handler_types;
 
 TYPED_TEST_SUITE(raft_append_entries_handler, handler_types);
+TYPED_TEST_SUITE(raft_join_handler, handler_types);
 TYPED_TEST_SUITE(raft_snapshot_handler, handler_types);
 TYPED_TEST_SUITE(raft_timeout_handler, handler_types);
 TYPED_TEST_SUITE(raft_vote_handler, handler_types);
@@ -229,6 +233,61 @@ TYPED_TEST(raft_append_entries_handler, handle_response_invalid_peer)
     EXPECT_FALSE(p_peer->recent_recv);
 }
 
+TYPED_TEST(raft_join_handler, handle_request_no_leader)
+{
+    using namespace std::chrono_literals;
+
+    details::context& ctx = this->init(3);
+    tests::empty_io::ptr p_io = this->m_p_io;
+
+    details::role::become_follower(ctx);
+    details::role::become_candidate(ctx);
+    ASSERT_TRUE(ctx.role.is_candidate());
+    std::this_thread::sleep_for(25ms);
+
+    details::message msg(details::message_type::join_request);
+    msg.term = 1;
+    msg.src_id = 2;
+    msg.dst_id = 1;
+    msg.address = "2";
+    msg.join_req.address = "2";
+    msg.join_req.id = 2;
+    msg.join_req.is_voter = false;
+
+    details::join::handle_request(ctx, msg.src_id, msg.address, msg.term, msg.join_req);
+    std::this_thread::sleep_for(25ms);
+
+    ASSERT_FALSE(p_io->client(2)->buffer.empty());
+    ASSERT_TRUE(p_io->client(2)->decode().type == details::message_type::join_response);
+    ASSERT_TRUE(p_io->client(2)->decode().join_resp.status == 2);
+}
+
+TYPED_TEST(raft_join_handler, handle_response_no_leader)
+{
+    using namespace std::chrono_literals;
+
+    details::context& ctx = this->init(3);
+    tests::empty_io::ptr p_io = this->m_p_io;
+
+    details::role::become_follower(ctx);
+    ASSERT_TRUE(ctx.role.is_follower());
+    std::this_thread::sleep_for(25ms);
+
+    details::message msg(details::message_type::join_response);
+    msg.term = 1;
+    msg.src_id = 2;
+    msg.dst_id = 1;
+    msg.address = "2";
+    msg.join_resp.status = 2;
+
+    p_io->client(2)->buffer.clear();
+    details::join::handle_response(ctx, msg.src_id, msg.address, msg.term, msg.join_resp);
+    ASSERT_TRUE(p_io->client(2)->buffer.empty());
+    std::this_thread::sleep_for(125ms);
+    ASSERT_FALSE(p_io->client(2)->buffer.empty());
+    ASSERT_TRUE(p_io->client(2)->decode().type == details::message_type::join_request);
+}
+
 TYPED_TEST(raft_snapshot_handler, request)
 {
     using namespace std::chrono_literals;
@@ -302,6 +361,40 @@ TYPED_TEST(raft_snapshot_handler, handle_request)
     ASSERT_TRUE(ctx.term == 3);
     ASSERT_FALSE(p_io->client(2)->buffer.empty());
     ASSERT_TRUE(p_io->client(2)->decode().type == details::message_type::append_entries_response);
+}
+
+TYPED_TEST(raft_snapshot_handler, handle_request_local_higher_term)
+{
+    using namespace std::chrono_literals;
+
+    details::context& ctx = this->init(2);
+    tests::empty_io::ptr p_io = this->m_p_io;
+    ctx.term = 3;
+    details::role::become_follower(ctx);
+    EXPECT_TRUE(ctx.role.is_follower());
+
+    details::snapshot::handle_request(ctx, 2, "2", 1, details::snapshot_message());
+    std::this_thread::sleep_for(25ms);
+
+    ASSERT_TRUE(ctx.term == 3);
+    ASSERT_FALSE(p_io->client(2)->buffer.empty());
+    ASSERT_TRUE(p_io->client(2)->decode().type == details::message_type::append_entries_response);
+    ASSERT_FALSE(p_io->client(2)->decode().append_entries_resp.accept);
+}
+
+TYPED_TEST(raft_snapshot_handler, handle_request_downgrade_role)
+{
+    using namespace std::chrono_literals;
+
+    details::context& ctx = this->init(2);
+    ctx.term = 1;
+    details::role::become_follower(ctx);
+    details::role::become_candidate(ctx);
+    EXPECT_TRUE(ctx.role.is_candidate());
+
+    details::append_entries::handle_request(ctx, 2, "2", 1, details::append_entries_message());
+    std::this_thread::sleep_for(25ms);
+    EXPECT_TRUE(ctx.role.is_follower());
 }
 
 TYPED_TEST(raft_timeout_handler, timeout_stopped_servicce)
@@ -414,13 +507,31 @@ TYPED_TEST(raft_vote_handler, handle_response_invalid_src_id)
     details::role::become_follower(ctx);
     details::role::become_candidate(ctx);
     ctx.role.candidate.is_prevote = true;
-    ctx.role.candidate.votes_granted = 0;
 
+    EXPECT_TRUE(details::role::election_granted_votes(ctx) == 1) << details::role::election_granted_votes(ctx);
     details::vote_response_message msg;
     msg.is_prevote = true;
     msg.accept = true;
     details::vote::handle_response(ctx, 10, "10", 1, msg);
-    EXPECT_TRUE(ctx.role.candidate.votes_granted == 0);
+    EXPECT_TRUE(details::role::election_granted_votes(ctx) == 1) << details::role::election_granted_votes(ctx);
+}
+
+TYPED_TEST(raft_vote_handler, handle_response_duplicate_vote)
+{
+    details::context& ctx = this->init(2);
+    details::role::become_follower(ctx);
+    details::role::become_candidate(ctx);
+    ctx.role.candidate.is_prevote = true;
+
+    EXPECT_TRUE(details::role::election_granted_votes(ctx) == 1) << details::role::election_granted_votes(ctx);
+    details::vote_response_message msg;
+    msg.is_prevote = true;
+    msg.accept = true;
+    details::vote::handle_response(ctx, 2, "2", 1, msg);
+    EXPECT_TRUE(details::role::election_granted_votes(ctx) == 2) << details::role::election_granted_votes(ctx);
+
+    details::vote::handle_response(ctx, 2, "2", 1, msg);
+    EXPECT_TRUE(details::role::election_granted_votes(ctx) == 2) << details::role::election_granted_votes(ctx);
 }
 
 TYPED_TEST(raft_vote_handler, handle_response_invalid_term)
@@ -432,13 +543,13 @@ TYPED_TEST(raft_vote_handler, handle_response_invalid_term)
     details::role::become_candidate(ctx);
     ctx.term = 5;
     ctx.role.candidate.is_prevote = true;
-    ctx.role.candidate.votes_granted = 0;
 
+    EXPECT_TRUE(details::role::election_granted_votes(ctx) == 1) << details::role::election_granted_votes(ctx);
     details::vote_response_message msg;
     msg.is_prevote = true;
     msg.accept = true;
     details::vote::handle_response(ctx, 2, "2", 1, msg);
-    EXPECT_TRUE(ctx.role.candidate.votes_granted == 0);
+    EXPECT_TRUE(details::role::election_granted_votes(ctx) == 1) << details::role::election_granted_votes(ctx);
 }
 
 TYPED_TEST(raft_vote_handler, handle_response_outdated_term)
@@ -450,7 +561,6 @@ TYPED_TEST(raft_vote_handler, handle_response_outdated_term)
     details::role::become_candidate(ctx);
     ctx.term = 1;
     ctx.role.candidate.is_prevote = false;
-    ctx.role.candidate.votes_granted = 0;
 
     details::vote_response_message msg;
     msg.is_prevote = false;
@@ -468,7 +578,6 @@ TYPED_TEST(raft_vote_handler, handle_response_outdated_prevote_term)
     details::role::become_candidate(ctx);
     ctx.term = 1;
     ctx.role.candidate.is_prevote = true;
-    ctx.role.candidate.votes_granted = 0;
 
     details::vote_response_message msg;
     msg.is_prevote = true;

@@ -57,14 +57,9 @@ void handle_request(context& ctx, server_id_t src_id, const std::string& /*addre
             ctx.id, ctx.role.str(), msg.id, (msg.is_voter ? "voter" : "non-voter"));
         return utils::send_join_response(ctx, src_id, msg.address, ctx.term, status);
     } else {
-        const server_id_t leader_id = ctx.role.leader_id;
-        if (leader_id == gk_invalid_id) {
-            RAFT_JOIN_LOG_DEBUG(ctx, "Reject join request from server %llu. Reason: cluster does not have leader", msg.id);
-            return utils::send_join_response(ctx, src_id, msg.address, ctx.term, join_status::no_leader);
-        }
-        const server_config* p_cfg = utils::find_server_config(ctx, leader_id);
-        if (p_cfg == nullptr) {
-            RAFT_JOIN_LOG_ERROR(ctx, "Reject join request from server %llu. Reason: server have invalid configuration", msg.id);
+        const server_config* p_cfg = utils::find_server_config(ctx, ctx.role.leader_id);
+        if (ctx.role.leader_id == gk_invalid_id || p_cfg == nullptr) {
+            RAFT_JOIN_LOG_ERROR(ctx, "Reject join request from server %llu. Reason: cluster does not have leader", msg.id);
             return utils::send_join_response(ctx, src_id, msg.address, ctx.term, join_status::no_leader);
         }
         RAFT_JOIN_LOG_DEBUG(ctx, "Resend join request to leader %llu.", p_cfg->id);
@@ -91,7 +86,7 @@ void request(context& ctx, const std::string& address)
     return utils::send_join_request(ctx, gk_invalid_id, address, ctx.term, ctx.id, ctx.address, ctx.role.is_voter);
 }
 
-} // namespace heartbeat
+} // namespace join
 } // namespace details
 } // namespace raft
 } // namespace wstux
