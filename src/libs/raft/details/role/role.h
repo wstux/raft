@@ -28,7 +28,7 @@
 #include <cstdint>
 #include <cstring>
 #include <atomic>
-//#include <string>
+#include <vector>
 
 #include "raft/io.h"
 #include "raft/details/connection/peer.h"
@@ -68,6 +68,7 @@ struct state final
     {
         clear();
         role.store(role_type::candidate, std::memory_order_relaxed);
+        ::new (static_cast<void*>(&candidate.votes)) std::vector<bool>();
     }
 
     inline void become_leader()
@@ -82,7 +83,9 @@ struct state final
         /*if (is_follower()) {
             follower.leader_address.~basic_string();
         } else */
-        if (role.load(std::memory_order_relaxed) == role_type::leader) {
+        if (role.load(std::memory_order_relaxed) == role_type::candidate) {
+            candidate.votes.~vector();
+        } else if (role.load(std::memory_order_relaxed) == role_type::leader) {
             leader.peers.~vector();
         }
     }
@@ -117,7 +120,7 @@ struct state final
     union {
         struct {} follower;
         struct {
-            size_t votes_granted;
+            std::vector<bool> votes;
             bool is_prevote;
         } candidate;
         struct {

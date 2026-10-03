@@ -32,7 +32,11 @@ namespace raft {
 namespace details {
 namespace role {
 
-bool election_results(context& ctx);
+size_t election_granted_votes(const context& ctx);
+
+void election_process(context& ctx, const server_id_t id);
+
+bool election_results(const context& ctx);
 
 void election_start(context& ctx);
 

@@ -34,13 +34,45 @@ namespace wstux {
 namespace raft {
 namespace details {
 namespace role {
+namespace {
 
-bool election_results(context& ctx)
+size_t server_index(const context& ctx, const server_id_t id)
+{
+    size_t idx = ctx.state.cluster_cfg.servers.size();
+    for (size_t i = 0; i < ctx.state.cluster_cfg.servers.size(); ++ i) {
+        if (ctx.state.cluster_cfg.servers[i].id == id) {
+            idx = i;
+            break;
+        }
+    }
+    return idx;
+}
+
+} // <anonymous> namespace
+
+size_t election_granted_votes(const context& ctx)
+{
+    assert(ctx.role.is_candidate());
+    return std::count(ctx.role.candidate.votes.cbegin(), ctx.role.candidate.votes.cend(), true);
+}
+
+void election_process(context& ctx, const server_id_t id)
+{
+    assert(ctx.role.is_candidate());
+    assert(ctx.role.candidate.votes.size() == ctx.state.cluster_cfg.servers.size());
+
+    const size_t idx = server_index(ctx, id);
+    if (idx != ctx.state.cluster_cfg.servers.size()) {
+        ctx.role.candidate.votes[idx] = true;
+    }
+}
+
+bool election_results(const context& ctx)
 {
     assert(ctx.role.is_candidate());
 
     const size_t quorum_size = utils::quorum_for_election(ctx) + 1;
-    const size_t votes = ctx.role.candidate.votes_granted;
+    const size_t votes = election_granted_votes(ctx);
 
     return ctx.role.is_candidate() && (votes >= quorum_size);
 }
