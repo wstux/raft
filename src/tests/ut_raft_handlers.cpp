@@ -31,6 +31,7 @@
 #include "raft/details/context.h"
 #include "raft/details/connection/serialization.h"
 #include "raft/details/handlers/append_entries_handler.h"
+#include "raft/details/handlers/join_handler.h"
 #include "raft/details/handlers/snapshot_handler.h"
 #include "raft/details/handlers/timeout_handler.h"
 #include "raft/details/handlers/vote_handler.h"
@@ -95,6 +96,7 @@ struct async
 };
 
 template<typename T> using raft_append_entries_handler = raft_handler<T>;
+template<typename T> using raft_join_handler = raft_handler<T>;
 template<typename T> using raft_snapshot_handler = raft_handler<T>;
 template<typename T> using raft_timeout_handler = raft_handler<T>;
 template<typename T> using raft_vote_handler = raft_handler<T>;
@@ -102,6 +104,7 @@ template<typename T> using raft_vote_handler = raft_handler<T>;
 typedef ::testing::Types<sync, async> handler_types;
 
 TYPED_TEST_SUITE(raft_append_entries_handler, handler_types);
+TYPED_TEST_SUITE(raft_join_handler, handler_types);
 TYPED_TEST_SUITE(raft_snapshot_handler, handler_types);
 TYPED_TEST_SUITE(raft_timeout_handler, handler_types);
 TYPED_TEST_SUITE(raft_vote_handler, handler_types);
@@ -228,6 +231,61 @@ TYPED_TEST(raft_append_entries_handler, handle_response_invalid_peer)
 
     details::append_entries::handle_response(ctx, 5, "2", 1, details::append_entries_response_message());
     EXPECT_FALSE(p_peer->recent_recv);
+}
+
+TYPED_TEST(raft_join_handler, handle_request_no_leader)
+{
+    using namespace std::chrono_literals;
+
+    details::context& ctx = this->init(3);
+    tests::empty_io::ptr p_io = this->m_p_io;
+
+    details::role::become_follower(ctx);
+    details::role::become_candidate(ctx);
+    ASSERT_TRUE(ctx.role.is_candidate());
+    std::this_thread::sleep_for(25ms);
+
+    details::message msg(details::message_type::join_request);
+    msg.term = 1;
+    msg.src_id = 2;
+    msg.dst_id = 1;
+    msg.address = "2";
+    msg.join_req.address = "2";
+    msg.join_req.id = 2;
+    msg.join_req.is_voter = false;
+
+    details::join::handle_request(ctx, msg.src_id, msg.address, msg.term, msg.join_req);
+    std::this_thread::sleep_for(25ms);
+
+    ASSERT_FALSE(p_io->client(2)->buffer.empty());
+    ASSERT_TRUE(p_io->client(2)->decode().type == details::message_type::join_response);
+    ASSERT_TRUE(p_io->client(2)->decode().join_resp.status == 2);
+}
+
+TYPED_TEST(raft_join_handler, handle_response_no_leader)
+{
+    using namespace std::chrono_literals;
+
+    details::context& ctx = this->init(3);
+    tests::empty_io::ptr p_io = this->m_p_io;
+
+    details::role::become_follower(ctx);
+    ASSERT_TRUE(ctx.role.is_follower());
+    std::this_thread::sleep_for(25ms);
+
+    details::message msg(details::message_type::join_response);
+    msg.term = 1;
+    msg.src_id = 2;
+    msg.dst_id = 1;
+    msg.address = "2";
+    msg.join_resp.status = 2;
+
+    p_io->client(2)->buffer.clear();
+    details::join::handle_response(ctx, msg.src_id, msg.address, msg.term, msg.join_resp);
+    ASSERT_TRUE(p_io->client(2)->buffer.empty());
+    std::this_thread::sleep_for(125ms);
+    ASSERT_FALSE(p_io->client(2)->buffer.empty());
+    ASSERT_TRUE(p_io->client(2)->decode().type == details::message_type::join_request);
 }
 
 TYPED_TEST(raft_snapshot_handler, request)
