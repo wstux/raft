@@ -144,11 +144,6 @@ window.BENCHMARK_DATA = {
             "name": "Request Lock List (Real Time)::8 threads",
             "value": 5.8340824490613725,
             "unit": "ns"
-          },
-          {
-            "name": "Serialize Message (Real Time)::Base",
-            "value": 0.6269904617047052,
-            "unit": "ns"
           }
         ]
       },
@@ -292,11 +287,6 @@ window.BENCHMARK_DATA = {
           {
             "name": "Request Lock List (Real Time)::8 threads",
             "value": 8.125713623406893,
-            "unit": "ns"
-          },
-          {
-            "name": "Serialize Message (Real Time)::Base",
-            "value": 571.8404980832212,
             "unit": "ns"
           }
         ]
@@ -442,11 +432,6 @@ window.BENCHMARK_DATA = {
             "name": "Request Lock List (Real Time)::8 threads",
             "value": 6.7450644085751,
             "unit": "ns"
-          },
-          {
-            "name": "Serialize Message (Real Time)::Base",
-            "value": 519.6654674788139,
-            "unit": "ns"
           }
         ]
       },
@@ -590,11 +575,6 @@ window.BENCHMARK_DATA = {
           {
             "name": "Request Lock List (Real Time)::8 threads",
             "value": 5.737772786663765,
-            "unit": "ns"
-          },
-          {
-            "name": "Serialize Message (Real Time)::Base",
-            "value": 780.1272773039944,
             "unit": "ns"
           }
         ]
@@ -800,11 +780,6 @@ window.BENCHMARK_DATA = {
             "name": "Request Lock List (Real Time)::8 threads",
             "value": 2.6255984492703646,
             "unit": "ns"
-          },
-          {
-            "name": "Serialize Message (Real Time)::Base",
-            "value": 504.43199733132747,
-            "unit": "ns"
           }
         ]
       },
@@ -1008,11 +983,6 @@ window.BENCHMARK_DATA = {
           {
             "name": "Request Lock List (Real Time)::8 threads",
             "value": 5.834353415894117,
-            "unit": "ns"
-          },
-          {
-            "name": "Serialize Message (Real Time)::Base",
-            "value": 784.7918220655893,
             "unit": "ns"
           }
         ]
@@ -1218,11 +1188,6 @@ window.BENCHMARK_DATA = {
             "name": "Request Lock List (Real Time)::8 threads",
             "value": 6.252273620116765,
             "unit": "ns"
-          },
-          {
-            "name": "Serialize Message (Real Time)::Base",
-            "value": 784.0466169451599,
-            "unit": "ns"
           }
         ]
       },
@@ -1427,11 +1392,6 @@ window.BENCHMARK_DATA = {
             "name": "Request Lock List (Real Time)::8 threads",
             "value": 8.566550640169872,
             "unit": "ns"
-          },
-          {
-            "name": "Serialize Message (Real Time)::Base",
-            "value": 780.5310566774383,
-            "unit": "ns"
           }
         ]
       },
@@ -1595,11 +1555,6 @@ window.BENCHMARK_DATA = {
           {
             "name": "Check Contact Quorum (Real Time)::8 threads",
             "value": 589.8899271675451,
-            "unit": "ns"
-          },
-          {
-            "name": "Serialize Message (Real Time)::Base",
-            "value": 601.6266975509234,
             "unit": "ns"
           }
         ]
