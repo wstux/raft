@@ -61,13 +61,13 @@ public:
 
     void apply(buffer_type buf);
 
+    bool bootstrap(const config& cfg, const cluster_config& cluster_cfg);
+
     void deinit();
 
     server_id_t id() const { return m_id; }
 
     bool init(const config& cfg);
-
-    bool init_bootstrap(const config& cfg, const cluster_config& cluster_cfg);
 
     bool is_candidate() const;
 

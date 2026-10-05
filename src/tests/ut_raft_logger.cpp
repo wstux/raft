@@ -65,14 +65,12 @@ class raft_logger : public ::testing::Test
 public:
     virtual void SetUp() override
     {
-        tests::empty_io::ptr p_io = std::make_shared<tests::empty_io>();
+        m_p_io = std::make_shared<tests::empty_io>();
 
-        m_p_ctx = std::make_unique<details::context>(1, p_io, std::make_shared<tests::fsm_stub>(), std::make_unique<logging_handler>(),
+        m_p_ctx = std::make_unique<details::context>(1, m_p_io, std::make_shared<tests::fsm_stub>(), std::make_unique<logging_handler>(),
             []() -> bool { return false; }, []() -> void {});
 
-        p_io->cluster_cfg.servers.emplace_back(1, std::to_string(1), true);
-        details::utils::bootstrap(*m_p_ctx, p_io->cluster_cfg);
-
+        m_p_io->cluster_cfg.servers.emplace_back(1, std::to_string(1), true);
         m_p_hdlr = static_cast<logging_handler*>(m_p_ctx->raft_logger.p_hdlr->p_this);
     }
 
@@ -84,12 +82,14 @@ public:
     {
         cfg.address = "1";
         details::utils::init(*m_p_ctx, cfg);
+        details::utils::bootstrap(*m_p_ctx, m_p_io->cluster_cfg);
         return *m_p_ctx;
     }
 
     const logging_handler& logging_hdlr() const { return *m_p_hdlr; }
 
 private:
+    tests::empty_io::ptr m_p_io;
     details::context::ptr m_p_ctx;
     logging_handler* m_p_hdlr;
 };
