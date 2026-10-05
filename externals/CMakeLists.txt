@@ -1,5 +1,6 @@
 add_subdirectory(boost)
 add_subdirectory(grpc)
+add_subdirectory(lmdb)
 
 if (BUILD_TESTS)
     ExternalTarget(googlebenchmark
