@@ -121,13 +121,33 @@ namespace utils {
 
 bool bootstrap(context& ctx, cluster_config cluster_cfg)
 {
+    if (ctx.address.empty()) {
+        return false;
+    }
+    if (cluster_cfg.servers.empty()) {
+        ctx.address.clear();
+        return false;
+    }
+
     ctx.state.cluster_cfg = std::move(cluster_cfg);
     std::sort(ctx.state.cluster_cfg.servers.begin(), ctx.state.cluster_cfg.servers.end(),
         [](const server_config& l, const server_config& r) -> bool { return l.id < r.id; });
     if (! utils::is_valid_cluster(ctx.id, ctx.state.cluster_cfg)) {
+        ctx.address.clear();
         return false;
     }
     //ctx.state.cluster_cfg = std::move(cluster_cfg);
+
+    entry::list entries(1);
+    entries.back() = std::allocate_shared<entry>(ctx.alloc);
+    entry::ptr& e = entries.back();
+    e->term = 1;
+    e->type = entry_type::change;
+    e->buffer = serialize<cluster_config>(ctx.state.cluster_cfg);
+    if (! ctx.p_io->append(entries)) {
+        ctx.address.clear();
+        return false;
+    }
     return true;
 }
 
@@ -189,9 +209,9 @@ bool init(context& ctx, const config& cfg)
     if (! utils::is_valid_cluster(ctx.id, cluster_cfg)) {
         return false;
     }*/
-    if (! ctx.state.cluster_cfg.servers.empty() && ! utils::is_valid_cluster(ctx.id, ctx.state.cluster_cfg)) {
+    /*if (! ctx.state.cluster_cfg.servers.empty() && ! utils::is_valid_cluster(ctx.id, ctx.state.cluster_cfg)) {
         return false;
-    }
+    }*/
 
     //ctx.state.cluster_cfg = std::move(cluster_cfg);
 
@@ -265,6 +285,10 @@ bool is_valid_cluster(const server_id_t id, const cluster_config& cluster_cfg, b
 
 bool load(context& ctx)
 {
+    if (ctx.address.empty()) {
+        return false;
+    }
+
     io::ptr p_io = ctx.p_io;
 
     ctx.term = p_io->load_term();
@@ -290,19 +314,10 @@ bool load(context& ctx)
     } else if (entries.size() > 0) {
         assert(start_index == 1);
         assert(entries[0]->type == entry_type::change);
+        assert(entries[0]->term == 1);
 
         ctx.state.commit_index = 1;
         ctx.state.last_applied = 1;
-    } else if (! ctx.state.cluster_cfg.servers.empty()) {
-        entries.resize(1);
-        entries[0] = std::allocate_shared<entry>(ctx.alloc);
-        entry::ptr& e = entries[0];
-        e->term = ctx.term;
-        e->type = entry_type::change;
-        e->buffer = serialize<cluster_config>(ctx.state.cluster_cfg);
-        if (! ctx.p_io->append(entries)) {
-            return false;
-        }
     }
 
     if (! restore_entries(ctx, snapshot_index, snapshot_term, start_index, entries)) {

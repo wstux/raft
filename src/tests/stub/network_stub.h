@@ -136,7 +136,7 @@ public:
     void init()
     {
         for (const std::map<server_id_t, server_ptr>::value_type& s : m_servers) {
-            s.second->init_bootstrap(get_io(s.first)->m_cfg, get_io(s.first)->m_cluster_cfg);
+            s.second->bootstrap(get_io(s.first)->m_cfg, get_io(s.first)->m_cluster_cfg);
         }
     }
 

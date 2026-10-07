@@ -70,7 +70,7 @@ int counter_node::run()
         for (const config::server_config& cfg : m_p_config->cluster_config()) {
             cluster_cfg.servers.emplace_back(cfg.id, cfg.endpoint, cfg.is_voter);
         }
-        if (! m_p_server->init_bootstrap(cfg, cluster_cfg)) {
+        if (! m_p_server->bootstrap(cfg, cluster_cfg)) {
             LOG_ERROR(m_logger, "Failed to init bootstrap raft server");
             return 1;
         }

@@ -112,6 +112,19 @@ void server::apply(buffer_type buf)
     m_p_ctx->schd.execute_strand(std::move(handler));
 }
 
+bool server::bootstrap(const config& cfg, const cluster_config& cluster_cfg)
+{
+    if (! init(cfg)) {
+        RAFT_LOG_ERROR((*m_p_ctx), "Bootstrap filed to init raft server.");
+        return false;
+    }
+    if (! details::utils::bootstrap(*m_p_ctx, cluster_cfg)) {
+        RAFT_LOG_ERROR((*m_p_ctx), "Filed to init bootstrap raft server.");
+        return false;
+    }
+    return true;
+}
+
 void server::deinit()
 {
     m_p_ctx->p_io->deinit();
@@ -127,16 +140,6 @@ bool server::init(const config& cfg)
     m_p_ctx->election_task = m_p_ctx->schd.make_task([this]() { details::timeout::election_timeout_task(*m_p_ctx); });
     m_p_ctx->heartbeat_task = m_p_ctx->schd.make_task([this]() { details::timeout::heartbeat_timeout_task(*m_p_ctx); });
     return true;
-}
-
-bool server::init_bootstrap(const config& cfg, const cluster_config& cluster_cfg)
-{
-    const bool is_inited = details::utils::bootstrap(*m_p_ctx, cluster_cfg);
-    if (! is_inited) {
-        RAFT_LOG_ERROR((*m_p_ctx), "Filed to init bootstrap raft server.");
-        return false;
-    }
-    return init(cfg);
 }
 
 bool server::is_candidate() const

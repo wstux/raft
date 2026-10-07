@@ -52,8 +52,8 @@ public:
         m_p_ctx = std::make_unique<details::context>(1, m_p_io, m_p_fsm, raft::logging_handler::ptr(), is_stop_fn, stop_fn);
 
         m_p_io->cluster_cfg.servers.emplace_back(1, "1", true);
-        details::utils::bootstrap(*m_p_ctx, m_p_io->cluster_cfg);
         details::utils::init(*m_p_ctx, m_p_io->cfg);
+        details::utils::bootstrap(*m_p_ctx, m_p_io->cluster_cfg);
         details::utils::load(*m_p_ctx);
         m_p_ctx->schd.start();
     }

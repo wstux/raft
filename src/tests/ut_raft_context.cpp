@@ -90,8 +90,8 @@ TEST_F(raft_context, init)
 {
     details::context& ctx = init(1);
 
-    EXPECT_TRUE(details::utils::bootstrap(ctx, m_p_io->cluster_cfg));
     EXPECT_TRUE(details::utils::init(ctx, m_p_io->cfg));
+    EXPECT_TRUE(details::utils::bootstrap(ctx, m_p_io->cluster_cfg));
 }
 
 /**
@@ -115,9 +115,9 @@ TEST_F(raft_context, init_empty_address)
 {
     details::context& ctx = init(1);
 
-    EXPECT_TRUE(details::utils::bootstrap(ctx, m_p_io->cluster_cfg));
     m_p_io->cfg.address.clear();
     EXPECT_FALSE(details::utils::init(ctx, m_p_io->cfg));
+    EXPECT_FALSE(details::utils::bootstrap(ctx, m_p_io->cluster_cfg));
 }
 
 /**
@@ -143,8 +143,8 @@ TEST_F(raft_context, init_io_failed)
     details::context& ctx = init(1);
 
     m_p_io->is_init = false;
-    EXPECT_TRUE(details::utils::bootstrap(ctx, m_p_io->cluster_cfg));
     EXPECT_FALSE(details::utils::init(ctx, m_p_io->cfg));
+    EXPECT_FALSE(details::utils::bootstrap(ctx, m_p_io->cluster_cfg));
 }
 
 /**
@@ -169,8 +169,8 @@ TEST_F(raft_context, init_invalid_config)
     details::context& ctx = init(1);
 
     m_p_io->cfg.heartbeat_interval_ms = 0;
-    EXPECT_TRUE(details::utils::bootstrap(ctx, m_p_io->cluster_cfg));
     EXPECT_FALSE(details::utils::init(ctx, m_p_io->cfg));
+    EXPECT_FALSE(details::utils::bootstrap(ctx, m_p_io->cluster_cfg));
 }
 
 /**
@@ -189,8 +189,8 @@ TEST_F(raft_context, find_exists_config)
 {
     details::context& ctx = init(1);
 
-    EXPECT_TRUE(details::utils::bootstrap(ctx, m_p_io->cluster_cfg));
     EXPECT_TRUE(details::utils::init(ctx, m_p_io->cfg));
+    EXPECT_TRUE(details::utils::bootstrap(ctx, m_p_io->cluster_cfg));
     EXPECT_TRUE(details::utils::find_server_config(ctx, 1) != nullptr);
 }
 
@@ -210,8 +210,8 @@ TEST_F(raft_context, find_non_exists_config)
 {
     details::context& ctx = init(1);
 
-    EXPECT_TRUE(details::utils::bootstrap(ctx, m_p_io->cluster_cfg));
     EXPECT_TRUE(details::utils::init(ctx, m_p_io->cfg));
+    EXPECT_TRUE(details::utils::bootstrap(ctx, m_p_io->cluster_cfg));
     EXPECT_TRUE(details::utils::find_server_config(ctx, 2) == nullptr);
 }
 
@@ -230,8 +230,8 @@ TEST_F(raft_context, load)
 {
     details::context& ctx = init(1);
 
-    EXPECT_TRUE(details::utils::bootstrap(ctx, m_p_io->cluster_cfg));
     EXPECT_TRUE(details::utils::init(ctx, m_p_io->cfg));
+    EXPECT_TRUE(details::utils::bootstrap(ctx, m_p_io->cluster_cfg));
     EXPECT_TRUE(details::utils::load(ctx));
 }
 
@@ -257,19 +257,20 @@ TEST_F(raft_context, load_existing_state)
 {
     details::context& ctx = init(1);
 
-    m_p_io->entries.emplace(1, std::make_shared<raft::entry>());
-    m_p_io->entries[1]->term = 1;
-    m_p_io->entries[1]->type = raft::entry_type::change;
-    m_p_io->entries[1]->buffer = details::serialize<raft::cluster_config>(m_p_io->cluster_cfg);
-    raft::cluster_config cluster_cfg;
-    cluster_cfg.servers = {{1, "1", true}, {2, "2", false}};
+    EXPECT_TRUE(details::utils::init(ctx, m_p_io->cfg));
+    EXPECT_TRUE(details::utils::bootstrap(ctx, m_p_io->cluster_cfg));
+
     m_p_io->entries.emplace(2, std::make_shared<raft::entry>());
     m_p_io->entries[2]->term = 1;
     m_p_io->entries[2]->type = raft::entry_type::change;
-    m_p_io->entries[2]->buffer = details::serialize<raft::cluster_config>(cluster_cfg);
+    m_p_io->entries[2]->buffer = details::serialize<raft::cluster_config>(m_p_io->cluster_cfg);
+    raft::cluster_config cluster_cfg;
+    cluster_cfg.servers = {{1, "1", true}, {2, "2", false}};
+    m_p_io->entries.emplace(3, std::make_shared<raft::entry>());
+    m_p_io->entries[3]->term = 1;
+    m_p_io->entries[3]->type = raft::entry_type::change;
+    m_p_io->entries[3]->buffer = details::serialize<raft::cluster_config>(cluster_cfg);
 
-    EXPECT_TRUE(details::utils::bootstrap(ctx, m_p_io->cluster_cfg));
-    EXPECT_TRUE(details::utils::init(ctx, m_p_io->cfg));
     EXPECT_TRUE(details::utils::load(ctx));
 
     EXPECT_TRUE(ctx.state.cluster_cfg.servers.size() == 2);
@@ -304,8 +305,8 @@ TEST_F(raft_context, load_existing_snapshot)
     m_p_io->p_snapshot->conf.servers = {{1, "1", true}, {2, "2", false}};
     m_p_io->p_snapshot->conf_index = 3;
 
-    EXPECT_TRUE(details::utils::bootstrap(ctx, m_p_io->cluster_cfg));
     EXPECT_TRUE(details::utils::init(ctx, m_p_io->cfg));
+    EXPECT_TRUE(details::utils::bootstrap(ctx, m_p_io->cluster_cfg));
     EXPECT_TRUE(details::utils::load(ctx));
 
     EXPECT_TRUE(ctx.term == 1) << ctx.term;
@@ -341,8 +342,8 @@ TEST_F(raft_context, load_failed_append_bootstrap)
     details::context& ctx = init(1);
 
     m_p_io->is_append = false;
-    EXPECT_TRUE(details::utils::bootstrap(ctx, m_p_io->cluster_cfg));
     EXPECT_TRUE(details::utils::init(ctx, m_p_io->cfg));
+    EXPECT_FALSE(details::utils::bootstrap(ctx, m_p_io->cluster_cfg));
     EXPECT_FALSE(details::utils::load(ctx));
 }
 
@@ -368,8 +369,8 @@ TEST_F(raft_context, load_invalid_term)
     details::context& ctx = init(1);
 
     m_p_io->term = 0;
-    EXPECT_TRUE(details::utils::bootstrap(ctx, m_p_io->cluster_cfg));
     EXPECT_TRUE(details::utils::init(ctx, m_p_io->cfg));
+    EXPECT_TRUE(details::utils::bootstrap(ctx, m_p_io->cluster_cfg));
     EXPECT_FALSE(details::utils::load(ctx));
 }
 
@@ -402,8 +403,8 @@ TEST_F(raft_context, load_failed_restore_snapshot)
 
     m_p_fsm->is_result = false;
 
-    EXPECT_TRUE(details::utils::bootstrap(ctx, m_p_io->cluster_cfg));
     EXPECT_TRUE(details::utils::init(ctx, m_p_io->cfg));
+    EXPECT_TRUE(details::utils::bootstrap(ctx, m_p_io->cluster_cfg));
     EXPECT_FALSE(details::utils::load(ctx));
 }
 
@@ -430,8 +431,8 @@ TEST_F(raft_context, load_failed_duplicated_peer)
     details::context& ctx = init(3);
 
     m_p_io->cluster_cfg.servers.emplace_back(2, "2", true);
+    EXPECT_TRUE(details::utils::init(ctx, m_p_io->cfg));
     EXPECT_FALSE(details::utils::bootstrap(ctx, m_p_io->cluster_cfg));
-    EXPECT_FALSE(details::utils::init(ctx, m_p_io->cfg));
     EXPECT_FALSE(details::utils::load(ctx));
 }
 
@@ -461,8 +462,8 @@ TEST_F(raft_context, reconfigure)
     details::context& ctx = init(1);
 
     m_p_io->cfg.address = "1";
-    EXPECT_TRUE(details::utils::bootstrap(ctx, m_p_io->cluster_cfg));
     EXPECT_TRUE(details::utils::init(ctx, m_p_io->cfg));
+    EXPECT_TRUE(details::utils::bootstrap(ctx, m_p_io->cluster_cfg));
     EXPECT_TRUE(details::utils::load(ctx));
 
     EXPECT_TRUE(ctx.address == "1");
