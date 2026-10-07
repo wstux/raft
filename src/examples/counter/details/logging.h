@@ -22,27 +22,27 @@
  * THE SOFTWARE.
  */
 
-#ifndef _EXAMPLES_RAFT_COUNTER_LOGGING_H_
-#define _EXAMPLES_RAFT_COUNTER_LOGGING_H_
+#ifndef _EXAMPLES_CLUSTER_LOGGING_H_
+#define _EXAMPLES_CLUSTER_LOGGING_H_
 
 #include <sys/time.h>
 
+#include <array>
 #include <iostream>
 #include <mutex>
 #include <sstream>
 #include <thread>
 
-#include "raft/io.h"
+#include <raft/io.h>
 
 namespace wstux {
 namespace examples {
-namespace counter {
-namespace details {
+namespace cluster {
 
 class logging_handler final : public raft::logging_handler
 {
 public:
-    explicit logging_handler(severity_level lvl)
+    explicit logging_handler(raft::logging_handler::severity_level lvl)
         : raft::logging_handler()
         , m_severity_level(lvl)
     {
@@ -51,22 +51,24 @@ public:
         log_fn = &log;
     }
 
-    static bool can_log(void* p_this, severity_level lvl)
+    static bool can_log(void* p_this, raft::logging_handler::severity_level lvl)
     {
         if (p_this == nullptr) {
             return false;
         }
-        const severity_level& severity_lvl = *(static_cast<const severity_level*>(p_this));
+        const raft::logging_handler::severity_level& severity_lvl = *(static_cast<const raft::logging_handler::severity_level*>(p_this));
         return (lvl <= severity_lvl);
     }
 
-    static void log(void*, const severity_level lvl, const char* p_msg)
+    static void log(void*, const raft::logging_handler::severity_level lvl, const char* p_msg)
     {
         static std::mutex cout_mutex;
 
+        static std::array<std::string, 9> lvl_str = {"EMERG", "FATAL", "CRIT ", "ERROR", "WARN ", "NOTIC", "INFO ", "DEBUG", "TRACE"};
+
         const std::string ts = timestamp();
         std::lock_guard<std::mutex> lock(cout_mutex);
-        std::cout << ts << " <" << std::this_thread::get_id() << "> [" << lvl << "] <Raft> " << p_msg << std::endl;
+        std::cout << ts << " <" << std::this_thread::get_id() << "> [" << lvl_str[lvl] << "] <Raft> " << p_msg << std::endl;
     }
 
 private:
@@ -94,12 +96,11 @@ private:
     raft::logging_handler::severity_level m_severity_level;
 };
 
-} // namespace details
-} // namespace counter
+} // namespace cluster
 } // namespace examples
 } // namespace wstux
 
-#define _COUNTER_LOG(logger, level, VARS)                                   \
+#define _CLUSTER_LOG(logger, level, VARS)                                   \
     do {                                                                    \
         if (logger.can_log_fn(logger.p_this, level)) {                      \
             std::stringstream ss;                                           \
@@ -108,10 +109,10 @@ private:
         }                                                                   \
     } while(0)
 
-#define LOG_ERROR(logger, VARS)    _COUNTER_LOG(logger, ::wstux::raft::logging_handler::severity_level::error,   VARS)
-#define LOG_WARN(logger,  VARS)    _COUNTER_LOG(logger, ::wstux::raft::logging_handler::severity_level::warning, VARS)
-#define LOG_INFO(logger,  VARS)    _COUNTER_LOG(logger, ::wstux::raft::logging_handler::severity_level::info,    VARS)
-#define LOG_DEBUG(logger, VARS)    _COUNTER_LOG(logger, ::wstux::raft::logging_handler::severity_level::debug,   VARS)
-#define LOG_TRACE(logger, VARS)    _COUNTER_LOG(logger, ::wstux::raft::logging_handler::severity_level::trace,   VARS)
+#define LOG_ERROR(logger, VARS)    _CLUSTER_LOG(logger, ::wstux::raft::logging_handler::severity_level::error,   VARS)
+#define LOG_WARN(logger,  VARS)    _CLUSTER_LOG(logger, ::wstux::raft::logging_handler::severity_level::warning, VARS)
+#define LOG_INFO(logger,  VARS)    _CLUSTER_LOG(logger, ::wstux::raft::logging_handler::severity_level::info,    VARS)
+#define LOG_DEBUG(logger, VARS)    _CLUSTER_LOG(logger, ::wstux::raft::logging_handler::severity_level::debug,   VARS)
+#define LOG_TRACE(logger, VARS)    _CLUSTER_LOG(logger, ::wstux::raft::logging_handler::severity_level::trace,   VARS)
 
-#endif /* _EXAMPLES_RAFT_COUNTER_LOGGING_H_ */
+#endif /* _EXAMPLES_CLUSTER_LOGGING_H_ */

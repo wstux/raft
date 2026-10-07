@@ -29,7 +29,7 @@
 #include <string>
 #include <vector>
 
-#include "raft/io.h"
+#include <raft/io.h>
 
 namespace wstux {
 namespace examples {
@@ -40,23 +40,12 @@ class config final
 public:
     using ptr = std::shared_ptr<config>;
 
-    struct server_config
-    {
-        using list = std::vector<server_config>;
-
-        raft::server_id_t id = raft::gk_invalid_id;
-        bool is_voter = false;
-        std::string endpoint;
-    };
-
 public:
-    const server_config::list& cluster_config() const  { return m_servers; }
+    const raft::config& configuration() const { return m_config; }
 
-    const std::string& endpoint() const { return m_endpoint; }
+    const raft::cluster_config& cluster_config() const  { return m_cluster_cfg; }
 
-    bool bootstrap() const  { return m_bootstrap; }
-
-    const std::string cluster_address() const { return m_cluster_address; }
+    const std::string& join_address() const { return m_join_address; }
 
     raft::server_id_t server_id() const { return m_server_id; }
 
@@ -64,21 +53,22 @@ public:
 
     bool load(int argc, char** argv);
 
+    const std::string& work_dir() const { return m_work_dir; }
+
 private:
     bool parse_args(int argc, char** argv);
 
     bool parse_config_file();
 
 private:
-    std::string m_endpoint;
-
     raft::server_id_t m_server_id = raft::gk_invalid_id;
+    raft::config m_config;
+    raft::cluster_config m_cluster_cfg;
     raft::logging_handler::severity_level m_level = raft::logging_handler::severity_level::info;
 
-    std::string m_cluster_address;
+    std::string m_work_dir;
+    std::string m_join_address;
 
-    bool m_bootstrap = false;
-    server_config::list m_servers;
     std::string m_cfg_file;
 };
 

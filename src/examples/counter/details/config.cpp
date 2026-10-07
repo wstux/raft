@@ -31,23 +31,32 @@
 namespace wstux {
 namespace examples {
 namespace counter {
+namespace {
+
+struct server_config final
+{
+    std::string endpoint = "";
+    raft::server_id_t id = raft::gk_invalid_id;
+    bool is_voter = false;
+    bool is_async_io = false;
+    std::string work_dir = "";
+    bool bootstrap = false;
+    bool add_to_bootstrap = false;
+    std::string join_address = "";
+};
+
+} // <anonymous> namespace
 
 bool config::load(int argc, char** argv)
 {
     if (! parse_args(argc, argv)) {
         return false;
     }
-    if (m_cluster_address.empty() && ! parse_config_file()) {
+    if (! parse_config_file()) {
         return false;
     }
 
-    for (const server_config& cfg : m_servers) {
-        if (cfg.id == m_server_id) {
-            m_endpoint = cfg.endpoint;
-            break;
-        }
-    }
-    if (m_endpoint.empty()) {
+    if (m_config.address.empty()) {
         return false;
     }
     return true;
@@ -80,21 +89,9 @@ bool config::parse_args(int argc, char** argv)
                     m_level = raft::logging_handler::severity_level::error;
                 }
             }
-        } else if (arg == "-b" || arg == "--bootstrap") {
-            m_bootstrap = true;
-        } else if (arg == "-j" || arg == "--join") {
-            m_cluster_address = argv[++i];
-        } else if (arg == "-e" || arg == "--endpoint") {
-            m_endpoint = argv[++i];
         }
     }
-    if (m_cluster_address.empty() && m_cfg_file.empty()) {
-        return false;
-    }
-    if (! m_cluster_address.empty() && ! m_cfg_file.empty()) {
-        return false;
-    }
-    if (! m_cluster_address.empty() && m_bootstrap) {
+    if (m_cfg_file.empty()) {
         return false;
     }
     if (m_server_id == raft::gk_invalid_id) {
@@ -105,9 +102,6 @@ bool config::parse_args(int argc, char** argv)
 
 bool config::parse_config_file()
 {
-    const std::function<bool(const server_config&)> is_valid_fn =
-        [](const server_config& cfg) -> bool { return cfg.id != raft::gk_invalid_id; };
-
     const std::function<std::string(const std::string&)> trim_fn =
         [](const std::string& str) -> std::string {
             size_t first = str.find_first_not_of(" \t\r\n");
@@ -123,6 +117,8 @@ bool config::parse_config_file()
         return false;
     }
 
+    std::vector<server_config> configs;
+
     std::string line;
     while (std::getline(fin, line)) {
         line = trim_fn(line);
@@ -131,12 +127,19 @@ bool config::parse_config_file()
         }
 
         if (line == "[server]") {
-            if (! m_servers.empty()) {
-                if (! is_valid_fn(m_servers.back())) {
+            if (! configs.empty()) {
+                const server_config& cfg = configs.back();
+                if ((cfg.bootstrap && ! cfg.add_to_bootstrap)) {
+                    return false;
+                } else if (! cfg.bootstrap && cfg.join_address.empty()) {
+                    return false;
+                } else if (cfg.endpoint.empty() || cfg.work_dir.empty()) {
+                    return false;
+                } else if (cfg.id == raft::gk_invalid_id) {
                     return false;
                 }
             }
-            m_servers.push_back(server_config());
+            configs.push_back(server_config());
         } else {
             size_t delim_pos = line.find('=');
             if (delim_pos != std::string::npos) {
@@ -146,14 +149,53 @@ bool config::parse_config_file()
                     return false;
                 }
                 if (key == "endpoint") {
-                    m_servers.back().endpoint = value;
+                    configs.back().endpoint = value;
                 } else if (key == "id") {
-                    m_servers.back().id = static_cast<raft::server_id_t>(std::stoi(value));
+                    configs.back().id = static_cast<raft::server_id_t>(std::stoi(value));
                 } else if (key == "is_voter") {
-                    m_servers.back().is_voter = (value == "true");
+                    configs.back().is_voter = (value == "true");
+                } else if (key == "is_async_io") {
+                    configs.back().is_async_io = (value == "true");
+                } else if (key == "work_dir") {
+                    configs.back().work_dir = value;
+                } else if (key == "bootstrap") {
+                    configs.back().bootstrap = (value == "true");
+                } else if (key == "add_to_bootstrap") {
+                    configs.back().add_to_bootstrap = (value == "true");
+                } else if (key == "join_address") {
+                    configs.back().join_address = value;
                 }
             }
         }
+    }
+
+    std::vector<server_config>::const_iterator it = std::find_if(configs.cbegin(), configs.cend(),
+        [this](const server_config& cfg) -> bool { return m_server_id == cfg.id; });
+    if (it == configs.cend()) {
+        return false;
+    }
+
+    const server_config& cfg = *it;
+    m_config.address = cfg.endpoint;
+    m_config.is_voter = cfg.is_voter;
+    m_config.is_async_io = cfg.is_async_io;
+
+    if (cfg.bootstrap) {
+        for (const server_config& cfg : configs) {
+            if (cfg.add_to_bootstrap) {
+                m_cluster_cfg.servers.emplace_back(cfg.id, cfg.endpoint, cfg.is_voter);
+            }
+        }
+    } else {
+        m_join_address = cfg.join_address;
+        if (m_join_address.empty()) {
+            return false;
+        }
+    }
+
+    m_work_dir = cfg.work_dir;
+    if (m_work_dir.empty()) {
+        return false;
     }
 
     return true;

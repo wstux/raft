@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package cluster;
+package wstux.examples.cluster;
 
 service NodeService {
     rpc SendRaftMessage(Message) returns (Empty);
@@ -8,6 +8,4 @@ service NodeService {
 
 message Empty {}
 
-message Message {
-    bytes buffer = 1;
-}
+message Message { bytes buffer = 1; }

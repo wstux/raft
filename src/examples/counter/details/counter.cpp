@@ -22,178 +22,93 @@
  * THE SOFTWARE.
  */
 
-#include <chrono>
-#include <thread>
-
 #include "counter/counter.h"
 
 namespace wstux {
 namespace examples {
 namespace counter {
-namespace {
 
-raft::server::ptr make_server(const details::io::ptr& p_io, details::fsm::ptr& p_fsm, const config::ptr& p_cfg)
-{
-    raft::server::ptr p_srv;
-    const std::function<bool()> is_stop_fn = []()->bool { return false; };
-    raft::logging_handler::ptr p_logger = std::make_unique<details::logging_handler>(p_cfg->level());
-    p_srv = std::make_shared<raft::server>(p_cfg->server_id(), p_io, p_fsm, std::move(p_logger), is_stop_fn);
-    return p_srv;
-}
-
-} // <anonymous> namespace
-
-counter_node::counter_node(const config::ptr& p_config)
-    : m_p_config(p_config)
-    , m_p_io(std::make_shared<details::io>(m_p_config->cluster_config(), m_p_config->level()))
-    , m_p_fsm(std::make_shared<details::fsm>())
-    , m_p_server(make_server(m_p_io, m_p_fsm, m_p_config))
+counter::counter(const config::ptr& p_config)
+    : cluster::node(p_config->level())
+    , m_p_config(p_config)
     , m_counter(0)
     , m_logger(m_p_config->level())
 {}
 
-counter_node::~counter_node()
+counter::~counter()
+{}
+
+raft::cluster_config counter::bootstrap() const
 {
-    stop();
+    return m_p_config->cluster_config();
 }
 
-int counter_node::run()
+raft::config counter::config() const
 {
-    raft::config cfg;
-    cfg.address = m_p_config->endpoint();
-    cfg.is_voter = true;
-    cfg.scheduler_threads_count = 4;
+    return m_p_config->configuration();
+}
 
-    if (m_p_config->bootstrap()) {
-        LOG_DEBUG(m_logger, "Counter starts with bootstrap and '" << m_p_config->endpoint() << "' endpoint");
-        raft::cluster_config cluster_cfg;
-        for (const config::server_config& cfg : m_p_config->cluster_config()) {
-            cluster_cfg.servers.emplace_back(cfg.id, cfg.endpoint, cfg.is_voter);
+bool counter::execute_follower()
+{
+    raft::buffer_type buf = get_value();
+    if (! buf.empty()) {
+        if (buf.size() != sizeof(uint64_t)) {
+            return false;
         }
-        if (! m_p_server->bootstrap(cfg, cluster_cfg)) {
-            LOG_ERROR(m_logger, "Failed to init bootstrap raft server");
-            return 1;
-        }
-    } else {
-        LOG_DEBUG(m_logger, "Counter starts with '" << m_p_config->endpoint() << "' endpoint");
-        if (! m_p_server->init(cfg)) {
-            LOG_ERROR(m_logger, "Failed to init raft server");
-            return 1;
-        }
-    }
-
-    if (! m_p_server->start()) {
-        LOG_ERROR(m_logger, "Failed to start raft server");
-        return 1;
-    }
-
-    if (! start_rpc(m_p_config->endpoint())) {
-        LOG_ERROR(m_logger, "Failed to start rpc server");
-        stop();
-        return 1;
-    }
-
-    if (! m_p_config->cluster_address().empty()) {
-        LOG_DEBUG(m_logger, "Counter with '" << m_p_config->endpoint() << "' endpoint is joining to cluster " << m_p_config->cluster_address());
-        m_p_server->join(m_p_config->cluster_address());
-    }
-
-    while (is_ready()) {
-        if (m_p_server->is_leader()) {
-            ++m_counter;
-            m_p_server->apply(m_counter);
-        } else if (m_p_server->is_follower()) {
-            m_counter = m_p_fsm->get_counter();
-        }
+        const uint64_t* p_counter = reinterpret_cast<const uint64_t*>(buf.data());
+        m_counter = *p_counter;
         if (m_counter % 10 == 0) {
-            LOG_INFO(m_logger, "Current counter value " << m_counter);
+            LOG_INFO(m_logger, "Got counter value " << m_counter);
         }
-        std::this_thread::sleep_for(std::chrono::seconds(1));
     }
-
-    return 0;
+    return true;
 }
 
-bool counter_node::start_rpc(const std::string address)
+bool counter::execute_leader()
 {
-    bool expected = false;
-    if (! m_is_started.compare_exchange_strong(expected, true)) {
-        return false;
+    ++m_counter;
+    const uint64_t counter = m_counter;
+    const char* ptr = reinterpret_cast<const char*>(&counter);
+    raft::buffer_type buf(ptr, ptr + sizeof(uint64_t));
+    apply(std::move(buf));
+    if (m_counter % 10 == 0) {
+        LOG_INFO(m_logger, "Counter value " << m_counter);
     }
+    return true;
+}
 
-    const std::function<void()> thread_fn = [this, address]() -> void {
-        try {
-            thread_main_rpc(address);
-        } catch (const std::exception& ex) {
-            m_is_started = false;
+std::string counter::join_address() const
+{
+    return m_p_config->join_address();
+}
+
+bool counter::init()
+{
+    raft::buffer_type buf = get_value();
+    if (! buf.empty()) {
+        if (buf.size() != sizeof(uint64_t)) {
+            return false;
         }
-    };
-
-    server_state expected_state = server_state::stopped;
-    if (! m_state.compare_exchange_strong(expected_state, server_state::starting)) {
-        LOG_ERROR(m_logger, "Incorrect server state " << m_state);
-        return false;
+        const uint64_t* p_counter = reinterpret_cast<const uint64_t*>(buf.data());
+        m_counter = *p_counter;
+        LOG_INFO(m_logger, "Counter value " << m_counter);
     }
-    m_thread = std::make_unique<std::thread>(thread_fn);
-    wait_for_rpc(std::chrono::seconds(1));
-    return is_ready();
+    return true;
 }
 
-void counter_node::stop()
+raft::logging_handler::severity_level counter::log_level() const
 {
-    stop_rpc();
-    m_p_server->stop();
+    return m_p_config->level();
 }
 
-void counter_node::stop_rpc()
+raft::server_id_t counter::server_id() const
 {
-    if (is_stopped()) {
-        return;
-    }
-    m_state = server_state::stopped;
-    if (m_p_rpc_server) {
-        m_p_rpc_server->Shutdown();
-    }
-
-    if (m_thread && m_thread->joinable()) {
-        m_thread->join();
-    }
+    return m_p_config->server_id();
 }
 
-void counter_node::thread_main_rpc(const std::string& address)
+std::string counter::work_dir() const
 {
-    if (is_stopped()) {
-        LOG_DEBUG(m_logger, "Server has been stopped");
-        return;
-    }
-
-    ::grpc::ServerBuilder builder;
-    builder.AddListeningPort(address, ::grpc::InsecureServerCredentials());
-    builder.RegisterService(this);
-    m_p_rpc_server = std::move(builder.BuildAndStart());
-    if (m_p_rpc_server.get() != nullptr) {
-        LOG_DEBUG(m_logger, "Server starts listening to address " << address);
-    } else {
-        LOG_WARN(m_logger, "Could not listen to address " << address);
-    }
-
-    if (m_p_rpc_server) {
-        // Run server
-        server_state expected_state = server_state::starting;
-        if (! m_state.compare_exchange_strong(expected_state, server_state::ready)) {
-            return;
-        }
-        m_p_rpc_server->Wait();
-    }
-}
-
-::grpc::Status counter_node::SendRaftMessage(::grpc::ServerContext*, const ::cluster::Message* p_req, ::cluster::Empty*)
-{
-    LOG_TRACE(m_logger, "Got raft message.");
-
-    raft::inbuffer_type msg(p_req->buffer().data(), p_req->buffer().size());
-    m_p_server->handle_message(msg);
-    return ::grpc::Status::OK;
+    return m_p_config->work_dir();
 }
 
 } // namespace counter
