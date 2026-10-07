@@ -124,7 +124,7 @@ bool commmit_command(context& ctx, const index_t index, const entry::ptr& p_entr
         return false;
     }
 
-    RAFT_LOG_DEBUG(ctx, "Committed command with index %u to fsm.", index);
+    RAFT_LOG_TRACE(ctx, "Committed command with index %u to fsm.", index);
     ctx.state.last_applied = index;
     return true;
 }

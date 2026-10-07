@@ -314,7 +314,7 @@ bool load(context& ctx)
     } else if (entries.size() > 0) {
         assert(start_index == 1);
         assert(entries[0]->type == entry_type::change);
-        assert(entries[0]->term == 1);
+        assert(entries[0]->term > 0);
 
         ctx.state.commit_index = 1;
         ctx.state.last_applied = 1;
