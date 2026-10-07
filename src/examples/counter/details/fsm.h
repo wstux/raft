@@ -22,16 +22,19 @@
  * THE SOFTWARE.
  */
 
-#ifndef _EXAMPLES_RAFT_COUNTER_FSM_H_
-#define _EXAMPLES_RAFT_COUNTER_FSM_H_
+#ifndef _EXAMPLES_CLUSTER_FSM_H_
+#define _EXAMPLES_CLUSTER_FSM_H_
 
-#include <atomic>
+#include <memory>
+#include <mutex>
 
-#include "raft/io.h"
+#include <raft/io.h>
+
+#include "counter/details/db_guard.h"
 
 namespace wstux {
 namespace examples {
-namespace counter {
+namespace cluster {
 namespace details {
 
 class fsm final : public raft::fsm
@@ -40,47 +43,111 @@ public:
     using ptr = std::shared_ptr<fsm>;
 
 public:
+    explicit fsm(db_guard::ptr p_db_guard)
+        : m_p_db_guard(std::move(p_db_guard))
+    {
+        init();
+    }
+
     virtual ~fsm() {}
 
-    virtual bool apply(const raft::buffer_type& buf) noexcept { return change(buf); }
+    virtual bool apply(const raft::buffer_type& buf) noexcept override final
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        if (! init()) {
+            return false;
+        }
 
-    virtual bool restore(const raft::buffer_type& buf) noexcept { return change(buf); }
+        MDB_txn* p_txn = nullptr;
+        if (mdb_txn_begin(m_p_db_guard->p_env, nullptr, 0, &p_txn) != MDB_SUCCESS) {
+            return false;
+        }
 
-    virtual bool take_snapshot(raft::buffer_type& buf) noexcept { buf = m_buffer; return true; }
+        MDB_val key{ 5, const_cast<char*>("state") };
+        MDB_val val{ buf.size(), const_cast<char*>(buf.data()) };
 
-    uint64_t get_counter() const { return m_counter; }
+        if (mdb_put(p_txn, m_fsm_dbi, &key, &val, 0) != MDB_SUCCESS) {
+            mdb_txn_abort(p_txn);
+            return false;
+        }
+
+        m_buffer = buf;
+        return mdb_txn_commit(p_txn) == MDB_SUCCESS;
+    }
+
+    virtual bool restore(const raft::buffer_type& buf) noexcept override final { return apply(buf); }
+
+    virtual bool take_snapshot(raft::buffer_type& buf) noexcept override final
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        buf = m_buffer;
+        return true;
+    }
+
+    raft::buffer_type get_buffer() const
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        return m_buffer;
+    }
 
 private:
-    bool change(const raft::buffer_type& buf)
+    bool init()
     {
-        const uint64_t* p_counter = get_ptr(buf);
-        if (p_counter != nullptr) {
-            m_buffer = buf;
-            m_counter = *p_counter;
+        if (is_inited()) {
             return true;
         }
-        return false;
+
+        if (! m_p_db_guard) {
+            return false;
+        }
+
+        MDB_txn* p_txn = nullptr;
+        if (mdb_txn_begin(m_p_db_guard->p_env, nullptr, 0, &p_txn) != MDB_SUCCESS) {
+            return false;
+        }
+
+        if (mdb_dbi_open(p_txn, "fsm", MDB_CREATE, &m_fsm_dbi) != MDB_SUCCESS) {
+            mdb_txn_abort(p_txn);
+            return false;
+        }
+
+        if (mdb_txn_commit(p_txn) != MDB_SUCCESS) {
+            return false;
+        }
+
+        p_txn = nullptr;
+        if (mdb_txn_begin(m_p_db_guard->p_env, nullptr, MDB_RDONLY, &p_txn) != MDB_SUCCESS) {
+            return false;
+        }
+
+        MDB_val key{ 5, const_cast<char*>("state") };
+        MDB_val value;
+
+        if (mdb_get(p_txn, m_fsm_dbi, &key, &value) != MDB_SUCCESS) {
+            mdb_txn_abort(p_txn);
+            return true;
+        }
+
+        const char* src = static_cast<const char*>(value.mv_data);
+        m_buffer = raft::buffer_type(src, src + value.mv_size);
+
+        mdb_txn_abort(p_txn);
+        return true;
     }
 
-    const uint64_t* get_ptr(const raft::buffer_type& buf) const
-    {
-        if (buf.size() == 0) {
-            return nullptr;
-        }
-        if (sizeof(uint64_t) > buf.size()) {
-            return nullptr;
-        }
-        return reinterpret_cast<const uint64_t*>(buf.data());
-    }
+    bool is_inited() const { return m_fsm_dbi != 0; }
 
 private:
-    std::atomic_uint64_t m_counter = 0;
+    db_guard::ptr m_p_db_guard;
+    MDB_dbi m_fsm_dbi = 0;
+
+    mutable std::mutex m_mutex;
     raft::buffer_type m_buffer;
 };
 
 } // namespace details
-} // namespace counter
+} // namespace cluster
 } // namespace examples
 } // namespace wstux
 
-#endif /* _EXAMPLES_RAFT_COUNTER_FSM_H_ */
+#endif /* _EXAMPLES_CLUSTER_FSM_H_ */

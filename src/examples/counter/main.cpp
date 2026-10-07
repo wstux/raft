@@ -35,10 +35,6 @@
 void print_usage()
 {
     std::cout << "Usage: <program> -i/--id <server_id(>0)> -l/--level <trace/debug/info/warning/error> -c/--config <cfg_file>" << std::endl;
-    std::cout << "Usage bootstrap: <program> -i/--id <server_id(>0)> -l/--level <trace/debug/info/warning/error> "
-              << "-c/--config <cfg_file> -b/--bootstrap" << std::endl;
-    std::cout << "Usage join: <program> -i/--id <server_id(>0)> -l/--level <trace/debug/info/warning/error> "
-              << "-e/endpoint <addr> -j/--join <cluster_addr>" << std::endl;
 }
 
 int main(int argc, char** argv)
@@ -52,7 +48,7 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    wstux::examples::counter::counter_node node(p_config);
+    wstux::examples::counter::counter node(p_config);
     const int rc = node.run();
     return rc;
 }

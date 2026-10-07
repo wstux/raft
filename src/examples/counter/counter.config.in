@@ -1,0 +1,28 @@
+[server]
+    endpoint = localhost:50001
+    id = 1
+    is_voter = true
+    is_async_io = true
+    work_dir = @BUILD_DIR@/__test_data/exmples/run/1
+    bootstrap = true
+    add_to_bootstrap = true
+
+[server]
+    endpoint = localhost:50002
+    id = 2
+    is_voter = true
+    is_async_io = true
+    work_dir = @BUILD_DIR@/__test_data/exmples/run/2
+    bootstrap = false
+    add_to_bootstrap = false
+    join_address = localhost:50001
+
+[server]
+    endpoint = localhost:50003
+    id = 3
+    is_voter = true
+    is_async_io = true
+    work_dir = @BUILD_DIR@/__test_data/exmples/run/3
+    bootstrap = false
+    add_to_bootstrap = false
+    join_address = localhost:50001

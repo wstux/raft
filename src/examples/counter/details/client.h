@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef _EXAMPLES_RAFT_COUNTER_CLIENT_H_
-#define _EXAMPLES_RAFT_COUNTER_CLIENT_H_
+#ifndef _EXAMPLES_CLUSTER_CLIENT_H_
+#define _EXAMPLES_CLUSTER_CLIENT_H_
 
 #include <memory>
 
@@ -41,20 +41,20 @@
     #include <node.grpc.pb.h>
 #pragma GCC diagnostic pop
 
-#include "raft/io.h"
+#include <raft/io.h>
 
 #include "counter/details/logging.h"
 
 namespace wstux {
 namespace examples {
-namespace counter {
+namespace cluster {
 namespace details {
 
 class client final
 {
 private:
     using context_type = ::grpc::ClientContext;
-    using service_type = ::cluster::NodeService;
+    using service_type = NodeService;
     using stub_type    = typename service_type::Stub;
 
 public:
@@ -73,10 +73,10 @@ public:
     {
         context_type ctx;
 
-        ::cluster::Message msg;
+        Message msg;
         msg.set_buffer(buf.data(), buf.size());
 
-        ::cluster::Empty resp;
+        Empty resp;
         ::grpc::Status status = m_p_stub->SendRaftMessage(&ctx, msg, &resp);
         if (! status.ok()) {
             LOG_ERROR(m_logger, "Failed to send append entries request data to server " << m_address);
@@ -97,9 +97,8 @@ private:
 };
 
 } // namespace details
-} // namespace counter
+} // namespace cluster
 } // namespace examples
 } // namespace wstux
 
-#endif /* _EXAMPLES_RAFT_COUNTER_CLIENT_H_ */
-
+#endif /* _EXAMPLES_CLUSTER_CLIENT_H_ */
