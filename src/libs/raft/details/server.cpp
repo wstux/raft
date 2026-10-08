@@ -128,6 +128,7 @@ bool server::bootstrap(const config& cfg, const cluster_config& cluster_cfg)
 void server::deinit()
 {
     m_p_ctx->p_io->deinit();
+    m_p_ctx->p_fsm->deinit();
 }
 
 bool server::init(const config& cfg)
@@ -210,6 +211,12 @@ bool server::reconfigure(const config& cfg)
     RAFT_LOG_INFO((*m_p_ctx), "Raft server %llu is reconfiguring.", m_p_ctx->id);
 
     if (! m_p_ctx->p_io->reconfigure(m_p_ctx->id)) {
+        RAFT_LOG_ERROR((*m_p_ctx), "Raft server %llu failed to reconfigure I/O.", m_p_ctx->id);
+        return false;
+    }
+
+    if (! m_p_ctx->p_fsm->reconfigure(m_p_ctx->id)) {
+        RAFT_LOG_ERROR((*m_p_ctx), "Raft server %llu failed to reconfigure fsm.", m_p_ctx->id);
         return false;
     }
 

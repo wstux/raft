@@ -139,6 +139,12 @@ public:
 
     virtual bool apply(const buffer_type& buf) noexcept = 0;
 
+    virtual void deinit() noexcept = 0;
+
+    virtual bool init(server_id_t id) noexcept = 0;
+
+    virtual bool reconfigure(server_id_t id) noexcept = 0;
+
     virtual bool restore(const buffer_type& buf) noexcept = 0;
 
     virtual bool take_snapshot(buffer_type& buf) noexcept = 0;
