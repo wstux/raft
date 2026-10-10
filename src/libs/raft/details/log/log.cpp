@@ -51,6 +51,10 @@ iterator_type<TLogStore> find_entry(TLogStore* p_log, const index_t idx)
 
 } // <anonymous> namespace
 
+log_store::log_store(const allocator_type& al)
+    : alloc(al)
+{}
+
 entry::list log_store::acquire(index_t begin_idx) const
 {
     assert(begin_idx > 0);
@@ -81,7 +85,7 @@ void log_store::append(entry::ptr p_entry)
 
 void log_store::append_change(term_t term, const cluster_config& cfg)
 {
-    entry::ptr e = std::make_shared<entry>();
+    entry::ptr e = std::allocate_shared<entry>(alloc);
     e->term = term;
     e->type = entry_type::change;
     e->buffer = serialize<cluster_config>(cfg);
@@ -91,7 +95,7 @@ void log_store::append_change(term_t term, const cluster_config& cfg)
 
 void log_store::append_command(term_t term, buffer_type buf)
 {
-    entry::ptr e = std::make_shared<entry>();
+    entry::ptr e = std::allocate_shared<entry>(alloc);
     e->term = term;
     e->type = entry_type::command;
     e->buffer = std::move(buf);

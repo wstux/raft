@@ -106,6 +106,7 @@ context::context(server_id_t id, const io::ptr p_io, const fsm::ptr p_fsm, loggi
     , is_async_io(false)
     , p_io(p_io)
     , p_fsm(p_fsm)
+    , log(alloc)
     , term(0)
     , schd(alloc)
     , heartbeat_interval_ms(100)

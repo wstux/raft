@@ -37,6 +37,8 @@ struct log_store final
 {
     using entry_buffer = boost::circular_buffer<entry::ptr>;
 
+    explicit log_store(const allocator_type& al = allocator_type());
+
     entry::list acquire(index_t begin_idx) const;
 
     void append(entry::ptr p_entry);
@@ -61,6 +63,7 @@ struct log_store final
 
     void truncate(index_t begin_idx);
 
+    allocator_type alloc;
     entry_buffer entries;
     index_t offset = 0;
     struct
