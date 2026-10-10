@@ -196,6 +196,11 @@ bool init(context& ctx, const config& cfg)
         return false;
     }
 
+    if (! ctx.p_fsm->init(ctx.id)) {
+        RAFT_LOG_ERROR(ctx, "Server %llu(%s) failed to init fsm.", ctx.id, ctx.role.str());
+        return false;
+    }
+
     if (cfg.address.empty()) {
         return false;
     }

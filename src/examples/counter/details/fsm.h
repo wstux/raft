@@ -45,19 +45,13 @@ public:
 public:
     explicit fsm(db_guard::ptr p_db_guard)
         : m_p_db_guard(std::move(p_db_guard))
-    {
-        init();
-    }
+    {}
 
     virtual ~fsm() {}
 
     virtual bool apply(const raft::buffer_type& buf) noexcept override final
     {
         std::lock_guard<std::mutex> lock(m_mutex);
-        if (! init()) {
-            return false;
-        }
-
         MDB_txn* p_txn = nullptr;
         if (mdb_txn_begin(m_p_db_guard->p_env, nullptr, 0, &p_txn) != MDB_SUCCESS) {
             return false;
@@ -74,6 +68,10 @@ public:
         m_buffer = buf;
         return mdb_txn_commit(p_txn) == MDB_SUCCESS;
     }
+
+    virtual void deinit() noexcept override final {}
+    virtual bool init(raft::server_id_t) noexcept override final { return init(); }
+    virtual bool reconfigure(raft::server_id_t) noexcept override final { return true; }
 
     virtual bool restore(const raft::buffer_type& buf) noexcept override final { return apply(buf); }
 

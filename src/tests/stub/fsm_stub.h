@@ -39,6 +39,9 @@ public:
 public:
     virtual ~fsm_stub() {}
     virtual bool apply(const raft::buffer_type& buf) noexcept override { return change(buf); }
+    virtual void deinit() noexcept override final {}
+    virtual bool init(server_id_t) noexcept override final { return true; }
+    virtual bool reconfigure(server_id_t) noexcept override final { return true; }
     virtual bool restore(const raft::buffer_type& buf) noexcept override { return change(buf); }
     virtual bool take_snapshot(raft::buffer_type& buf) noexcept override { buf = m_buffer; return is_result; }
 
