@@ -67,7 +67,7 @@ bool catchup_round(context& ctx)
     assert(ctx.role.is_leader());
     assert(ctx.role.leader.promotee_id != gk_invalid_id);
 
-    const peer::ptr p_peer = utils::find_peer(ctx, ctx.role.leader.promotee_id);
+    const peer* p_peer = utils::find_peer(ctx, ctx.role.leader.promotee_id);
     assert(p_peer != nullptr);
 
     const index_t match_index = p_peer->match_index;

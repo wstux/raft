@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef _LIBS_RAFT_CONTEXT_H_
-#define _LIBS_RAFT_CONTEXT_H_
+#ifndef _LIBS_RAFT_DETAILS_CONTEXT_H_
+#define _LIBS_RAFT_DETAILS_CONTEXT_H_
 
 #include <atomic>
 #include <functional>
@@ -51,7 +51,7 @@ struct context final
     using stop_fn_t = std::function<void()>;
 
     context(server_id_t id, const io::ptr p_io, const fsm::ptr p_fsm, logging_handler::ptr p_handler,
-            const is_stop_fn_t& is_stop, const stop_fn_t& stop_fn, const allocator_type& alloc = allocator_type());
+            const is_stop_fn_t& is_stop, const stop_fn_t& stop_fn, const allocator_type& al);
 
     const server_id_t id;
     const is_stop_fn_t is_stop_fn;
@@ -124,7 +124,7 @@ bool bootstrap(context& ctx, cluster_config cluster_cfg);
  */
 bool check_contact_quorum(context& ctx);
 
-peer::ptr find_peer(context& ctx, server_id_t id);
+peer* find_peer(context& ctx, server_id_t id);
 
 server_config* find_server_config(context& ctx, server_id_t id);
 
@@ -152,4 +152,4 @@ size_t voting_members_count(const context& ctx);
 } // namespace raft
 } // namespace wstux
 
-#endif /* _LIBS_RAFT_CONTEXT_H_ */
+#endif /* _LIBS_RAFT_DETAILS_CONTEXT_H_ */

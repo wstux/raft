@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef _LIBS_RAFT_HANDLERS_HEARTBEAT_HANDLER_H_
-#define _LIBS_RAFT_HANDLERS_HEARTBEAT_HANDLER_H_
+#ifndef _LIBS_RAFT_DETAILS_HANDLERS_HEARTBEAT_HANDLER_H_
+#define _LIBS_RAFT_DETAILS_HANDLERS_HEARTBEAT_HANDLER_H_
 
 #include "raft/details/context.h"
 
@@ -54,4 +54,4 @@ void request(context& ctx);
 } // namespace raft
 } // namespace wstux
 
-#endif /* _LIBS_RAFT_HANDLERS_HEARTBEAT_HANDLER_H_ */
+#endif /* _LIBS_RAFT_DETAILS_HANDLERS_HEARTBEAT_HANDLER_H_ */

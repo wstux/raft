@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef _LIBS_RAFT_LOGGER_H_
-#define _LIBS_RAFT_LOGGER_H_
+#ifndef _LIBS_RAFT_DETAILS_LOGGER_H_
+#define _LIBS_RAFT_DETAILS_LOGGER_H_
 
 #include <cstdarg>
 #include <cstdio>
@@ -188,4 +188,4 @@ struct logger
 #define RAFT_VOTE_LOG_DEBUG(ctx,  fmt, ...)  RAFT_LOG_CH_DEBUG(ctx,  vote, "Vote", fmt, ##__VA_ARGS__)
 #define RAFT_VOTE_LOG_TRACE(ctx,  fmt, ...)  RAFT_LOG_CH_TRACE(ctx,  vote, "Vote", fmt, ##__VA_ARGS__)
 
-#endif /* _LIBS_RAFT_LOGGER_H_ */
+#endif /* _LIBS_RAFT_DETAILS_LOGGER_H_ */

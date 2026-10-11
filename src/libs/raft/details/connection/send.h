@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef _LIBS_RAFT_CONNECTION_SEND_H_
-#define _LIBS_RAFT_CONNECTION_SEND_H_
+#ifndef _LIBS_RAFT_DETAILS_CONNECTION_SEND_H_
+#define _LIBS_RAFT_DETAILS_CONNECTION_SEND_H_
 
 #include <cstdint>
 #include <memory>
@@ -180,4 +180,4 @@ inline void send_vote_response(context& ctx, server_id_t dst_id, std::string add
 } // namespace raft
 } // namespace wstux
 
-#endif /* _LIBS_RAFT_CONNECTION_SEND_H_ */
+#endif /* _LIBS_RAFT_DETAILS_CONNECTION_SEND_H_ */

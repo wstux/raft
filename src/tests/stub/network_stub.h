@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef _TESTS_RAFT_NETWORK_STUB_H_
-#define _TESTS_RAFT_NETWORK_STUB_H_
+#ifndef _TESTS_STUB_NETWORK_STUB_H_
+#define _TESTS_STUB_NETWORK_STUB_H_
 
 #include <algorithm>
 #include <filesystem>
@@ -299,4 +299,4 @@ std::string network_stub::m_test_name = "";
 } // namespace raft
 } // namespace wstux
 
-#endif /* _TESTS_RAFT_NETWORK_STUB_H_ */
+#endif /* _TESTS_STUB_NETWORK_STUB_H_ */

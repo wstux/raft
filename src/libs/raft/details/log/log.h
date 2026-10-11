@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef _LIBS_RAFT_LOG_LOG_H_
-#define _LIBS_RAFT_LOG_LOG_H_
+#ifndef _LIBS_RAFT_DETAILS_LOG_LOG_H_
+#define _LIBS_RAFT_DETAILS_LOG_LOG_H_
 
 #include <boost/circular_buffer.hpp>
 
@@ -35,7 +35,10 @@ namespace details {
 
 struct log_store final
 {
-    using entry_buffer = boost::circular_buffer<entry::ptr>;
+    template<typename T> using allocator_type = typename std::allocator_traits<raft::allocator_type>::template rebind_alloc<T>;
+    using entry_buffer = boost::circular_buffer<entry::ptr, allocator_type<entry::ptr>>;
+
+    explicit log_store(const raft::allocator_type& al);
 
     entry::list acquire(index_t begin_idx) const;
 
@@ -61,6 +64,7 @@ struct log_store final
 
     void truncate(index_t begin_idx);
 
+    raft::allocator_type alloc;
     entry_buffer entries;
     index_t offset = 0;
     struct
@@ -74,4 +78,4 @@ struct log_store final
 } // namespace raft
 } // namespace wstux
 
-#endif /* _LIBS_RAFT_LOG_LOG_H_ */
+#endif /* _LIBS_RAFT_DETAILS_LOG_LOG_H_ */

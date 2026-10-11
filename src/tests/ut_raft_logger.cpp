@@ -68,7 +68,7 @@ public:
         m_p_io = std::make_shared<tests::empty_io>();
 
         m_p_ctx = std::make_unique<details::context>(1, m_p_io, std::make_shared<tests::fsm_stub>(), std::make_unique<logging_handler>(),
-            []() -> bool { return false; }, []() -> void {});
+            []() -> bool { return false; }, []() -> void {}, raft::allocator_type());
 
         m_p_io->cluster_cfg.servers.emplace_back(1, std::to_string(1), true);
         m_p_hdlr = static_cast<logging_handler*>(m_p_ctx->raft_logger.p_hdlr->p_this);

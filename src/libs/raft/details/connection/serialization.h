@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef _LIBS_RAFT_SERIALIZATION_H_
-#define _LIBS_RAFT_SERIALIZATION_H_
+#ifndef _LIBS_RAFT_DETAILS_CONNECTION_SERIALIZATION_H_
+#define _LIBS_RAFT_DETAILS_CONNECTION_SERIALIZATION_H_
 
 #include <cassert>
 #include <type_traits>
@@ -556,4 +556,4 @@ inline buffer_type serialize(const T& data)
 } // namespace raft
 } // namespace wstux
 
-#endif /* _LIBS_RAFT_SERIALIZATION_H_ */
+#endif /* _LIBS_RAFT_DETAILS_CONNECTION_SERIALIZATION_H_ */

@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef _LIBS_RAFT_SNAPSHOT_HANDLER_H_
-#define _LIBS_RAFT_SNAPSHOT_HANDLER_H_
+#ifndef _LIBS_RAFT_DETAILS_HANDLERS_SNAPSHOT_HANDLER_H_
+#define _LIBS_RAFT_DETAILS_HANDLERS_SNAPSHOT_HANDLER_H_
 
 #include "raft/io.h"
 #include "raft/details/context.h"
@@ -80,4 +80,4 @@ void request(context& ctx, peer& p);
 } // namespace raft
 } // namespace wstux
 
-#endif /* _LIBS_RAFT_SNAPSHOT_HANDLER_H_ */
+#endif /* _LIBS_RAFT_DETAILS_HANDLERS_SNAPSHOT_HANDLER_H_ */

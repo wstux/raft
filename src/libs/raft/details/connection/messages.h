@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef _LIBS_RAFT_CONNECTION_MESSAGES_H_
-#define _LIBS_RAFT_CONNECTION_MESSAGES_H_
+#ifndef _LIBS_RAFT_DETAILS_CONNECTION_MESSAGES_H_
+#define _LIBS_RAFT_DETAILS_CONNECTION_MESSAGES_H_
 
 #include <type_traits>
 
@@ -201,4 +201,4 @@ private:
 } // namespace raft
 } // namespace wstux
 
-#endif /* _LIBS_RAFT_CONNECTION_MESSAGES_H_ */
+#endif /* _LIBS_RAFT_DETAILS_CONNECTION_MESSAGES_H_ */

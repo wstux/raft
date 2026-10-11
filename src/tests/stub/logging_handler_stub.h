@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef _TESTS_RAFT_LOGGING_HANDLER_STUB_H_
-#define _TESTS_RAFT_LOGGING_HANDLER_STUB_H_
+#ifndef _TESTS_STUB_LOGGING_HANDLER_STUB_H_
+#define _TESTS_STUB_LOGGING_HANDLER_STUB_H_
 
 #include <sys/time.h>
 
@@ -154,4 +154,4 @@ struct logging_handler_file : public logging_handler
 } // namespace raft
 } // namespace wstux
 
-#endif /* _TESTS_RAFT_LOGGING_HANDLER_STUB_H_ */
+#endif /* _TESTS_STUB_LOGGING_HANDLER_STUB_H_ */

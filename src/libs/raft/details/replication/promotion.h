@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef _LIBS_RAFT_REPLICATION_PROMOTION_H_
-#define _LIBS_RAFT_REPLICATION_PROMOTION_H_
+#ifndef _LIBS_RAFT_DETAILS_REPLICATION_PROMOTION_H_
+#define _LIBS_RAFT_DETAILS_REPLICATION_PROMOTION_H_
 
 #include "raft/io.h"
 #include "raft/details/context.h"
@@ -46,4 +46,4 @@ void process(context& ctx, const server_id_t server_id);
 } // namespace raft
 } // namespace wstux
 
-#endif /* _LIBS_RAFT_REPLICATION_PROMOTION_H_ */
+#endif /* _LIBS_RAFT_DETAILS_REPLICATION_PROMOTION_H_ */

@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef _LIBS_RAFT_ROLE_ROLE_H_
-#define _LIBS_RAFT_ROLE_ROLE_H_
+#ifndef _LIBS_RAFT_DETAILS_ROLE_ROLE_H_
+#define _LIBS_RAFT_DETAILS_ROLE_ROLE_H_
 
 #include <cstdint>
 #include <cstring>
@@ -48,8 +48,11 @@ enum role_type : int32_t
 
 struct state final
 {
-    state()
-        : role(role_type::undefined)
+    template<typename T> using allocator_type = typename std::allocator_traits<raft::allocator_type>::template rebind_alloc<T>;
+
+    explicit state(const raft::allocator_type& al)
+        : alloc(al)
+        , role(role_type::undefined)
         , follower{}
     {
         std::memset(&follower, 0, sizeof(leader));
@@ -68,14 +71,14 @@ struct state final
     {
         clear();
         role.store(role_type::candidate, std::memory_order_relaxed);
-        ::new (static_cast<void*>(&candidate.votes)) std::vector<bool>();
+        ::new (static_cast<void*>(&candidate.votes)) std::vector<bool, allocator_type<bool>>(allocator_type<bool>(alloc));
     }
 
     inline void become_leader()
     {
         clear();
         role.store(role_type::leader, std::memory_order_relaxed);
-        ::new (static_cast<void*>(&leader.peers)) peer::list();
+        ::new (static_cast<void*>(&leader.peers)) std::vector<peer, allocator_type<peer>>(allocator_type<peer>(alloc));
     }
 
     inline void clear()
@@ -113,18 +116,19 @@ struct state final
         return p_undefined_str;
     }
 
-    std::atomic<role_type> role = role_type::undefined;
+    raft::allocator_type alloc;
 
+    std::atomic<role_type> role = role_type::undefined;
     std::atomic<server_id_t> leader_id = gk_invalid_id;
 
     union {
         struct {} follower;
         struct {
-            std::vector<bool> votes;
+            std::vector<bool, allocator_type<bool>> votes;
             bool is_prevote;
         } candidate;
         struct {
-            peer::list peers;
+            std::vector<peer, allocator_type<peer>> peers;
             server_id_t promotee_id;
             uint16_t round;
             index_t round_index;
@@ -141,4 +145,4 @@ struct state final
 } // namespace raft
 } // namespace wstux
 
-#endif /* _LIBS_RAFT_ROLE_ROLE_H_ */
+#endif /* _LIBS_RAFT_DETAILS_ROLE_ROLE_H_ */

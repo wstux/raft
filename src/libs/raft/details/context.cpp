@@ -98,14 +98,16 @@ bool restore_entries(context& ctx, index_t snapshot_index, term_t snapshot_term,
 // class context
 
 context::context(server_id_t id, const io::ptr p_io, const fsm::ptr p_fsm, logging_handler::ptr p_handler,
-                 const is_stop_fn_t& is_stop, const stop_fn_t& stop_fn, const allocator_type& alloc)
+                 const is_stop_fn_t& is_stop, const stop_fn_t& stop_fn, const allocator_type& al)
     : id(id)
     , is_stop_fn(is_stop)
     , stop_fn(stop_fn)
-    , alloc(alloc)
+    , alloc(al)
     , is_async_io(false)
     , p_io(p_io)
     , p_fsm(p_fsm)
+    , role(alloc)
+    , log(alloc)
     , term(0)
     , schd(alloc)
     , heartbeat_interval_ms(100)
@@ -166,16 +168,16 @@ bool check_contact_quorum(context& ctx)
     return contacts > quorum_for_election_size;
 }
 
-peer::ptr find_peer(context& ctx, server_id_t id)
+peer* find_peer(context& ctx, server_id_t id)
 {
     assert(ctx.role.is_leader());
 
-    peer::list::iterator it = std::find_if(ctx.role.leader.peers.begin(), ctx.role.leader.peers.end(),
+    std::vector<peer>::iterator it = std::find_if(ctx.role.leader.peers.begin(), ctx.role.leader.peers.end(),
         [id](const peer& p) { return p.id == id; });
     if (it != ctx.role.leader.peers.cend()) {
         return &(*it);
     }
-    return peer::ptr();
+    return nullptr;
 }
 
 server_config* find_server_config(context& ctx, server_id_t id)

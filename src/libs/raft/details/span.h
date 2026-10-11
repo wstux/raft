@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef _LIBS_RAFT_SPAN_H_
-#define _LIBS_RAFT_SPAN_H_
+#ifndef _LIBS_RAFT_DETAILS_SPAN_H_
+#define _LIBS_RAFT_DETAILS_SPAN_H_
 
 #if __cplusplus < 202002L
     #include <cassert>
@@ -116,4 +116,4 @@ using span_type = std::span<T>;
 } // namespace raft
 } // namespace wstux
 
-#endif /* _LIBS_RAFT_SPAN_H_ */
+#endif /* _LIBS_RAFT_DETAILS_SPAN_H_ */
