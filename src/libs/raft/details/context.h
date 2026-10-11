@@ -124,7 +124,7 @@ bool bootstrap(context& ctx, cluster_config cluster_cfg);
  */
 bool check_contact_quorum(context& ctx);
 
-peer::ptr find_peer(context& ctx, server_id_t id);
+peer* find_peer(context& ctx, server_id_t id);
 
 server_config* find_server_config(context& ctx, server_id_t id);
 

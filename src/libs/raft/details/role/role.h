@@ -75,7 +75,7 @@ struct state final
     {
         clear();
         role.store(role_type::leader, std::memory_order_relaxed);
-        ::new (static_cast<void*>(&leader.peers)) peer::list();
+        ::new (static_cast<void*>(&leader.peers)) std::vector<peer>();
     }
 
     inline void clear()
@@ -124,7 +124,7 @@ struct state final
             bool is_prevote;
         } candidate;
         struct {
-            peer::list peers;
+            std::vector<peer> peers;
             server_id_t promotee_id;
             uint16_t round;
             index_t round_index;

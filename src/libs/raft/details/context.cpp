@@ -167,16 +167,16 @@ bool check_contact_quorum(context& ctx)
     return contacts > quorum_for_election_size;
 }
 
-peer::ptr find_peer(context& ctx, server_id_t id)
+peer* find_peer(context& ctx, server_id_t id)
 {
     assert(ctx.role.is_leader());
 
-    peer::list::iterator it = std::find_if(ctx.role.leader.peers.begin(), ctx.role.leader.peers.end(),
+    std::vector<peer>::iterator it = std::find_if(ctx.role.leader.peers.begin(), ctx.role.leader.peers.end(),
         [id](const peer& p) { return p.id == id; });
     if (it != ctx.role.leader.peers.cend()) {
         return &(*it);
     }
-    return peer::ptr();
+    return nullptr;
 }
 
 server_config* find_server_config(context& ctx, server_id_t id)

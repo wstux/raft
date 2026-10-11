@@ -25,11 +25,6 @@
 #ifndef _LIBS_RAFT_CONNECTION_PEER_H_
 #define _LIBS_RAFT_CONNECTION_PEER_H_
 
-#include <cstdint>
-#include <memory>
-#include <shared_mutex>
-#include <vector>
-
 #include "raft/io.h"
 
 namespace wstux {
@@ -38,9 +33,6 @@ namespace details {
 
 struct peer final
 {
-    using ptr = peer*;
-    using list = std::vector<peer>;
-
     peer(const server_config& cfg, index_t next_idx)
         : id(cfg.id)
         , address(cfg.address)
@@ -53,7 +45,10 @@ struct peer final
         shapshot.is_in_process = false;
     }
 
+    peer(peer&) noexcept = delete;
     peer(peer&&) noexcept = default;
+
+    peer& operator=(peer& other) noexcept = delete;
 
     peer& operator=(peer&& other) noexcept
     {
