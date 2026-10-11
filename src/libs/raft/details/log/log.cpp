@@ -51,8 +51,9 @@ iterator_type<TLogStore> find_entry(TLogStore* p_log, const index_t idx)
 
 } // <anonymous> namespace
 
-log_store::log_store(const allocator_type& al)
+log_store::log_store(const raft::allocator_type& al)
     : alloc(al)
+    , entries(allocator_type<entry::ptr>(alloc))
 {}
 
 entry::list log_store::acquire(index_t begin_idx) const

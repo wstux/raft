@@ -51,7 +51,7 @@ struct context final
     using stop_fn_t = std::function<void()>;
 
     context(server_id_t id, const io::ptr p_io, const fsm::ptr p_fsm, logging_handler::ptr p_handler,
-            const is_stop_fn_t& is_stop, const stop_fn_t& stop_fn, const allocator_type& alloc = allocator_type());
+            const is_stop_fn_t& is_stop, const stop_fn_t& stop_fn, const allocator_type& al = allocator_type());
 
     const server_id_t id;
     const is_stop_fn_t is_stop_fn;
