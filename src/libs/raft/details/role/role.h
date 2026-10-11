@@ -50,7 +50,7 @@ struct state final
 {
     template<typename T> using allocator_type = typename std::allocator_traits<raft::allocator_type>::template rebind_alloc<T>;
 
-    explicit state(const raft::allocator_type& al = raft::allocator_type())
+    explicit state(const raft::allocator_type& al)
         : alloc(al)
         , role(role_type::undefined)
         , follower{}

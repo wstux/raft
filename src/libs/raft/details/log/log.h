@@ -38,7 +38,7 @@ struct log_store final
     template<typename T> using allocator_type = typename std::allocator_traits<raft::allocator_type>::template rebind_alloc<T>;
     using entry_buffer = boost::circular_buffer<entry::ptr, allocator_type<entry::ptr>>;
 
-    explicit log_store(const raft::allocator_type& al = raft::allocator_type());
+    explicit log_store(const raft::allocator_type& al);
 
     entry::list acquire(index_t begin_idx) const;
 

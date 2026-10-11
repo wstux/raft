@@ -50,7 +50,7 @@ TEST_F(raft_role, follower)
     namespace raft = ::wstux::raft;
     using raft_role = raft::details::role::state;
 
-    raft_role role;
+    raft_role role{raft::allocator_type()};
     role.become_follower();
 
     EXPECT_TRUE(role.is_follower()) << "role: " << role.role;
@@ -67,7 +67,7 @@ TEST_F(raft_role, candidate)
     namespace raft = ::wstux::raft;
     using raft_role = raft::details::role::state;
 
-    raft_role role;
+    raft_role role{raft::allocator_type()};
     role.become_candidate();
 
     EXPECT_FALSE(role.is_follower()) << "role: " << role.role;
@@ -84,7 +84,7 @@ TEST_F(raft_role, leader)
     namespace raft = ::wstux::raft;
     using raft_role = raft::details::role::state;
 
-    raft_role role;
+    raft_role role{raft::allocator_type()};
     role.become_leader();
 
     EXPECT_FALSE(role.is_follower()) << "role: " << role.role;
@@ -101,7 +101,7 @@ TEST_F(raft_role, undefined)
     namespace raft = ::wstux::raft;
     using raft_role = raft::details::role::state;
 
-    raft_role role;
+    raft_role role{raft::allocator_type()};
     role.role = (raft::details::role::role_type)255;
 
     EXPECT_FALSE(role.is_follower()) << "role: " << role.role;
@@ -115,7 +115,7 @@ TEST_F(raft_role, has_leader)
     namespace raft = ::wstux::raft;
     using raft_role = raft::details::role::state;
 
-    raft_role role;
+    raft_role role{raft::allocator_type()};
     role.become_leader();
 
     EXPECT_FALSE(role.has_leader());

@@ -50,7 +50,7 @@ public:
         std::function<bool()> is_stop_fn = [p_raw_io]() -> bool { return p_raw_io->is_stop; };
         std::function<void()> stop_fn = []() -> void {};
 
-        m_p_ctx = std::make_unique<details::context>(1, m_p_io, m_p_fsm, raft::logging_handler::ptr(), is_stop_fn, stop_fn);
+        m_p_ctx = std::make_unique<details::context>(1, m_p_io, m_p_fsm, raft::logging_handler::ptr(), is_stop_fn, stop_fn, raft::allocator_type());
 
         m_p_io->cluster_cfg.servers.emplace_back(1, std::to_string(1), true);
         m_p_io->cluster_cfg.servers.emplace_back(2, std::to_string(2), true);
