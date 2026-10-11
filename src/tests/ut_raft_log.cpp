@@ -48,7 +48,7 @@ TEST_F(raft_log, acquire_empty_log)
     namespace raft = ::wstux::raft;
     using raft_log = raft::details::log_store;
 
-    raft_log log{raft::allocator_type()};
+    raft_log log;
     log.offset = 1;
     log.snapshot.last_index = 0;
     log.snapshot.last_term = 0;
@@ -73,7 +73,7 @@ TEST_F(raft_log, acquire)
     namespace raft = ::wstux::raft;
     using raft_log = raft::details::log_store;
 
-    raft_log log{raft::allocator_type()};
+    raft_log log;
     log.load(0, 0, 1);
 
     for (size_t i = 1; i < 11; ++i) {
@@ -112,7 +112,7 @@ TEST_F(raft_log, append)
     namespace raft = ::wstux::raft;
     using raft_log = raft::details::log_store;
 
-    raft_log log{raft::allocator_type()};
+    raft_log log;
     log.offset = 1;
     log.snapshot.last_index = 0;
     log.snapshot.last_term = 0;
@@ -148,7 +148,7 @@ TEST_F(raft_log, append_change)
     namespace raft = ::wstux::raft;
     using raft_log = raft::details::log_store;
 
-    raft_log log{raft::allocator_type()};
+    raft_log log;
     log.offset = 1;
     log.snapshot.last_index = 0;
     log.snapshot.last_term = 0;
@@ -179,7 +179,7 @@ TEST_F(raft_log, append_command)
     namespace raft = ::wstux::raft;
     using raft_log = raft::details::log_store;
 
-    raft_log log{raft::allocator_type()};
+    raft_log log;
     log.offset = 1;
     log.snapshot.last_index = 0;
     log.snapshot.last_term = 0;
@@ -209,7 +209,7 @@ TEST_F(raft_log, get_entry_with_valid_index)
     namespace raft = ::wstux::raft;
     using raft_log = raft::details::log_store;
 
-    raft_log log{raft::allocator_type()};
+    raft_log log;
     log.offset = 1;
     log.snapshot.last_index = 0;
     log.snapshot.last_term = 0;
@@ -236,7 +236,7 @@ TEST_F(raft_log, get_entry_with_invalid_index)
     namespace raft = ::wstux::raft;
     using raft_log = raft::details::log_store;
 
-    raft_log log{raft::allocator_type()};
+    raft_log log;
     log.offset = 1;
     log.snapshot.last_index = 0;
     log.snapshot.last_term = 0;
@@ -264,7 +264,7 @@ TEST_F(raft_log, last_index)
     namespace raft = ::wstux::raft;
     using raft_log = raft::details::log_store;
 
-    raft_log log{raft::allocator_type()};
+    raft_log log;
     log.offset = 1;
     log.snapshot.last_index = 0;
     log.snapshot.last_term = 0;
@@ -296,7 +296,7 @@ TEST_F(raft_log, last_term)
     namespace raft = ::wstux::raft;
     using raft_log = raft::details::log_store;
 
-    raft_log log{raft::allocator_type()};
+    raft_log log;
     log.offset = 1;
     log.snapshot.last_index = 2;
     log.snapshot.last_term = 1;
@@ -324,7 +324,7 @@ TEST_F(raft_log, load)
     namespace raft = ::wstux::raft;
     using raft_log = raft::details::log_store;
 
-    raft_log log{raft::allocator_type()};
+    raft_log log;
     log.load(2, 3, 3);
 
     EXPECT_TRUE(log.entries.empty()) << "Entries size in log: " << log.entries.size();
@@ -348,7 +348,7 @@ TEST_F(raft_log, restore)
     namespace raft = ::wstux::raft;
     using raft_log = raft::details::log_store;
 
-    raft_log log{raft::allocator_type()};
+    raft_log log;
     log.load(0, 0, 1);
     for (size_t i = 0; i < 3; ++i) {
         log.append_change(i + 1, raft::cluster_config());
@@ -384,7 +384,7 @@ TEST_F(raft_log, take_snapshot)
     namespace raft = ::wstux::raft;
     using raft_log = raft::details::log_store;
 
-    raft_log log{raft::allocator_type()};
+    raft_log log;
     log.load(0, 0, 1);
     for (size_t i = 0; i < 3; ++i) {
         log.append_change(1, raft::cluster_config());
@@ -415,7 +415,7 @@ TEST_F(raft_log, take_snapshot_trailing)
     namespace raft = ::wstux::raft;
     using raft_log = raft::details::log_store;
 
-    raft_log log{raft::allocator_type()};
+    raft_log log;
     log.load(0, 0, 1);
     for (size_t i = 0; i < 3; ++i) {
         log.append_change(1, raft::cluster_config());
@@ -446,7 +446,7 @@ TEST_F(raft_log, take_snapshot_clear_all_entries)
     namespace raft = ::wstux::raft;
     using raft_log = raft::details::log_store;
 
-    raft_log log{raft::allocator_type()};
+    raft_log log;
     log.load(10, 1, 10);
 
     raft::entry::ptr p_entry = std::make_shared<raft::entry>();
@@ -476,7 +476,7 @@ TEST_F(raft_log, term)
     namespace raft = ::wstux::raft;
     using raft_log = raft::details::log_store;
 
-    raft_log log{raft::allocator_type()};
+    raft_log log;
     log.offset = 2;
     log.snapshot.last_index = 2;
     log.snapshot.last_term = 2;
@@ -505,7 +505,7 @@ TEST_F(raft_log, truncate)
     namespace raft = ::wstux::raft;
     using raft_log = raft::details::log_store;
 
-    raft_log log{raft::allocator_type()};
+    raft_log log;
     log.load(0, 0, 1);
     for (size_t i = 0; i < 5; ++i) {
         log.append_change(i + 1, raft::cluster_config());
@@ -526,7 +526,7 @@ TEST_F(raft_log, truncate_invalid_index)
     namespace raft = ::wstux::raft;
     using raft_log = raft::details::log_store;
 
-    raft_log log{raft::allocator_type()};
+    raft_log log;
     log.load(0, 0, 1);
     for (size_t i = 0; i < 5; ++i) {
         log.append_change(i + 1, raft::cluster_config());

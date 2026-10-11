@@ -98,18 +98,14 @@ bool restore_entries(context& ctx, index_t snapshot_index, term_t snapshot_term,
 // class context
 
 context::context(server_id_t id, const io::ptr p_io, const fsm::ptr p_fsm, logging_handler::ptr p_handler,
-                 const is_stop_fn_t& is_stop, const stop_fn_t& stop_fn, const allocator_type& al)
+                 const is_stop_fn_t& is_stop, const stop_fn_t& stop_fn)
     : id(id)
     , is_stop_fn(is_stop)
     , stop_fn(stop_fn)
-    , alloc(al)
     , is_async_io(false)
     , p_io(p_io)
     , p_fsm(p_fsm)
-    , role(alloc)
-    , log(alloc)
     , term(0)
-    , schd(alloc)
     , heartbeat_interval_ms(100)
     , rand_engine(std::chrono::system_clock::now().time_since_epoch().count() * id)
     , election_distribution(250, 500)
@@ -141,7 +137,7 @@ bool bootstrap(context& ctx, cluster_config cluster_cfg)
     //ctx.state.cluster_cfg = std::move(cluster_cfg);
 
     entry::list entries(1);
-    entries.back() = std::allocate_shared<entry>(ctx.alloc);
+    entries.back() = std::make_shared<entry>();
     entry::ptr& e = entries.back();
     e->term = 1;
     e->type = entry_type::change;

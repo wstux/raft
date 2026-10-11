@@ -40,9 +40,6 @@
 namespace wstux {
 namespace raft {
 
-/// \brief  Default allocator type for handling raw bytes.
-using allocator_type = std::allocator<std::byte>;
-
 /// \brief  Predicate function to check if threads/processes should be stopped.
 using is_stop_fn_t = std::function<bool(void)>;
 
