@@ -48,11 +48,8 @@ enum role_type : int32_t
 
 struct state final
 {
-    template<typename T> using allocator_type = typename std::allocator_traits<raft::allocator_type>::template rebind_alloc<T>;
-
-    explicit state(const raft::allocator_type& al)
-        : alloc(al)
-        , role(role_type::undefined)
+    explicit state()
+        : role(role_type::undefined)
         , follower{}
     {
         std::memset(&follower, 0, sizeof(leader));
@@ -71,14 +68,14 @@ struct state final
     {
         clear();
         role.store(role_type::candidate, std::memory_order_relaxed);
-        ::new (static_cast<void*>(&candidate.votes)) std::vector<bool, allocator_type<bool>>(allocator_type<bool>(alloc));
+        ::new (static_cast<void*>(&candidate.votes)) std::vector<bool>();
     }
 
     inline void become_leader()
     {
         clear();
         role.store(role_type::leader, std::memory_order_relaxed);
-        ::new (static_cast<void*>(&leader.peers)) std::vector<peer, allocator_type<peer>>(allocator_type<peer>(alloc));
+        ::new (static_cast<void*>(&leader.peers)) std::vector<peer>();
     }
 
     inline void clear()
@@ -116,19 +113,17 @@ struct state final
         return p_undefined_str;
     }
 
-    raft::allocator_type alloc;
-
     std::atomic<role_type> role = role_type::undefined;
     std::atomic<server_id_t> leader_id = gk_invalid_id;
 
     union {
         struct {} follower;
         struct {
-            std::vector<bool, allocator_type<bool>> votes;
+            std::vector<bool> votes;
             bool is_prevote;
         } candidate;
         struct {
-            std::vector<peer, allocator_type<peer>> peers;
+            std::vector<peer> peers;
             server_id_t promotee_id;
             uint16_t round;
             index_t round_index;

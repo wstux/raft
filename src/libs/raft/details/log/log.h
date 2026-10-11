@@ -35,10 +35,7 @@ namespace details {
 
 struct log_store final
 {
-    template<typename T> using allocator_type = typename std::allocator_traits<raft::allocator_type>::template rebind_alloc<T>;
-    using entry_buffer = boost::circular_buffer<entry::ptr, allocator_type<entry::ptr>>;
-
-    explicit log_store(const raft::allocator_type& al);
+    using entry_buffer = boost::circular_buffer<entry::ptr>;
 
     entry::list acquire(index_t begin_idx) const;
 
@@ -64,7 +61,6 @@ struct log_store final
 
     void truncate(index_t begin_idx);
 
-    raft::allocator_type alloc;
     entry_buffer entries;
     index_t offset = 0;
     struct

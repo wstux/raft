@@ -75,7 +75,6 @@ namespace details { struct context; }
 class server final
 {
 public:
-    using allocator_type = std::allocator<server>; //!< Memory allocator for creating instances of the server class.
     using ptr = std::shared_ptr<server>;           //!< Smart pointer to a Raft server instance.
 
 public:
@@ -85,9 +84,7 @@ public:
     /// \param  p_fsm - pointer to the deterministic finite state machine of business logic.
     /// \param  p_handler - logger for recording system events and protocol tracing.
     /// \param  is_stop_fn - external predicate function for global application shutdown control.
-    /// \param  alloc - memory allocator instance (optional).
-    server(const server_id_t id, const io::ptr& p_io, const fsm::ptr p_fsm, logging_handler::ptr p_handler,
-           const is_stop_fn_t& is_stop_fn, const allocator_type& alloc = allocator_type());
+    server(const server_id_t id, const io::ptr& p_io, const fsm::ptr p_fsm, logging_handler::ptr p_handler, const is_stop_fn_t& is_stop_fn);
 
     /// \brief  Server destructor.
     ~server();
@@ -223,7 +220,6 @@ private:
 
 private:
     const server_id_t m_id;     //!< Unique identifier of this server.
-    allocator_type m_alloc;     //!< Memory allocator used by the server.
 
     is_stop_fn_t m_is_stop_fn;  //!< External stop checking function.
     std::atomic_bool m_is_stop; //!< Atomic internal server stop flag.

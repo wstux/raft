@@ -92,9 +92,8 @@ struct scheduler::task final
 ////////////////////////////////////////////////////////////////////////////////
 // class scheduler
 
-scheduler::scheduler(const allocator_type& alloc)
+scheduler::scheduler()
     : m_is_stop(true)
-    , m_alloc(alloc)
     , m_io_ctx()
     , m_strand(boost::asio::make_strand(m_io_ctx))
 {}
@@ -144,7 +143,7 @@ bool scheduler::is_canceled(const task_type& task) const
 scheduler::task_type scheduler::make_task(handler_type&& handler)
 {
     //return std::make_shared<task>(std::move(handler), m_io_ctx);
-    return std::allocate_shared<task>(m_alloc, std::move(handler), m_io_ctx);
+    return std::make_shared<task>(std::move(handler), m_io_ctx);
 }
 
 void scheduler::reconfigure(size_t new_size)
