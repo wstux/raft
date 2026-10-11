@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef _TESTS_RAFT_FSM_STUB_H_
-#define _TESTS_RAFT_FSM_STUB_H_
+#ifndef _TESTS_STUB_FSM_STUB_H_
+#define _TESTS_STUB_FSM_STUB_H_
 
 #include "raft/io.h"
 
@@ -88,4 +88,4 @@ private:
 } // namespace raft
 } // namespace wstux
 
-#endif /* _TESTS_RAFT_FSM_STUB_H_ */
+#endif /* _TESTS_STUB_FSM_STUB_H_ */

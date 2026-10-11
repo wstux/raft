@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef _TESTS_RAFT_IO_STUB_H_
-#define _TESTS_RAFT_IO_STUB_H_
+#ifndef _TESTS_STUB_IO_STUB_H_
+#define _TESTS_STUB_IO_STUB_H_
 
 #include <sys/time.h>
 
@@ -354,4 +354,4 @@ public:
 } // namespace raft
 } // namespace wstux
 
-#endif /* _TESTS_RAFT_IO_STUB_H_ */
+#endif /* _TESTS_STUB_IO_STUB_H_ */

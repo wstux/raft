@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef _LIBS_RAFT_CONNECTION_PEER_H_
-#define _LIBS_RAFT_CONNECTION_PEER_H_
+#ifndef _LIBS_RAFT_DETAILS_CONNECTION_PEER_H_
+#define _LIBS_RAFT_DETAILS_CONNECTION_PEER_H_
 
 #include "raft/io.h"
 
@@ -111,4 +111,4 @@ struct peer final
 } // namespace raft
 } // namespace wstux
 
-#endif /* _LIBS_RAFT_CONNECTION_PEER_H_ */
+#endif /* _LIBS_RAFT_DETAILS_CONNECTION_PEER_H_ */

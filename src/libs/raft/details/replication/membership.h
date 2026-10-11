@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef _LIBS_RAFT_REPLICATION_MEMBERSHIP_H_
-#define _LIBS_RAFT_REPLICATION_MEMBERSHIP_H_
+#ifndef _LIBS_RAFT_DETAILS_REPLICATION_MEMBERSHIP_H_
+#define _LIBS_RAFT_DETAILS_REPLICATION_MEMBERSHIP_H_
 
 #include "raft/io.h"
 #include "raft/details/context.h"
@@ -50,4 +50,4 @@ bool update(context& ctx, const entry::ptr& p_entry);
 } // namespace raft
 } // namespace wstux
 
-#endif /* _LIBS_RAFT_REPLICATION_MEMBERSHIP_H_ */
+#endif /* _LIBS_RAFT_DETAILS_REPLICATION_MEMBERSHIP_H_ */

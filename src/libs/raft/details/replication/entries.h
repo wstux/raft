@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef _LIBS_RAFT_REPLICATION_ENTRIES_H_
-#define _LIBS_RAFT_REPLICATION_ENTRIES_H_
+#ifndef _LIBS_RAFT_DETAILS_REPLICATION_ENTRIES_H_
+#define _LIBS_RAFT_DETAILS_REPLICATION_ENTRIES_H_
 
 #include <memory>
 
@@ -83,4 +83,4 @@ void update_commit_index(context& ctx, const index_t index);
 } // namespace raft
 } // namespace wstux
 
-#endif /* _LIBS_RAFT_REPLICATION_ENTRIES_H_ */
+#endif /* _LIBS_RAFT_DETAILS_REPLICATION_ENTRIES_H_ */

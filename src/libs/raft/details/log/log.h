@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef _LIBS_RAFT_LOG_LOG_H_
-#define _LIBS_RAFT_LOG_LOG_H_
+#ifndef _LIBS_RAFT_DETAILS_LOG_LOG_H_
+#define _LIBS_RAFT_DETAILS_LOG_LOG_H_
 
 #include <boost/circular_buffer.hpp>
 
@@ -77,4 +77,4 @@ struct log_store final
 } // namespace raft
 } // namespace wstux
 
-#endif /* _LIBS_RAFT_LOG_LOG_H_ */
+#endif /* _LIBS_RAFT_DETAILS_LOG_LOG_H_ */

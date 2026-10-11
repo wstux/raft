@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef _TESTS_RAFT_EMPTY_IO_H_
-#define _TESTS_RAFT_EMPTY_IO_H_
+#ifndef _TESTS_STUB_EMPTY_IO_H_
+#define _TESTS_STUB_EMPTY_IO_H_
 
 #include <algorithm>
 #include <atomic>
@@ -194,4 +194,4 @@ size_t empty_io::m_addr_id = 0;
 } // namespace raft
 } // namespace wstux
 
-#endif /* _TESTS_RAFT_EMPTY_IO_H_ */
+#endif /* _TESTS_STUB_EMPTY_IO_H_ */

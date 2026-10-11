@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef _LIBS_RAFT_ROLE_CONVERT_H_
-#define _LIBS_RAFT_ROLE_CONVERT_H_
+#ifndef _LIBS_RAFT_DETAILS_ROLE_CONVERT_H_
+#define _LIBS_RAFT_DETAILS_ROLE_CONVERT_H_
 
 #include "raft/details/context.h"
 
@@ -47,4 +47,4 @@ void update_term(context& ctx, term_t term);
 } // namespace raft
 } // namespace wstux
 
-#endif /* _LIBS_RAFT_ROLE_CONVERT_H_ */
+#endif /* _LIBS_RAFT_DETAILS_ROLE_CONVERT_H_ */

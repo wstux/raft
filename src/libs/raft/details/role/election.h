@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef _LIBS_RAFT_ROLE_ELECTION_H_
-#define _LIBS_RAFT_ROLE_ELECTION_H_
+#ifndef _LIBS_RAFT_DETAILS_ROLE_ELECTION_H_
+#define _LIBS_RAFT_DETAILS_ROLE_ELECTION_H_
 
 #include "raft/details/context.h"
 
@@ -47,4 +47,4 @@ void initiate_self_election(context& ctx);
 } // namespace raft
 } // namespace wstux
 
-#endif /* _LIBS_RAFT_ROLE_ELECTION_H_ */
+#endif /* _LIBS_RAFT_DETAILS_ROLE_ELECTION_H_ */

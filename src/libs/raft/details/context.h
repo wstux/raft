@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef _LIBS_RAFT_CONTEXT_H_
-#define _LIBS_RAFT_CONTEXT_H_
+#ifndef _LIBS_RAFT_DETAILS_CONTEXT_H_
+#define _LIBS_RAFT_DETAILS_CONTEXT_H_
 
 #include <atomic>
 #include <functional>
@@ -152,4 +152,4 @@ size_t voting_members_count(const context& ctx);
 } // namespace raft
 } // namespace wstux
 
-#endif /* _LIBS_RAFT_CONTEXT_H_ */
+#endif /* _LIBS_RAFT_DETAILS_CONTEXT_H_ */

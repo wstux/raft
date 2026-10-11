@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef _LIBS_RAFT_SCHEDULER_H_
-#define _LIBS_RAFT_SCHEDULER_H_
+#ifndef _LIBS_RAFT_DETAILS_SCHEDULER_H_
+#define _LIBS_RAFT_DETAILS_SCHEDULER_H_
 
 #include <atomic>
 #include <functional>
@@ -164,4 +164,4 @@ private:
 } // namespace raft
 } // namespace wstux
 
-#endif /* _LIBS_RAFT_SCHEDULER_H_ */
+#endif /* _LIBS_RAFT_DETAILS_SCHEDULER_H_ */
