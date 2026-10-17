@@ -98,6 +98,8 @@ if (COVERAGE_BUILD)
                     --show-details --ignore-errors ${_lcov_ignore_errors}
                     --title "${PROJECT_NAME}"
                     --output-directory ${_genhtml_out} ${_lcov_final_out} ${_cov_log_file}
+        # Print summary
+        COMMAND ${LCOV_EXECUTABLE} --summary ${_lcov_final_out}
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
         COMMENT "Processing code coverage counters and generating report."
     )
