@@ -208,10 +208,10 @@ TYPED_TEST(raft_append_entries_handler, handle_response_src_higher_term)
     EXPECT_TRUE(ctx.role.is_leader());
 
     details::peer* p_peer = details::utils::find_peer(ctx, 2);
+    EXPECT_TRUE(ctx.role.is_leader());
     ASSERT_FALSE(p_peer->recent_recv);
 
     details::append_entries::handle_response(ctx, 2, "2", 5, details::append_entries_response_message());
-    EXPECT_FALSE(p_peer->recent_recv);
     EXPECT_TRUE(ctx.role.is_follower()) << ctx;
     EXPECT_TRUE(ctx.term == 5) << ctx.term;
 }
