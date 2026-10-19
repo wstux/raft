@@ -88,7 +88,6 @@ server::server(const server_id_t id, const io::ptr& p_io, const fsm::ptr p_fsm, 
     static_assert(std::is_same<context_ptr, details::context::ptr>::value, "Invalid context pointer type");
 
     assert(m_id != gk_invalid_id);
-    details::role::become_follower(*m_p_ctx);
 }
 
 server::~server()
@@ -138,6 +137,7 @@ bool server::init(const config& cfg)
     }
     m_p_ctx->election_task = m_p_ctx->schd.make_task([this]() { details::timeout::election_timeout_task(*m_p_ctx); });
     m_p_ctx->heartbeat_task = m_p_ctx->schd.make_task([this]() { details::timeout::heartbeat_timeout_task(*m_p_ctx); });
+    details::role::become_follower(*m_p_ctx);
     return true;
 }
 
