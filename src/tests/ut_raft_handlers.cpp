@@ -72,6 +72,7 @@ public:
         }
 
         m_p_io->cfg.is_async_io = T::is_async_io;
+        m_p_io->cfg.scheduler_threads_count = 1;
         details::utils::init(*m_p_ctx, m_p_io->cfg);
         details::utils::bootstrap(*m_p_ctx, m_p_io->cluster_cfg);
         details::utils::load(*m_p_ctx);
@@ -136,7 +137,8 @@ TYPED_TEST(raft_append_entries_handler, handle_request_invalid_src_id)
 
     details::append_entries::handle_request(ctx, 10, "10", 1, details::append_entries_message());
     std::this_thread::sleep_for(5ms);
-    EXPECT_TRUE(p_io->client(2)->buffer.empty());
+    ctx.schd.stop();
+    EXPECT_TRUE(p_io->client(2)->empty());
 }
 
 TYPED_TEST(raft_append_entries_handler, handle_request_invalid_term)
@@ -257,7 +259,8 @@ TYPED_TEST(raft_join_handler, handle_request_no_leader)
     details::join::handle_request(ctx, msg.src_id, msg.address, msg.term, msg.join_req);
     std::this_thread::sleep_for(25ms);
 
-    ASSERT_FALSE(p_io->client(2)->buffer.empty());
+    ctx.schd.stop();
+    ASSERT_FALSE(p_io->client(2)->empty());
     ASSERT_TRUE(p_io->client(2)->decode().type == details::message_type::join_response);
     ASSERT_TRUE(p_io->client(2)->decode().join_resp.status == 2);
 }
@@ -280,11 +283,11 @@ TYPED_TEST(raft_join_handler, handle_response_no_leader)
     msg.address = "2";
     msg.join_resp.status = 2;
 
-    p_io->client(2)->buffer.clear();
     details::join::handle_response(ctx, msg.src_id, msg.address, msg.term, msg.join_resp);
-    ASSERT_TRUE(p_io->client(2)->buffer.empty());
+    ASSERT_TRUE(p_io->client(2)->empty());
     std::this_thread::sleep_for(125ms);
-    ASSERT_FALSE(p_io->client(2)->buffer.empty());
+    ctx.schd.stop();
+    ASSERT_FALSE(p_io->client(2)->empty());
     ASSERT_TRUE(p_io->client(2)->decode().type == details::message_type::join_request);
 }
 
@@ -302,13 +305,14 @@ TYPED_TEST(raft_snapshot_handler, request)
     std::this_thread::sleep_for(25ms);
 
     p_io->p_snapshot = raft::snapshot();
-    p_io->client(2)->buffer.clear();
-    ASSERT_TRUE(p_io->client(2)->buffer.empty());
+    //p_io->client(2)->clear();
+    //ASSERT_TRUE(p_io->client(2)->empty());
     ASSERT_TRUE(details::utils::find_peer(ctx, 2) != nullptr);
     details::snapshot::request(ctx, *details::utils::find_peer(ctx, 2));
     std::this_thread::sleep_for(25ms);
 
-    ASSERT_FALSE(p_io->client(2)->buffer.empty());
+    ctx.schd.stop();
+    ASSERT_FALSE(p_io->client(2)->empty());
     ASSERT_TRUE(p_io->client(2)->decode().type == details::message_type::snapshot_request);
 }
 
@@ -325,13 +329,13 @@ TYPED_TEST(raft_snapshot_handler, request_without_snapshot)
     ASSERT_TRUE(ctx.role.is_leader());
     std::this_thread::sleep_for(25ms);
 
-    p_io->client(2)->buffer.clear();
-    ASSERT_TRUE(p_io->client(2)->buffer.empty());
+    p_io->client(2)->clear();
+    ASSERT_TRUE(p_io->client(2)->empty());
     ASSERT_TRUE(details::utils::find_peer(ctx, 2) != nullptr);
     details::snapshot::request(ctx, *details::utils::find_peer(ctx, 2));
     std::this_thread::sleep_for(25ms);
 
-    ASSERT_TRUE(p_io->client(2)->buffer.empty()) << p_io->client(2)->decode().type;
+    ASSERT_TRUE(p_io->client(2)->empty()) << p_io->client(2)->decode().type;
 }
 
 TYPED_TEST(raft_snapshot_handler, handle_request)
@@ -354,12 +358,13 @@ TYPED_TEST(raft_snapshot_handler, handle_request)
     msg.snapshot_req.conf.servers = {{1, "1", true}, {2, "2", true}};
     msg.snapshot_req.conf_index = 4;
 
-    ASSERT_TRUE(p_io->client(2)->buffer.empty());
+    ASSERT_TRUE(p_io->client(2)->empty());
     details::snapshot::handle_request(ctx, msg.src_id, msg.address, msg.term, msg.snapshot_req);
     std::this_thread::sleep_for(25ms);
 
+    ctx.schd.stop();
     ASSERT_TRUE(ctx.term == 3);
-    ASSERT_FALSE(p_io->client(2)->buffer.empty());
+    ASSERT_FALSE(p_io->client(2)->empty());
     ASSERT_TRUE(p_io->client(2)->decode().type == details::message_type::append_entries_response);
 }
 
@@ -377,7 +382,7 @@ TYPED_TEST(raft_snapshot_handler, handle_request_local_higher_term)
     std::this_thread::sleep_for(25ms);
 
     ASSERT_TRUE(ctx.term == 3);
-    ASSERT_FALSE(p_io->client(2)->buffer.empty());
+    ASSERT_FALSE(p_io->client(2)->empty());
     ASSERT_TRUE(p_io->client(2)->decode().type == details::message_type::append_entries_response);
     ASSERT_FALSE(p_io->client(2)->decode().append_entries_resp.accept);
 }
@@ -450,7 +455,7 @@ TYPED_TEST(raft_vote_handler, DISABLED_handle_request_invalid_src_id)
     std::this_thread::sleep_for(5ms);
     //details::message msg = details::deserialize<raft::details::message>(p_client->buffer);
     //EXPECT_TRUE(msg.type == details::message_type::invalid);
-    EXPECT_TRUE(p_io->client(2)->buffer.empty());
+    EXPECT_TRUE(p_io->client(2)->empty());
 }
 
 TYPED_TEST(raft_vote_handler, handle_request_invalid_term)

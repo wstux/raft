@@ -28,6 +28,7 @@
 #include <algorithm>
 #include <atomic>
 #include <map>
+#include <mutex>
 #include <unordered_map>
 
 #include "raft/io.h"
@@ -48,14 +49,35 @@ public:
         : address(addr)
     {}
 
-    void send(const buffer_type& b) { buffer = b; }
+    void send(const buffer_type& b)
+    {
+        std::lock_guard<std::mutex> lock(buffer_mutex);
+        buffer = b;
+    }
 
     static empty_client::ptr make(std::string_view addr) { return std::make_shared<empty_client>(addr); }
 
-    details::message decode() const { return details::deserialize<details::message>(buffer); }
+    void clear()
+    {
+        std::lock_guard<std::mutex> lock(buffer_mutex);
+        buffer.clear();
+    }
+
+    bool empty() const
+    {
+        std::lock_guard<std::mutex> lock(buffer_mutex);
+        return buffer.empty();
+    }
+
+    details::message decode() const
+    {
+        std::lock_guard<std::mutex> lock(buffer_mutex);
+        return details::deserialize<details::message>(buffer);
+    }
 
 public:
     const std::string address;
+    mutable std::mutex buffer_mutex;
     buffer_type buffer;
 };
 
@@ -160,11 +182,17 @@ public:
 
     empty_client::ptr client(server_id_t id) const { return clients.at(id); }
 
+    bool has_client(server_id_t id) const
+    {
+        std::unique_lock<std::mutex> lock(clients_mutex);
+        return (clients.find(id) != clients.end());
+    }
+
 public:
     config cfg;
     cluster_config cluster_cfg;
 
-    std::mutex clients_mutex;
+    mutable std::mutex clients_mutex;
     std::unordered_map<server_id_t, empty_client::ptr> clients;
 
     std::map<index_t, entry::ptr> entries;

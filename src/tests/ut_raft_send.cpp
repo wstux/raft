@@ -73,10 +73,8 @@ public:
     {
         using namespace std::chrono_literals;
 
-        std::unordered_map<raft::server_id_t, tests::empty_client::ptr>::const_iterator it = m_p_io->clients.find(id);
-        for (size_t i = 0; (i < limit_ms) && (it == m_p_io->clients.cend()); i += 10) {
+        for (size_t i = 0; (i < limit_ms) && (! m_p_io->has_client(id)); i += 10) {
             std::this_thread::sleep_for(10ms);
-            it = m_p_io->clients.find(id);
         }
     }
 

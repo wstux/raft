@@ -89,8 +89,10 @@ endif()
 
 set_flag_by_opt(USE_FAST_MAT        "--ffast-math")
 
-set_flag_by_opt(USE_LTO             "-flto=auto")
-set_linker_flag_by_opt(USE_LTO      "-flto=auto")
+if (NOT USE_THREAD_SANITIZER)
+    set_flag_by_opt(USE_LTO         "-flto=auto")
+    set_linker_flag_by_opt(USE_LTO  "-flto=auto")
+endif()
 
 set_flag_by_opt(USE_PEDANTIC        "-pedantic")
 set_flag_by_opt(USE_PEDANTIC        "-pedantic-errors")

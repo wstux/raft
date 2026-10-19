@@ -5,4 +5,5 @@ TestLibTarget(raft_stub INTERFACE
     INCLUDE_DIR src/tests
     COMPILE_DEFINITIONS
         TEST_DATA_DIR="${CMAKE_BINARY_DIR}/__test_data"
+        TEST_ROOT_DIR="${CMAKE_SOURCE_DIR}"
 )
