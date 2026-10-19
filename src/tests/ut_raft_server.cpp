@@ -50,7 +50,7 @@ public:
         m_p_srv = std::make_shared<raft::server>(1, m_p_io, m_p_fsm, raft::logging_handler::ptr(), is_stop_fn);
     }
 
-    virtual void TearDown() override {}
+    virtual void TearDown() override { m_p_srv->stop(); }
 
 protected:
     tests::empty_io::ptr m_p_io;

@@ -48,6 +48,24 @@
 #include "raft/details/connection/messages.h"
 #include "raft/details/connection/serialization.h"
 
+#if defined(__has_feature)
+    #if __has_feature(thread_sanitizer)
+        #define HAS_TSAN
+    #endif
+#elif defined(__SANITIZE_THREAD__)
+    #define HAS_TSAN
+#endif
+
+#ifdef HAS_TSAN
+    #if ! defined(TEST_ROOT_DIR)
+        #error TEST_ROOT_DIR is not defined
+    #endif
+extern "C" const char* __tsan_default_options()
+{
+    return "suppressions=" TEST_ROOT_DIR "/lint/tsan.supp";
+}
+#endif
+
 namespace wstux {
 namespace raft {
 namespace tests {
@@ -148,6 +166,7 @@ private:
         using namespace std::chrono_literals;
 
         if (m_type == client_type::random_threaded) {
+            std::lock_guard<std::mutex> lock(m_rand_mutex);
             const size_t sleep_for_ms = m_sleep_for(m_rand_engine);
             return std::chrono::milliseconds(sleep_for_ms);
         }
@@ -177,6 +196,7 @@ private:
     std::weak_ptr<server> m_p_srv;
     client_type m_type;
 
+    std::mutex m_rand_mutex;
     std::mt19937 m_rand_engine;
     std::uniform_int_distribution<size_t> m_sleep_for;
     boost::lockfree::queue<queue_data*> m_queue;

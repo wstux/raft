@@ -1,3 +1,7 @@
+if(USE_THREAD_SANITIZER)
+    set(DISABLE_FENCED_BLOCK    BOOST_ASIO_DISABLE_FENCED_BLOCK)
+endif()
+
 LibTarget(raft STATIC
     SOURCES
         details/context.cpp
@@ -16,6 +20,8 @@ LibTarget(raft STATIC
         details/replication/snapshot.cpp
         details/role/convert.cpp
         details/role/election.cpp
+    COMPILE_DEFINITIONS
+        ${DISABLE_FENCED_BLOCK}
     INCLUDE_DIR
         src/libs
     DEPENDS
