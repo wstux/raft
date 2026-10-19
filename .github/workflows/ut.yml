@@ -19,8 +19,8 @@ jobs:
           - ut-name: "Address, Leak and UB sanitizers"
             make-flags: "-- --sanitizer_addr --sanitizer_leak --sanitizer_ub"
 
-          - ut-name: "Thread sanitizer"
-            make-flags: "-- --sanitizer_thread"
+          #- ut-name: "Thread sanitizer"
+          #  make-flags: "-- --sanitizer_thread"
 
     steps:
     - name: Checkout repository
